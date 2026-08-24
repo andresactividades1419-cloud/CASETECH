@@ -9,6 +9,7 @@ import MainLayout from '../components/layout/MainLayout';
 import LoginPage from '../pages/LoginPage';
 import DashboardPage from '../pages/DashboardPage';
 import ProvidersPage from '../pages/ProvidersPage';
+import MaterialsPage from '../pages/MaterialsPage';
 
 export function AppRoutes() {
   return (
@@ -21,6 +22,7 @@ export function AppRoutes() {
         <Route element={<MainLayout />}>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/providers" element={<ProvidersPage />} />
+          <Route path="/materials" element={<MaterialsPage />} />
         </Route>
       </Route>
 
