@@ -1,0 +1,81 @@
+# ============================================================
+# CASETECH — .gitignore
+# Exclusión estricta para monorepo Python + Node
+# ============================================================
+
+# --------------- Python / Backend ---------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+pip-wheel-metadata/
+*.pyo
+*.pyd
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+
+# Alembic
+alembic/versions/__pycache__/
+
+# UV
+.uv/
+uv.lock.bak
+
+# --------------- Node / Frontend ---------------
+node_modules/
+.pnpm-store/
+.pnpm/
+pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+frontend/dist/
+frontend/build/
+.next/
+out/
+
+# --------------- Variables de entorno ---------------
+.env
+.env.*
+!.env.example
+*.local
+
+# --------------- Docker ---------------
+docker-compose.override.yml
+
+# --------------- IDEs y editores ---------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --------------- Temporales y OS ---------------
+tmp/
+temp/
+*.tmp
+*.bak
+*.cache
