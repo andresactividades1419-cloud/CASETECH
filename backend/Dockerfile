@@ -18,7 +18,6 @@ LABEL python.version="3.11"
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONFAULTHANDLER=1 \
-    # UV: ubicación del entorno virtual dentro del contenedor
     UV_PROJECT_ENVIRONMENT=/app/.venv \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
@@ -38,15 +37,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Directorio de trabajo
 WORKDIR /app
 
-# Copiar archivos de configuración de dependencias primero (cache de capas)
-COPY pyproject.toml ./
-COPY uv.lock* ./
+# ── Etapa A: instalar SOLO dependencias externas (máxima cache de capas) ─────
+# Se copian únicamente los manifiestos; el código fuente aún no existe aquí.
+# --no-install-project: instala las deps del lockfile sin intentar construir
+#                       el paquete local (evita que Hatchling busque README.md).
+COPY pyproject.toml README.md uv.lock* ./
+RUN uv sync --no-install-project --no-dev
 
-# Instalar dependencias Python con UV (usa el lock file si existe)
-RUN uv sync --frozen --no-dev
-
-# Copiar el código fuente de la aplicación
+# ── Etapa B: copiar código e instalar el proyecto completo ───────────────────
+# Ahora sí existen todos los archivos que Hatchling necesita (README.md, app/).
 COPY . .
+RUN uv sync --no-dev
 
 # Puerto expuesto por el backend
 EXPOSE 8000

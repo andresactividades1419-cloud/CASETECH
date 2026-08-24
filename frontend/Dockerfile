@@ -29,9 +29,9 @@ FROM base AS dependencies
 # Copiar archivos de manifiesto de dependencias
 COPY package.json pnpm-lock.yaml* ./
 
-# Instalar dependencias con lockfile estricto (reproducibilidad garantizada)
-# --frozen-lockfile: falla si pnpm-lock.yaml no está actualizado
-RUN pnpm install --frozen-lockfile
+# Instalar dependencias en modo desarrollo
+# --no-frozen-lockfile: permite instalar aunque pnpm-lock.yaml no exista o esté desactualizado
+RUN pnpm install --no-frozen-lockfile
 
 # ============================================================
 # Etapa de desarrollo (imagen final para docker-compose dev)
@@ -46,8 +46,8 @@ COPY --from=dependencies /app/node_modules ./node_modules
 # Copiar el código fuente
 COPY . .
 
-# Puerto del servidor de desarrollo Vite
-EXPOSE 5173
+# Puerto del servidor de desarrollo React
+EXPOSE 3000
 
 # Iniciar servidor de desarrollo con hot-reload y escucha en todas las interfaces
-CMD ["pnpm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+CMD ["pnpm", "run", "dev"]

@@ -19,14 +19,18 @@ dependencies = [
     "uvicorn==0.28.0",
     # ORM con soporte async/await
     "sqlalchemy==2.0.28",
+    # Driver async de PostgreSQL para SQLAlchemy (asyncpg)
+    "asyncpg==0.29.0",
     # Migraciones de base de datos
     "alembic==1.13.1",
-    # Driver PostgreSQL para Python
+    # Driver PostgreSQL síncrono para Alembic y psycopg2
     "psycopg2-binary==2.9.9",
     # Validación y serialización de datos (core en Rust)
     "pydantic==2.6.4",
     # Configuración via variables de entorno con Pydantic
     "pydantic-settings==2.2.1",
+    # Validación de emails para EmailStr (requerido por Pydantic v2)
+    "email-validator==2.1.1",
     # Hashing de contraseñas
     "passlib==1.7.4",
     # Implementación bcrypt para passlib
