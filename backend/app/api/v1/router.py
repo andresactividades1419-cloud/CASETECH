@@ -7,7 +7,7 @@ Agrupa todos los sub-routers de los distintos dominios bajo el prefijo
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth
+from app.api.v1.endpoints import auth, providers
 
 api_router = APIRouter()
 
@@ -21,7 +21,16 @@ api_router.include_router(
 )
 
 # -----------------------------------------------------------------------
-# Aquí se agregarán futuros dominios, por ejemplo:
-#   api_router.include_router(products.router, prefix="/products", tags=["Productos"])
-#   api_router.include_router(orders.router,   prefix="/orders",   tags=["Pedidos"])
+# Proveedores  (HU02, HU03)
+# -----------------------------------------------------------------------
+api_router.include_router(
+    providers.router,
+    prefix="/providers",
+    tags=["Proveedores"],
+)
+
+# -----------------------------------------------------------------------
+# Futuros dominios:
+#   api_router.include_router(materials.router, prefix="/materials", tags=["Materiales"])
+#   api_router.include_router(orders.router,    prefix="/orders",    tags=["Pedidos"])
 # -----------------------------------------------------------------------
