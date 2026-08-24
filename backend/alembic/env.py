@@ -23,8 +23,8 @@ if config.config_file_name is not None:
 # Metadatos del ORM para autogenerate
 target_metadata = Base.metadata
 
-# Inyectar la URL de la base de datos desde settings
-config.set_main_option("sqlalchemy.url", settings.SQLALCHEMY_DATABASE_URI)
+# Inyectar la URL SÍNCRONA (psycopg2) desde settings — Alembic no soporta asyncpg
+config.set_main_option("sqlalchemy.url", settings.SQLALCHEMY_SYNC_DATABASE_URI)
 
 
 def run_migrations_offline() -> None:
@@ -56,30 +56,22 @@ def do_run_migrations(connection: Connection) -> None:
         context.run_migrations()
 
 
-async def run_async_migrations() -> None:
+def run_migrations_online() -> None:
     """
-    Crea un AsyncEngine y ejecuta las migraciones de forma asíncrona.
+    Ejecuta migraciones en modo 'online' usando un engine SÍNCRONO (psycopg2).
+    Alembic no requiere async — el engine async es exclusivo del runtime FastAPI.
     """
-    configuration = config.get_section(config.config_ini_section) or {}
-    configuration["sqlalchemy.url"] = settings.SQLALCHEMY_DATABASE_URI
+    from sqlalchemy import create_engine
 
-    connectable = async_engine_from_config(
-        configuration,
-        prefix="sqlalchemy.",
+    connectable = create_engine(
+        settings.SQLALCHEMY_SYNC_DATABASE_URI,
         poolclass=pool.NullPool,
     )
 
-    async with connectable.connect() as connection:
-        await connection.run_sync(do_run_migrations)
+    with connectable.connect() as connection:
+        do_run_migrations(connection)
 
-    await connectable.dispose()
-
-
-def run_migrations_online() -> None:
-    """
-    Ejecuta migraciones en modo 'online' usando el bucle de eventos asyncio.
-    """
-    asyncio.run(run_async_migrations())
+    connectable.dispose()
 
 
 if context.is_offline_mode():
