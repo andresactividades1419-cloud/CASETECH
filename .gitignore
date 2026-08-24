@@ -83,3 +83,7 @@ temp/
 # --------------- Antigravity IDE / AI Agent Rules & Context ---------------
 .agents/
 *.agent.md
+
+# Memoria interna y reglas de Antigravity IDE
+.agents/
+*.agent.md
