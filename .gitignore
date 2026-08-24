@@ -79,3 +79,7 @@ temp/
 *.tmp
 *.bak
 *.cache
+
+# --------------- Antigravity IDE / AI Agent Rules & Context ---------------
+.agents/
+*.agent.md
