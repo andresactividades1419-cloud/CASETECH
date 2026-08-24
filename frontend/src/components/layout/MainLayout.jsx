@@ -39,8 +39,7 @@ export function MainLayout() {
       to: '/materials',
       label: 'Materiales & BOM',
       icon: '🧱',
-      badge: 'Fase 4',
-      disabled: true,
+      badge: 'HU10/HU12',
     },
     {
       to: '/orders',
