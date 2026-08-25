@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_router
 from app.core.config import settings
+from app.core.init_db import init_db
 
 # ---------------------------------------------------------------------------
 # Ciclo de vida de la aplicación (lifespan handler — FastAPI 0.110+)
@@ -27,15 +28,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
     Gestor de ciclo de vida async de FastAPI.
 
-    Startup : Puede usarse para verificar conexión a BD, inicializar cachés,
-              registrar tareas en background, etc.
-    Shutdown: Cierre limpio de pools, conexiones externas, etc.
+    Startup : Siembra automática de roles y usuarios iniciales si la BD es nueva.
+    Shutdown: Cierre limpio de recursos.
     """
     # --- Startup ---
-    # Aquí podrías llamar a: await check_db_connection() o similar
+    await init_db()
     yield
     # --- Shutdown ---
-    # Aquí podrías cerrar: await engine.dispose()
 
 
 # ---------------------------------------------------------------------------
