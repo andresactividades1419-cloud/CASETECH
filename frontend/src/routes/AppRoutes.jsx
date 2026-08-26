@@ -10,6 +10,7 @@ import LoginPage from '../pages/LoginPage';
 import DashboardPage from '../pages/DashboardPage';
 import ProvidersPage from '../pages/ProvidersPage';
 import MaterialsPage from '../pages/MaterialsPage';
+import OrdersPage from '../pages/OrdersPage';
 
 export function AppRoutes() {
   return (
@@ -23,6 +24,7 @@ export function AppRoutes() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/providers" element={<ProvidersPage />} />
           <Route path="/materials" element={<MaterialsPage />} />
+          <Route path="/orders" element={<OrdersPage />} />
         </Route>
       </Route>
 

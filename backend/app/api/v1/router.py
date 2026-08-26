@@ -8,6 +8,7 @@ Agrupa todos los sub-routers de los distintos dominios bajo el prefijo
 from fastapi import APIRouter
 
 from app.api.v1.endpoints import auth, materials, providers
+from app.api.v1.endpoints.orders import product_types_router, router as orders_router
 
 api_router = APIRouter()
 
@@ -39,6 +40,20 @@ api_router.include_router(
 )
 
 # -----------------------------------------------------------------------
-# Futuros dominios:
-#   api_router.include_router(orders.router, prefix="/orders", tags=["Pedidos"])
+# Pedidos de Producción + Motor BOM  (HU07, HU08, HU11)
 # -----------------------------------------------------------------------
+api_router.include_router(
+    orders_router,
+    prefix="/orders",
+    tags=["Pedidos"],
+)
+
+# -----------------------------------------------------------------------
+# Catálogo de Tipos de Casetón  (selector frontend)
+# -----------------------------------------------------------------------
+api_router.include_router(
+    product_types_router,
+    prefix="/product-types",
+    tags=["Tipos de Casetón"],
+)
+
