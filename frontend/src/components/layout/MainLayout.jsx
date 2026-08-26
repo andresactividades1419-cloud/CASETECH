@@ -45,8 +45,7 @@ export function MainLayout() {
       to: '/orders',
       label: 'Pedidos Producción',
       icon: '📋',
-      badge: 'Fase 5',
-      disabled: true,
+      badge: 'HU07/HU11',
     },
   ];
 
