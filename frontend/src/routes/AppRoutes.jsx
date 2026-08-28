@@ -24,6 +24,7 @@ export function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route element={<MainLayout />}>
           <Route path="/" element={<DashboardPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/providers" element={<ProvidersPage />} />
           <Route path="/purchases" element={<PurchasesPage />} />
           <Route path="/materials" element={<MaterialsPage />} />
@@ -31,6 +32,7 @@ export function AppRoutes() {
           <Route path="/adjustments" element={<AdjustmentsPage />} />
         </Route>
       </Route>
+
 
 
 

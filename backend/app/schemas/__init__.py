@@ -28,6 +28,15 @@ from app.schemas.order import (
     OrderListResponse,
     OrderStatus,
 )
+from app.schemas.dashboard import (
+    AuditLogItem,
+    AuditLogListResponse,
+    DashboardKPIs,
+    DashboardMetricsResponse,
+    ProductionByType,
+    StockMovementAuditItem,
+    StockMovementListResponse,
+)
 from app.schemas.product_type import ProductTypeResponse, ProductTypeListResponse
 from app.schemas.purchase import (
     PurchaseCreate,
@@ -95,6 +104,15 @@ __all__ = [
     "StockAdjustmentListResponse",
     "StockAdjustmentResponse",
     "StockAdjustmentReview",
+    # Dashboard
+    "AuditLogItem",
+    "AuditLogListResponse",
+    "DashboardKPIs",
+    "DashboardMetricsResponse",
+    "ProductionByType",
+    "StockMovementAuditItem",
+    "StockMovementListResponse",
 ]
+
 
 

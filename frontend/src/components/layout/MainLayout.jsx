@@ -25,12 +25,13 @@ export function MainLayout() {
   const navItems = [
     {
       to: '/',
-      label: 'Dashboard',
+      label: 'Dashboard & Métricas',
       icon: '📊',
-      badge: null,
+      badge: 'HU15',
     },
     {
       to: '/providers',
+
       label: 'Proveedores',
       icon: '🏢',
       badge: 'HU02/HU03',
@@ -165,8 +166,9 @@ export function MainLayout() {
               );
             }
 
-            const isActive = location.pathname === item.to;
+            const isActive = location.pathname === item.to || (item.to === '/' && location.pathname === '/dashboard');
             return (
+
               <NavLink
                 key={item.to}
                 to={item.to}
