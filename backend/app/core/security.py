@@ -10,18 +10,12 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 from jose import jwt
-from passlib.context import CryptContext
+import bcrypt
 
 from app.core.config import settings
 
 # ---------------------------------------------------------------------------
-# CryptContext — bcrypt como esquema activo, deprecar el resto automáticamente
-# ---------------------------------------------------------------------------
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-# ---------------------------------------------------------------------------
-# Funciones de contraseña
+# Funciones de contraseña (bcrypt nativo)
 # ---------------------------------------------------------------------------
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -35,7 +29,13 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Returns:
         True si la contraseña es correcta, False en caso contrario.
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return bcrypt.checkpw(
+            plain_password.encode("utf-8"),
+            hashed_password.encode("utf-8"),
+        )
+    except Exception:
+        return False
 
 
 def get_password_hash(password: str) -> str:
@@ -48,7 +48,11 @@ def get_password_hash(password: str) -> str:
     Returns:
         String con el hash bcrypt listo para persistir en BD.
     """
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(
+        password.encode("utf-8"),
+        bcrypt.gensalt(),
+    ).decode("utf-8")
+
 
 
 # ---------------------------------------------------------------------------

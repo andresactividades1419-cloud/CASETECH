@@ -9,6 +9,7 @@ from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
     auth,
+    dashboard,
     materials,
     providers,
     purchases,
@@ -17,6 +18,15 @@ from app.api.v1.endpoints import (
 from app.api.v1.endpoints.orders import product_types_router, router as orders_router
 
 api_router = APIRouter()
+
+# -----------------------------------------------------------------------
+# Dashboard, Métricas y Auditoría  (HU14, HU15)
+# -----------------------------------------------------------------------
+api_router.include_router(
+    dashboard.router,
+    prefix="/dashboard",
+    tags=["Dashboard & Auditoría"],
+)
 
 # -----------------------------------------------------------------------
 # Autenticación y gestión de usuarios  (HU01, HU14)
@@ -80,6 +90,7 @@ api_router.include_router(
     prefix="/stock-adjustments",
     tags=["Ajustes de Inventario"],
 )
+
 
 
 
