@@ -28,7 +28,15 @@ from app.schemas.order import (
     OrderListResponse,
     OrderStatus,
 )
-from app.schemas.product_type import ProductTypeResponse, ProductTypeListResponse
+from app.schemas.stock_adjustment import (
+    AdjustmentStatus,
+    AdjustmentType,
+    StockAdjustmentBase,
+    StockAdjustmentCreate,
+    StockAdjustmentListResponse,
+    StockAdjustmentResponse,
+    StockAdjustmentReview,
+)
 
 __all__ = [
     # Role
@@ -65,4 +73,13 @@ __all__ = [
     # ProductType
     "ProductTypeResponse",
     "ProductTypeListResponse",
+    # StockAdjustment
+    "AdjustmentStatus",
+    "AdjustmentType",
+    "StockAdjustmentBase",
+    "StockAdjustmentCreate",
+    "StockAdjustmentListResponse",
+    "StockAdjustmentResponse",
+    "StockAdjustmentReview",
 ]
+

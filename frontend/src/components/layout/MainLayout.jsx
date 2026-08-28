@@ -47,7 +47,14 @@ export function MainLayout() {
       icon: '📋',
       badge: 'HU07/HU11',
     },
+    {
+      to: '/adjustments',
+      label: 'Ajustes & Auditoría',
+      icon: '⚖️',
+      badge: 'HU13',
+    },
   ];
+
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#0b0f19', color: '#f8fafc' }}>
