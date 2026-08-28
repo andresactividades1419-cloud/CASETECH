@@ -36,6 +36,12 @@ export function MainLayout() {
       badge: 'HU02/HU03',
     },
     {
+      to: '/purchases',
+      label: 'Compras & Ingresos',
+      icon: '🛒',
+      badge: 'HU07',
+    },
+    {
       to: '/materials',
       label: 'Materiales & BOM',
       icon: '🧱',
@@ -54,6 +60,7 @@ export function MainLayout() {
       badge: 'HU13',
     },
   ];
+
 
 
   return (
