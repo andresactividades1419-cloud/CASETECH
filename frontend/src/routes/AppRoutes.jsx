@@ -10,6 +10,9 @@ import LoginPage from '../pages/LoginPage';
 import DashboardPage from '../pages/DashboardPage';
 import ProvidersPage from '../pages/ProvidersPage';
 import MaterialsPage from '../pages/MaterialsPage';
+import OrdersPage from '../pages/OrdersPage';
+import AdjustmentsPage from '../pages/AdjustmentsPage';
+import PurchasesPage from '../pages/PurchasesPage';
 
 export function AppRoutes() {
   return (
@@ -21,10 +24,17 @@ export function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route element={<MainLayout />}>
           <Route path="/" element={<DashboardPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/providers" element={<ProvidersPage />} />
+          <Route path="/purchases" element={<PurchasesPage />} />
           <Route path="/materials" element={<MaterialsPage />} />
+          <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/adjustments" element={<AdjustmentsPage />} />
         </Route>
       </Route>
+
+
+
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

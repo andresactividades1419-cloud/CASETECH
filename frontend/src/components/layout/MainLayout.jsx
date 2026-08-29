@@ -25,15 +25,22 @@ export function MainLayout() {
   const navItems = [
     {
       to: '/',
-      label: 'Dashboard',
+      label: 'Dashboard & Métricas',
       icon: '📊',
-      badge: null,
+      badge: 'HU15',
     },
     {
       to: '/providers',
+
       label: 'Proveedores',
       icon: '🏢',
       badge: 'HU02/HU03',
+    },
+    {
+      to: '/purchases',
+      label: 'Compras & Ingresos',
+      icon: '🛒',
+      badge: 'HU07',
     },
     {
       to: '/materials',
@@ -45,10 +52,17 @@ export function MainLayout() {
       to: '/orders',
       label: 'Pedidos Producción',
       icon: '📋',
-      badge: 'Fase 5',
-      disabled: true,
+      badge: 'HU07/HU11',
+    },
+    {
+      to: '/adjustments',
+      label: 'Ajustes & Auditoría',
+      icon: '⚖️',
+      badge: 'HU13',
     },
   ];
+
+
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#0b0f19', color: '#f8fafc' }}>
@@ -152,8 +166,9 @@ export function MainLayout() {
               );
             }
 
-            const isActive = location.pathname === item.to;
+            const isActive = location.pathname === item.to || (item.to === '/' && location.pathname === '/dashboard');
             return (
+
               <NavLink
                 key={item.to}
                 to={item.to}

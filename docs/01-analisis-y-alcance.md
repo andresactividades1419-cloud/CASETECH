@@ -37,7 +37,7 @@ La sustitución de `tipos_caseton` y `recetas` por cualquier otro catálogo de p
 
 ### 1.2 Caso de Uso Inicial: Fábrica de Casetones
 
-Los casetones son elementos de construcción utilizados en el sector de la edificación para conformar placas aligeradas de concreto. La fábrica produce dos naturalezas fundamentales de producto, con comportamientos distintos frente al inventario:
+Los casetones son elementos de construcción utilizados en el sector de la edificación, hay muchos tipos de casetones para conformar placas aligeradas de concreto. La fábrica produce dos naturalezas fundamentales de producto, con comportamientos distintos frente al inventario:
 
 | Naturaleza | Tipos | Característica operativa |
 |------------|-------|--------------------------|
