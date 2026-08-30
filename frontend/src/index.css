@@ -65,3 +65,52 @@ input, button, select, textarea {
     transform: rotate(360deg);
   }
 }
+
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes logoFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+  }
+  50% {
+    transform: translateY(-4px) rotate(1deg);
+    box-shadow: 0 14px 28px rgba(15, 23, 42, 0.2), 0 0 15px rgba(212, 248, 76, 0.35);
+  }
+}
+
+.animate-float {
+  animation: floatSlow 6s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spin 1s linear infinite;
+}
+
+.animate-logo {
+  animation: logoFloat 4s ease-in-out infinite;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.animate-logo:hover {
+  transform: scale(1.06) rotate(-2deg);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.25), 0 0 20px rgba(212, 248, 76, 0.5);
+}
+
+
