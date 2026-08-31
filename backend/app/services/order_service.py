@@ -256,9 +256,15 @@ async def update_order_status(
         try:
             # El SP internamente hace FOR UPDATE en pedidos y materiales,
             # actualiza el estado a EN_PRODUCCION y registra movimientos.
+            query = text("""
+                CALL sp_descontar_receta(
+                    CAST(:pedido_id AS BIGINT),
+                    CAST(:usuario_id AS BIGINT)
+                )
+            """)
             await db.execute(
-                text("CALL sp_descontar_receta(:pedido_id, :usuario_id)"),
-                {"pedido_id": order_id, "usuario_id": user_id},
+                query,
+                {"pedido_id": int(order_id), "usuario_id": int(user_id)},
             )
             await db.commit()
 

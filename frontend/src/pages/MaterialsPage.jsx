@@ -36,7 +36,10 @@ export function MaterialsPage() {
   const [adjustmentMaterialId, setAdjustmentMaterialId] = useState(null);
 
   const showToast = (message, type = 'success') => {
-    setToast({ message, type });
+    const text = typeof message === 'string'
+      ? message
+      : (message?.detail || message?.message || 'Operación completada.');
+    setToast({ message: text, type });
     setTimeout(() => {
       setToast(null);
     }, 4000);

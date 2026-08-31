@@ -100,13 +100,16 @@ export function PurchasesPage() {
   const [toast, setToast] = useState(null);
 
   const showToast = (message, type = 'success') => {
-    setToast({ message, type });
+    const text = typeof message === 'string'
+      ? message
+      : (message?.detail || message?.message || 'Operación completada.');
+    setToast({ message: text, type });
   };
 
   // Cargar proveedores para selector
   useEffect(() => {
     providersApi.getProviders({ limit: 100 })
-      .then((data) => setProviders(data.items || []))
+      .then((data) => setProviders(data?.items || []))
       .catch(() => {});
   }, []);
 
@@ -123,10 +126,14 @@ export function PurchasesPage() {
         fecha_hasta: fechaHasta || undefined,
       });
 
-      setPurchases(data.items || []);
-      setTotal(data.total || 0);
+      setPurchases(data?.items || []);
+      setTotal(data?.total || 0);
     } catch (err) {
-      showToast(err.response?.data?.detail || 'Error al cargar las órdenes de compra.', 'error');
+      const detail = err.response?.data?.detail;
+      const errorMsg = typeof detail === 'string'
+        ? detail
+        : (err.message || 'Error al cargar las órdenes de compra.');
+      showToast(errorMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -137,9 +144,9 @@ export function PurchasesPage() {
   }, [fetchPurchases]);
 
   // Métricas para KPI cards
-  const totalAmount = purchases.reduce((acc, p) => acc + (parseFloat(p.total) || 0), 0);
-  const totalItemsCount = purchases.reduce((acc, p) => acc + (p.items ? p.items.length : 0), 0);
-  const uniqueProvidersCount = new Set(purchases.map((p) => p.proveedor_id)).size;
+  const totalAmount = (purchases || []).reduce((acc, p) => acc + (parseFloat(p?.total) || 0), 0);
+  const totalItemsCount = (purchases || []).reduce((acc, p) => acc + (Array.isArray(p?.items) ? p.items.length : 0), 0);
+  const uniqueProvidersCount = new Set((purchases || []).map((p) => p?.proveedor_id).filter(Boolean)).size;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>

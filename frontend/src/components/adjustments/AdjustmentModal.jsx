@@ -144,18 +144,27 @@ export function AdjustmentModal({ isOpen, onClose, onSuccess, initialMaterialId 
     setApiError('');
 
     try {
-      const response = await adjustmentsApi.createAdjustment({
-        material_id: form.material_id,
+      const payload = {
+        material_id: Number(form.material_id),
         tipo: form.tipo,
-        cantidad: form.cantidad,
-        motivo: form.motivo,
-      });
+        cantidad: Number(form.cantidad),
+        motivo: form.motivo.trim(),
+      };
 
-      onSuccess(response, 'Solicitud de ajuste registrada con éxito.');
+      const response = await adjustmentsApi.createAdjustment(payload);
+      const successMsg = response?.id
+        ? `Solicitud de ajuste #${response.id} registrada con éxito.`
+        : 'Solicitud de ajuste registrada con éxito.';
+
+      onSuccess(successMsg);
       onClose();
     } catch (err) {
-      const msg = err.response?.data?.detail || err.message || 'Error al registrar la solicitud de ajuste.';
-      setApiError(msg);
+      console.error('Error al registrar ajuste:', err);
+      const detail = err.response?.data?.detail;
+      const errorMsg = typeof detail === 'string'
+        ? detail
+        : (Array.isArray(detail) ? detail.map((d) => d.msg).join(', ') : (err.message || 'Error al registrar la solicitud de ajuste.'));
+      setApiError(errorMsg);
     } finally {
       setSubmitting(false);
     }
