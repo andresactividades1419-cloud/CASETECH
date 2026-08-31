@@ -134,7 +134,7 @@ export function ProvidersPage() {
                 Directorio de Proveedores
               </h1>
               <p style={{ color: '#94a3b8', margin: '0.2rem 0 0 0', fontSize: '0.9rem' }}>
-                Gestión de insumos para colado de casetones (HU02, HU03, HU05)
+                Gestión y catálogo de proveedores de materias primas
               </p>
             </div>
           </div>

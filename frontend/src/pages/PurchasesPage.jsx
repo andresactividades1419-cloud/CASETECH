@@ -155,11 +155,11 @@ export function PurchasesPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <span style={{ fontSize: '1.5rem' }}>🛒</span>
             <h1 style={{ margin: 0, fontSize: '1.6rem', fontWeight: '800', color: '#f8fafc', letterSpacing: '-0.02em' }}>
-              Compras y Abastecimiento de Materias Primas
+              Gestión de Abastecimiento
             </h1>
           </div>
           <p style={{ margin: '0.35rem 0 0 0', color: '#94a3b8', fontSize: '0.875rem' }}>
-            Gestión de compras a proveedores con ingreso atómico directo a inventario y Kardex (HU07).
+            Compras y abastecimiento de materias primas con ingreso directo a inventario y Kardex.
           </p>
         </div>
 

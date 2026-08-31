@@ -251,7 +251,7 @@ export function PurchaseModal({ isOpen, onClose, onSuccess }) {
                 Registrar Orden de Compra & Abastecimiento
               </h3>
               <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8' }}>
-                Ingreso atómico de stock e historial inmutable en Kardex (HU07)
+                Ingreso atómico de stock e historial inmutable en Kardex
               </p>
             </div>
           </div>

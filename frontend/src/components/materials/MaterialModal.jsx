@@ -164,7 +164,7 @@ export function MaterialModal({ isOpen, onClose, onSuccess, materialToEdit = nul
                 {isEdit ? 'Editar Insumo de Producción' : 'Registrar Nuevo Insumo'}
               </h2>
               <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>
-                {isEdit ? `ID #${materialToEdit.id}` : 'Inventario maestro para recetas BOM (HU10)'}
+                {isEdit ? `ID #${materialToEdit.id}` : 'Inventario maestro para recetas BOM'}
               </p>
             </div>
           </div>
@@ -294,7 +294,7 @@ export function MaterialModal({ isOpen, onClose, onSuccess, materialToEdit = nul
 
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#cbd5e1', marginBottom: '0.35rem' }}>
-                Stock Mínimo (Alerta HU12) <span style={{ color: '#ef4444' }}>*</span>
+                Stock Mínimo (Alerta Crítica) <span style={{ color: '#ef4444' }}>*</span>
               </label>
               <input
                 type="number"

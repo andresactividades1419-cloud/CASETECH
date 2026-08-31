@@ -1,11 +1,18 @@
 /**
- * pages/MaterialsPage.jsx — Gestión de Insumos y Materias Primas para Casetones (HU10 y HU12).
+ * pages/MaterialsPage.jsx — Control de Inventario y Gestión de Insumos para CASETECH ERP.
+ *
+ * Características:
+ * - Cabecera "Control de Inventario" con botones "+ Nuevo Material" y "⚖️ Ajuste Manual de Stock".
+ * - Tarjetas de métricas y alertas de stock crítico.
+ * - Tabla completa con acciones: Editar, Ajustar (con preselección de insumo) y Desactivar/Reactivar.
+ * - Conectado a MaterialModal y AdjustmentModal con retroalimentación vía Toast.
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
 import materialsApi from '../api/materialsApi';
 import { useAuth } from '../context/AuthContext';
 import MaterialModal from '../components/materials/MaterialModal';
+import AdjustmentModal from '../components/adjustments/AdjustmentModal';
 
 export function MaterialsPage() {
   const { isAdmin } = useAuth();
@@ -19,10 +26,14 @@ export function MaterialsPage() {
   const [error, setError] = useState(null);
   const [toast, setToast] = useState(null);
 
-  // Modal State
-  const [modalOpen, setModalOpen] = useState(false);
+  // Modal State para Materiales
+  const [materialModalOpen, setMaterialModalOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [actionLoadingId, setActionLoadingId] = useState(null);
+
+  // Modal State para Ajustes de Inventario
+  const [adjustmentModalOpen, setAdjustmentModalOpen] = useState(false);
+  const [adjustmentMaterialId, setAdjustmentMaterialId] = useState(null);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -63,12 +74,17 @@ export function MaterialsPage() {
 
   const handleOpenCreate = () => {
     setSelectedMaterial(null);
-    setModalOpen(true);
+    setMaterialModalOpen(true);
   };
 
   const handleOpenEdit = (mat) => {
     setSelectedMaterial(mat);
-    setModalOpen(true);
+    setMaterialModalOpen(true);
+  };
+
+  const handleOpenAdjustment = (materialId = null) => {
+    setAdjustmentMaterialId(materialId);
+    setAdjustmentModalOpen(true);
   };
 
   const handleToggleStatus = async (mat) => {
@@ -129,43 +145,78 @@ export function MaterialsPage() {
       }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ fontSize: '2rem' }}>🧱</span>
+            <span style={{ fontSize: '2rem' }}>📦</span>
             <div>
-              <h1 style={{ fontSize: '1.75rem', fontWeight: '800', margin: 0, color: '#f8fafc' }}>
-                Inventario de Materiales e Insumos
+              <h1 style={{ fontSize: '1.75rem', fontWeight: '800', margin: 0, color: '#f8fafc', letterSpacing: '-0.02em' }}>
+                Control de Inventario
               </h1>
               <p style={{ color: '#94a3b8', margin: '0.2rem 0 0 0', fontSize: '0.9rem' }}>
-                Materias primas para recetas de casetones y monitoreo de stock mínimo (HU10 & HU12)
+                Inventario de materias primas, insumos de colado y control de stock en tiempo real
               </p>
             </div>
           </div>
         </div>
 
-        {isAdmin && (
+        {/* Botones de Acción de Cabecera */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {/* Botón Secundario: Ajuste Manual de Stock */}
           <button
-            onClick={handleOpenCreate}
+            onClick={() => handleOpenAdjustment(null)}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
-              padding: '0.75rem 1.35rem',
-              backgroundColor: '#2563eb',
-              color: '#ffffff',
-              border: 'none',
+              padding: '0.75rem 1.25rem',
+              backgroundColor: '#1e293b',
+              color: '#c084fc',
+              border: '1px solid rgba(192, 132, 252, 0.35)',
               borderRadius: '10px',
               fontWeight: '700',
-              fontSize: '0.95rem',
+              fontSize: '0.9rem',
               cursor: 'pointer',
-              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.4)',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
               transition: 'all 0.15s ease',
             }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(192, 132, 252, 0.15)';
+              e.currentTarget.style.borderColor = '#c084fc';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#1e293b';
+              e.currentTarget.style.borderColor = 'rgba(192, 132, 252, 0.35)';
+            }}
           >
-            <span style={{ fontSize: '1.1rem' }}>➕</span>
-            <span>Nuevo Insumo</span>
+            <span style={{ fontSize: '1.1rem' }}>⚖️</span>
+            <span>Ajuste Manual de Stock</span>
           </button>
-        )}
+
+          {/* Botón Primario: + Nuevo Material */}
+          {isAdmin && (
+            <button
+              onClick={handleOpenCreate}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.75rem 1.35rem',
+                backgroundColor: '#2563eb',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '10px',
+                fontWeight: '700',
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.4)',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+            >
+              <span style={{ fontSize: '1.1rem' }}>➕</span>
+              <span>Nuevo Material</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tarjetas de Métricas y Alertas */}
@@ -184,7 +235,7 @@ export function MaterialsPage() {
           justifyContent: 'space-between',
         }}>
           <div>
-            <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: '600' }}>TOTAL INSUMOS</div>
+            <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: '600' }}>TOTAL MATERIALES</div>
             <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#f8fafc', marginTop: '0.25rem' }}>{total}</div>
           </div>
           <span style={{ fontSize: '2rem', opacity: 0.7 }}>📦</span>
@@ -200,20 +251,20 @@ export function MaterialsPage() {
           justifyContent: 'space-between',
         }}>
           <div>
-            <div style={{ fontSize: '0.8rem', color: '#34d399', fontWeight: '600' }}>DISPONIBLES (ACTIVOS)</div>
+            <div style={{ fontSize: '0.8rem', color: '#34d399', fontWeight: '600' }}>ACTIVOS PARA PRODUCCIÓN</div>
             <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#34d399', marginTop: '0.25rem' }}>{activeCount}</div>
           </div>
-          <span style={{ fontSize: '2rem', opacity: 0.7 }}>🟢</span>
+          <span style={{ fontSize: '2rem' }}>✅</span>
         </div>
 
-        {/* Card Alerta de Stock Crítico */}
+        {/* Alerta Stock Crítico */}
         <div
-          onClick={() => setOnlyLowStock((prev) => !prev)}
+          onClick={() => setOnlyLowStock(!onlyLowStock)}
           style={{
-            backgroundColor: lowStockCount > 0 ? '#450a0a' : '#111827',
+            backgroundColor: lowStockCount > 0 ? '#1c131d' : '#111827',
             padding: '1.25rem',
             borderRadius: '12px',
-            border: lowStockCount > 0 ? '1px solid #ef4444' : '1px solid #1f2937',
+            border: `1px solid ${lowStockCount > 0 ? '#ef4444' : '#1f2937'}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -226,7 +277,7 @@ export function MaterialsPage() {
         >
           <div>
             <div style={{ fontSize: '0.8rem', color: lowStockCount > 0 ? '#fca5a5' : '#94a3b8', fontWeight: '700' }}>
-              STOCK CRÍTICO (HU12)
+              STOCK CRÍTICO
             </div>
             <div style={{ fontSize: '1.75rem', fontWeight: '800', color: lowStockCount > 0 ? '#ef4444' : '#94a3b8', marginTop: '0.25rem' }}>
               {lowStockCount} {lowStockCount > 0 && <span style={{ fontSize: '0.8rem', color: '#fca5a5' }}>Reabastecer</span>}
@@ -239,188 +290,113 @@ export function MaterialsPage() {
       {/* Barra de Filtros y Búsqueda */}
       <div style={{
         backgroundColor: '#111827',
-        padding: '1.25rem',
-        borderRadius: '12px',
         border: '1px solid #1f2937',
+        borderRadius: '12px',
+        padding: '1rem 1.25rem',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '1rem',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: '280px', maxWidth: '480px' }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            backgroundColor: '#1f2937',
-            border: '1px solid #374151',
-            borderRadius: '8px',
-            padding: '0 0.75rem',
-            width: '100%',
-          }}>
-            <span style={{ color: '#94a3b8' }}>🔍</span>
-            <input
-              type="text"
-              placeholder="Buscar insumo (ej: Icopor, Lona, Guadua)..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.65rem 0.75rem',
-                backgroundColor: 'transparent',
-                border: 'none',
-                color: '#f8fafc',
-                fontSize: '0.9rem',
-                outline: 'none',
-              }}
-            />
-            {search && (
-              <button
-                onClick={() => setSearch('')}
-                style={{ backgroundColor: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
-              >
-                ✕
-              </button>
-            )}
-          </div>
+        {/* Buscador */}
+        <div style={{ flex: '1 1 300px', maxWidth: '450px', position: 'relative' }}>
+          <span style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }}>🔍</span>
+          <input
+            type="text"
+            placeholder="Buscar material por nombre..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '0.65rem 1rem 0.65rem 2.5rem',
+              backgroundColor: '#0d131f',
+              border: '1px solid #334155',
+              borderRadius: '8px',
+              color: '#ffffff',
+              fontSize: '0.9rem',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
-          {/* Switch de Alerta de Stock */}
-          <label style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            fontSize: '0.85rem',
-            color: onlyLowStock ? '#ef4444' : '#cbd5e1',
-            fontWeight: onlyLowStock ? '700' : '500',
-            cursor: 'pointer',
-          }}>
+        {/* Checkboxes de Filtro */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem', color: '#cbd5e1' }}>
             <input
               type="checkbox"
               checked={onlyLowStock}
               onChange={(e) => setOnlyLowStock(e.target.checked)}
-              style={{ cursor: 'pointer', accentColor: '#ef4444' }}
+              style={{ width: '16px', height: '16px', accentColor: '#ef4444', cursor: 'pointer' }}
             />
-            <span>Solo en Alerta de Stock (&le; Mínimo)</span>
+            <span>Solo Alerta de Stock Crítico</span>
           </label>
 
-          {isAdmin && (
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#cbd5e1', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={includeInactive}
-                onChange={(e) => setIncludeInactive(e.target.checked)}
-                style={{ cursor: 'pointer', accentColor: '#38bdf8' }}
-              />
-              <span>Incluir inactivos</span>
-            </label>
-          )}
-
-          <button
-            onClick={fetchMaterials}
-            title="Refrescar inventario"
-            style={{
-              padding: '0.55rem 0.85rem',
-              backgroundColor: '#1f2937',
-              border: '1px solid #374151',
-              borderRadius: '8px',
-              color: '#cbd5e1',
-              cursor: 'pointer',
-              fontSize: '0.85rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-            }}
-          >
-            <span>🔄</span>
-            <span>Actualizar</span>
-          </button>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem', color: '#cbd5e1' }}>
+            <input
+              type="checkbox"
+              checked={includeInactive}
+              onChange={(e) => setIncludeInactive(e.target.checked)}
+              style={{ width: '16px', height: '16px', accentColor: '#2563eb', cursor: 'pointer' }}
+            />
+            <span>Incluir Desactivados</span>
+          </label>
         </div>
       </div>
-
-      {/* Alerta de Error */}
-      {error && (
-        <div style={{
-          padding: '1rem 1.25rem',
-          backgroundColor: 'rgba(239, 68, 68, 0.12)',
-          border: '1px solid rgba(239, 68, 68, 0.3)',
-          borderRadius: '10px',
-          color: '#fca5a5',
-          fontSize: '0.9rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span>⚠️</span>
-            <span>{error}</span>
-          </div>
-          <button
-            onClick={fetchMaterials}
-            style={{
-              backgroundColor: '#ef4444',
-              color: '#ffffff',
-              border: 'none',
-              padding: '0.4rem 0.8rem',
-              borderRadius: '6px',
-              fontSize: '0.8rem',
-              cursor: 'pointer',
-              fontWeight: '600',
-            }}
-          >
-            Reintentar
-          </button>
-        </div>
-      )}
 
       {/* Tabla de Materiales */}
       <div style={{
         backgroundColor: '#111827',
-        borderRadius: '12px',
         border: '1px solid #1f2937',
+        borderRadius: '14px',
         overflow: 'hidden',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
       }}>
         {loading ? (
           <div style={{ padding: '4rem', textAlign: 'center', color: '#94a3b8' }}>
-            <div style={{
-              width: '36px',
-              height: '36px',
-              border: '3px solid #1e293b',
-              borderTopColor: '#38bdf8',
-              borderRadius: '50%',
-              margin: '0 auto 1rem auto',
-              animation: 'spin 0.7s linear infinite',
-            }} />
-            <p style={{ margin: 0, fontSize: '0.95rem' }}>Consultando stock en tiempo real...</p>
+            <div style={{ fontSize: '2rem', animation: 'spin 1s linear infinite', display: 'inline-block' }}>⏳</div>
+            <p style={{ marginTop: '0.75rem', fontSize: '0.95rem' }}>Cargando inventario de materiales...</p>
+          </div>
+        ) : error ? (
+          <div style={{ padding: '3rem', textAlign: 'center', color: '#ef4444' }}>
+            <span style={{ fontSize: '2rem' }}>⚠️</span>
+            <p style={{ marginTop: '0.5rem' }}>{error}</p>
+            <button
+              onClick={fetchMaterials}
+              style={{
+                marginTop: '0.5rem',
+                padding: '0.5rem 1rem',
+                backgroundColor: '#1e293b',
+                color: '#f8fafc',
+                border: '1px solid #334155',
+                borderRadius: '6px',
+                cursor: 'pointer',
+              }}
+            >
+              Reintentar
+            </button>
           </div>
         ) : materials.length === 0 ? (
-          <div style={{ padding: '4rem 2rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>📦</div>
-            <h3 style={{ fontSize: '1.2rem', color: '#f8fafc', margin: '0 0 0.5rem 0' }}>
-              No se encontraron insumos de producción
-            </h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: '0 0 1.5rem 0', maxWidth: '420px', marginInline: 'auto' }}>
-              {search || onlyLowStock
-                ? 'No hay registros que coincidan con los filtros aplicados.'
-                : 'Aún no se han registrado insumos o materias primas en el inventario.'}
+          <div style={{ padding: '4rem', textAlign: 'center', color: '#64748b' }}>
+            <span style={{ fontSize: '2.5rem' }}>🧱</span>
+            <p style={{ marginTop: '0.75rem', fontSize: '1rem', color: '#94a3b8' }}>
+              No se encontraron materiales con los filtros aplicados.
             </p>
-            {isAdmin && !search && !onlyLowStock && (
+            {isAdmin && (
               <button
                 onClick={handleOpenCreate}
                 style={{
-                  padding: '0.65rem 1.25rem',
+                  marginTop: '0.5rem',
+                  padding: '0.5rem 1rem',
                   backgroundColor: '#2563eb',
                   color: '#ffffff',
                   border: 'none',
-                  borderRadius: '8px',
-                  fontWeight: '600',
-                  fontSize: '0.9rem',
+                  borderRadius: '6px',
                   cursor: 'pointer',
+                  fontWeight: '600',
                 }}
               >
-                ➕ Registrar Primer Insumo
+                + Registrar Primer Material
               </button>
             )}
           </div>
@@ -433,9 +409,9 @@ export function MaterialsPage() {
                   <th style={{ padding: '1rem 1.25rem', fontWeight: '700' }}>Unidad</th>
                   <th style={{ padding: '1rem 1.25rem', fontWeight: '700' }}>Stock Actual</th>
                   <th style={{ padding: '1rem 1.25rem', fontWeight: '700' }}>Stock Mínimo</th>
-                  <th style={{ padding: '1rem 1.25rem', fontWeight: '700' }}>Alerta de Stock (HU12)</th>
+                  <th style={{ padding: '1rem 1.25rem', fontWeight: '700' }}>Alerta de Stock</th>
                   <th style={{ padding: '1rem 1.25rem', fontWeight: '700' }}>Estado</th>
-                  {isAdmin && <th style={{ padding: '1rem 1.25rem', fontWeight: '700', textAlign: 'center' }}>Acciones</th>}
+                  <th style={{ padding: '1rem 1.25rem', fontWeight: '700', textAlign: 'center' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -531,35 +507,75 @@ export function MaterialsPage() {
                         </span>
                       </td>
 
-                      {/* Columna de Acciones */}
-                      {isAdmin && (
-                        <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-                            {/* Botón Editar */}
+                      {/* Columna de Acciones: Editar, Ajustar, Desactivar */}
+                      <td style={{ padding: '1rem 1.25rem', textAlign: 'center' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'nowrap' }}>
+                          {/* 1. Botón Editar */}
+                          {isAdmin && (
                             <button
                               onClick={() => handleOpenEdit(m)}
-                              title="Editar datos del insumo"
+                              title="Editar datos del material"
                               style={{
                                 backgroundColor: '#1f2937',
                                 color: '#38bdf8',
                                 border: '1px solid #374151',
                                 borderRadius: '6px',
-                                padding: '0.4rem 0.65rem',
-                                fontSize: '0.85rem',
+                                padding: '0.35rem 0.6rem',
+                                fontSize: '0.8rem',
+                                fontWeight: '600',
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '0.25rem',
                                 transition: 'all 0.15s ease',
                               }}
-                              onMouseEnter={(e) => e.currentTarget.style.borderColor = '#38bdf8'}
-                              onMouseLeave={(e) => e.currentTarget.style.borderColor = '#374151'}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.borderColor = '#38bdf8';
+                                e.currentTarget.style.backgroundColor = '#1e293b';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.borderColor = '#374151';
+                                e.currentTarget.style.backgroundColor = '#1f2937';
+                              }}
                             >
                               <span>✏️</span>
                               <span>Editar</span>
                             </button>
+                          )}
 
-                            {/* Botón Toggle Estado (Borrado Lógico) */}
+                          {/* 2. Botón Ajustar Stock */}
+                          <button
+                            onClick={() => handleOpenAdjustment(m.id)}
+                            title={`Solicitar ajuste manual de inventario para ${m.nombre}`}
+                            style={{
+                              backgroundColor: '#1e293b',
+                              color: '#c084fc',
+                              border: '1px solid rgba(192, 132, 252, 0.35)',
+                              borderRadius: '6px',
+                              padding: '0.35rem 0.6rem',
+                              fontSize: '0.8rem',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.25rem',
+                              transition: 'all 0.15s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.borderColor = '#c084fc';
+                              e.currentTarget.style.backgroundColor = 'rgba(192, 132, 252, 0.15)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.borderColor = 'rgba(192, 132, 252, 0.35)';
+                              e.currentTarget.style.backgroundColor = '#1e293b';
+                            }}
+                          >
+                            <span>⚖️</span>
+                            <span>Ajustar</span>
+                          </button>
+
+                          {/* 3. Botón Toggle Estado (Borrado Lógico) */}
+                          {isAdmin && (
                             <button
                               onClick={() => handleToggleStatus(m)}
                               disabled={actionLoadingId === m.id}
@@ -569,12 +585,14 @@ export function MaterialsPage() {
                                 color: m.activo ? '#f87171' : '#34d399',
                                 border: m.activo ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)',
                                 borderRadius: '6px',
-                                padding: '0.4rem 0.65rem',
-                                fontSize: '0.85rem',
+                                padding: '0.35rem 0.6rem',
+                                fontSize: '0.8rem',
+                                fontWeight: '600',
                                 cursor: actionLoadingId === m.id ? 'not-allowed' : 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '0.25rem',
+                                transition: 'all 0.15s ease',
                               }}
                             >
                               {actionLoadingId === m.id ? (
@@ -591,9 +609,9 @@ export function MaterialsPage() {
                                 </>
                               )}
                             </button>
-                          </div>
-                        </td>
-                      )}
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -603,15 +621,26 @@ export function MaterialsPage() {
         )}
       </div>
 
-      {/* Modal de Registro / Edición */}
+      {/* Modal de Registro / Edición de Material */}
       <MaterialModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+        isOpen={materialModalOpen}
+        onClose={() => setMaterialModalOpen(false)}
         onSuccess={(msg) => {
           showToast(msg);
           fetchMaterials();
         }}
         materialToEdit={selectedMaterial}
+      />
+
+      {/* Modal de Ajuste Manual de Inventario */}
+      <AdjustmentModal
+        isOpen={adjustmentModalOpen}
+        onClose={() => setAdjustmentModalOpen(false)}
+        onSuccess={(msg) => {
+          showToast(msg);
+          fetchMaterials();
+        }}
+        initialMaterialId={adjustmentMaterialId}
       />
     </div>
   );
