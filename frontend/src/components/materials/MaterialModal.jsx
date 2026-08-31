@@ -8,10 +8,11 @@ import materialsApi from '../../api/materialsApi';
 const UNITS_OPTIONS = [
   { value: 'm2', label: 'Metros cuadrados (m²) — Ej: Lonas, láminas' },
   { value: 'm', label: 'Metros lineales (m) — Ej: Varillas, perfiles' },
+  { value: 'pulgada', label: 'Pulgadas (in / ") — Ej: Puntillas, clavos, tornillos' },
+  { value: 'mm', label: 'Milímetros (mm) — Ej: Grapas, alambres, pernos' },
   { value: 'm3', label: 'Metros cúbicos (m³) — Ej: Icopor EPS, arena' },
   { value: 'kg', label: 'Kilogramos (kg) — Ej: Cemento, aditivos' },
   { value: 'und', label: 'Unidades (und) — Ej: Conectores, accesorios' },
-  { value: 'culmo', label: 'Culmos — Ej: Guadua Angustifolia' },
 ];
 
 export function MaterialModal({ isOpen, onClose, onSuccess, materialToEdit = null }) {
@@ -20,6 +21,7 @@ export function MaterialModal({ isOpen, onClose, onSuccess, materialToEdit = nul
   const [formData, setFormData] = useState({
     nombre: '',
     unidad_medida: 'und',
+    longitud_pieza: '',
     stock_actual: '0',
     stock_minimo: '0',
   });
@@ -30,9 +32,15 @@ export function MaterialModal({ isOpen, onClose, onSuccess, materialToEdit = nul
 
   useEffect(() => {
     if (materialToEdit) {
+      // Extraer longitud si ya venía en unidad_medida (ej: 'm (6m/und)')
+      const unitStr = materialToEdit.unidad_medida || 'und';
+      const isLinear = unitStr.startsWith('m');
+      const matchLong = unitStr.match(/\(([\d.]+)\s*m/i);
+
       setFormData({
         nombre: materialToEdit.nombre || '',
-        unidad_medida: materialToEdit.unidad_medida || 'und',
+        unidad_medida: isLinear ? 'm' : unitStr,
+        longitud_pieza: matchLong ? matchLong[1] : '',
         stock_actual: String(materialToEdit.stock_actual ?? '0'),
         stock_minimo: String(materialToEdit.stock_minimo ?? '0'),
       });
@@ -40,6 +48,7 @@ export function MaterialModal({ isOpen, onClose, onSuccess, materialToEdit = nul
       setFormData({
         nombre: '',
         unidad_medida: 'm2',
+        longitud_pieza: '',
         stock_actual: '0',
         stock_minimo: '10',
       });
@@ -93,10 +102,25 @@ export function MaterialModal({ isOpen, onClose, onSuccess, materialToEdit = nul
 
     try {
       setLoading(true);
+
+      // Formatear unidad de medida con longitud si es metro lineal
+      let finalUnit = formData.unidad_medida;
+      if (formData.unidad_medida === 'm' && formData.longitud_pieza && parseFloat(formData.longitud_pieza) > 0) {
+        const longFormatted = parseFloat(formData.longitud_pieza);
+        finalUnit = `m (${longFormatted}m/und)`;
+      }
+
+      const payload = {
+        nombre: formData.nombre.trim(),
+        unidad_medida: finalUnit,
+        stock_actual: parseFloat(formData.stock_actual) || 0,
+        stock_minimo: parseFloat(formData.stock_minimo) || 0,
+      };
+
       if (isEdit) {
-        await materialsApi.updateMaterial(materialToEdit.id, formData);
+        await materialsApi.updateMaterial(materialToEdit.id, payload);
       } else {
-        await materialsApi.createMaterial(formData);
+        await materialsApi.createMaterial(payload);
       }
       onSuccess(isEdit ? 'Insumo actualizado correctamente.' : 'Insumo registrado exitosamente en el inventario.');
       onClose();
@@ -261,6 +285,58 @@ export function MaterialModal({ isOpen, onClose, onSuccess, materialToEdit = nul
               ))}
             </select>
             {errors.unidad_medida && <span style={{ fontSize: '0.75rem', color: '#f87171', marginTop: '0.25rem', display: 'block' }}>{errors.unidad_medida}</span>}
+
+            {/* Especificación de Longitud si se eligen Metros Lineales */}
+            {formData.unidad_medida === 'm' && (
+              <div style={{
+                marginTop: '0.75rem',
+                padding: '0.85rem 1rem',
+                backgroundColor: 'rgba(56, 189, 248, 0.08)',
+                border: '1px solid rgba(56, 189, 248, 0.25)',
+                borderRadius: '10px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.4rem',
+                animation: 'fadeIn 0.2s ease-in-out',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#38bdf8' }}>
+                    📏 ¿Cuántos metros lineales mide cada pieza / unidad?
+                  </label>
+                  <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Opcional</span>
+                </div>
+                <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center' }}>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    name="longitud_pieza"
+                    value={formData.longitud_pieza}
+                    onChange={handleChange}
+                    disabled={loading}
+                    placeholder="Ej: 6.00, 3.00, 12.00..."
+                    style={{
+                      flex: 1,
+                      padding: '0.6rem 0.85rem',
+                      backgroundColor: '#1f2937',
+                      border: '1px solid #38bdf8',
+                      borderRadius: '8px',
+                      color: '#ffffff',
+                      fontSize: '0.9rem',
+                      outline: 'none',
+                    }}
+                  />
+                  <span style={{ color: '#cbd5e1', fontSize: '0.85rem', fontWeight: '600', whiteSpace: 'nowrap' }}>
+                    metros / pieza
+                  </span>
+                </div>
+                {formData.longitud_pieza && parseFloat(formData.longitud_pieza) > 0 && (
+                  <p style={{ fontSize: '0.75rem', color: '#93c5fd', margin: '0.15rem 0 0 0' }}>
+                    💡 Cada unidad física corresponderá a <strong>{formData.longitud_pieza} metros</strong> en el inventario y recetas.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Fila: Stock Actual y Stock Mínimo de Alerta */}

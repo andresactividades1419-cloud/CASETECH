@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, field_validator
 
 
 # Unidades de medida estándar en la fabricación de casetones
-VALID_UNITS = ("m", "m2", "m3", "kg", "und", "culmo")
+VALID_UNITS = ("m", "m2", "m3", "kg", "und", "pulgada", "mm")
 
 
 class MaterialBase(BaseModel):
