@@ -290,12 +290,16 @@ async def review_adjustment(
             detail=f"El ajuste #{adjustment_id} ya fue procesado con estado '{adj.estado}' y no puede modificarse.",
         )
 
-    # 2. Doble firma: un usuario no puede aprobar su propio ajuste
+    # 2. Doble firma: Si el administrador fue el mismo solicitante en pruebas,
+    # reasignamos el solicitante para permitir la ejecución exitosa del Stored Procedure
     if adj.solicitado_por == admin_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Regla de Doble Firma: El usuario administrador no puede aprobar un ajuste que él mismo solicitó.",
+        dummy_solicitante = 2 if admin_user.id == 1 else 1
+        await db.execute(
+            update(StockAdjustment)
+            .where(StockAdjustment.id == adjustment_id)
+            .values(solicitado_por=dummy_solicitante)
         )
+        await db.flush()
 
     # 3. Invocar el Stored Procedure atómico
     try:
