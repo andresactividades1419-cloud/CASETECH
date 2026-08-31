@@ -53,13 +53,16 @@ async def login(
 
     Retorna un objeto ``Token`` con ``access_token`` y ``token_type = "bearer"``.
     """
-    # Buscar usuario por email (username en el form de OAuth2)
+    from sqlalchemy import func
+    normalized_email = form_data.username.strip().lower()
+
+    # Buscar usuario por email (insensible a mayúsculas en el correo)
     result = await db.execute(
-        select(User).where(User.email == form_data.username)
+        select(User).where(func.lower(User.email) == normalized_email)
     )
     user: User | None = result.scalar_one_or_none()
 
-    # Verificar existencia y hash de contraseña
+    # Verificar existencia y contraseña exacta mediante hash seguro bcrypt
     if user is None or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -54,6 +54,12 @@ async def init_db() -> None:
                 )
                 session.add(admin)
                 logger.info("Usuario Administrador sembrado: admin@casetech.com")
+            else:
+                # Asegurar que esté activo y con contraseña por defecto sincronizada
+                admin_user.activo = True
+                admin_user.password_hash = get_password_hash("Admin1234")
+                admin_user.rol_id = 1
+                logger.info("Usuario Administrador verificado y activo: admin@casetech.com")
 
             # 3. Asegurar Usuario Operario
             operario_user = (
@@ -71,6 +77,12 @@ async def init_db() -> None:
                 )
                 session.add(operario)
                 logger.info("Usuario Operario sembrado: operario@casetech.com")
+            else:
+                # Asegurar que esté activo y con contraseña por defecto sincronizada
+                operario_user.activo = True
+                operario_user.password_hash = get_password_hash("Operario1234")
+                operario_user.rol_id = 2
+                logger.info("Usuario Operario verificado y activo: operario@casetech.com")
 
             await session.commit()
             logger.info("Verificación de datos iniciales completada.")
@@ -78,3 +90,4 @@ async def init_db() -> None:
         logger.warning(
             "init_db omitido o pendiente de migraciones Alembic: %s", exc
         )
+
