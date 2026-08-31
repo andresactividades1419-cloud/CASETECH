@@ -236,7 +236,7 @@ export function AdjustmentsPage() {
             </h1>
           </div>
           <p style={{ margin: '0.35rem 0 0 0', color: '#94a3b8', fontSize: '0.875rem' }}>
-            Control de mermas, sobrantes, daños y recuentos físicos con doble firma obligatoria (HU13).
+            Control de mermas, sobrantes, daños y recuentos físicos con doble firma obligatoria.
           </p>
         </div>
 
