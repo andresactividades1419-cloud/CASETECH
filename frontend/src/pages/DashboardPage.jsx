@@ -177,7 +177,7 @@ export function DashboardPage() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem' }}>
             <h1 style={{ fontSize: '1.75rem', fontWeight: '800', margin: 0, color: '#f8fafc', letterSpacing: '-0.02em' }}>
-              Panel General · Auditoría y Reportes (HU15)
+              Panel General de Operaciones
             </h1>
             <span style={{
               fontSize: '0.75rem',

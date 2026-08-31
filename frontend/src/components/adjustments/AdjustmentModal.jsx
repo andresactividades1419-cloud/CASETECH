@@ -49,12 +49,12 @@ const ERROR_STYLE = {
   marginTop: '0.25rem',
 };
 
-export function AdjustmentModal({ isOpen, onClose, onSuccess }) {
+export function AdjustmentModal({ isOpen, onClose, onSuccess, initialMaterialId = null }) {
   const [materials, setMaterials] = useState([]);
   const [loadingMaterials, setLoadingMaterials] = useState(false);
 
   const [form, setForm] = useState({
-    material_id: '',
+    material_id: initialMaterialId ? String(initialMaterialId) : '',
     tipo: 'MERMA',
     cantidad: '',
     motivo: '',
@@ -74,7 +74,7 @@ export function AdjustmentModal({ isOpen, onClose, onSuccess }) {
     setApiError('');
     setErrors({});
     setForm({
-      material_id: '',
+      material_id: initialMaterialId ? String(initialMaterialId) : '',
       tipo: 'MERMA',
       cantidad: '',
       motivo: '',
@@ -89,7 +89,7 @@ export function AdjustmentModal({ isOpen, onClose, onSuccess }) {
         setApiError('Error al cargar la lista de materiales. Reintente.');
       })
       .finally(() => setLoadingMaterials(false));
-  }, [isOpen]);
+  }, [isOpen, initialMaterialId]);
 
   // Focus en el primer control al abrir
   useEffect(() => {
@@ -211,7 +211,7 @@ export function AdjustmentModal({ isOpen, onClose, onSuccess }) {
                 Solicitar Ajuste Manual de Inventario
               </h3>
               <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8' }}>
-                HU13 — Auditoría de Stock y Doble Firma
+                Auditoría de Stock y Doble Firma
               </p>
             </div>
           </div>
