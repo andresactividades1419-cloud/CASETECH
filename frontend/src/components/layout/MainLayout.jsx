@@ -16,6 +16,7 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { BrandLogo } from '../common/BrandLogo';
 
 export function MainLayout() {
   const { user, logout, isAdmin } = useAuth();
@@ -39,12 +40,13 @@ export function MainLayout() {
     }
   };
 
-  // 5 Enlaces Planos Directos
+  // Enlaces Planos Directos
   const navLinks = [
     { to: '/', label: 'Dashboard', icon: '📊' },
     { to: '/providers', label: 'Proveedores', icon: '🏢' },
     { to: '/orders', label: 'Pedidos', icon: '📋' },
     { to: '/materials', label: 'Control de Inventario', icon: '📦' },
+    { to: '/adjustments', label: 'Ajustes de Inventario', icon: '⚖️' },
     { to: '/purchases', label: 'Abastecimiento', icon: '🛒' },
   ];
 
@@ -114,36 +116,7 @@ export function MainLayout() {
           alignItems: 'center',
           justifyContent: 'space-between',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '12px',
-              backgroundColor: '#0f172a',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              overflow: 'hidden',
-              boxShadow: '0 4px 12px rgba(15, 23, 42, 0.4)',
-              border: '1.5px solid #334155',
-              flexShrink: 0,
-            }}>
-              <img
-                src="/caseton-logo.jpg"
-                alt="Logo CASETECH"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                onError={(e) => { e.target.style.display = 'none'; }}
-              />
-            </div>
-            <div>
-              <div style={{ fontWeight: '900', fontSize: '1.2rem', letterSpacing: '-0.03em', color: '#f8fafc', lineHeight: 1 }}>
-                CASETECH
-              </div>
-              <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '600', marginTop: '3px' }}>
-                Sistema de Producción
-              </div>
-            </div>
-          </div>
+          <BrandLogo iconSize={40} titleSize="1.25rem" subtitle="Sistema de Producción" showSubtitle={true} />
 
           {/* Botón de cierre en móviles */}
           <button

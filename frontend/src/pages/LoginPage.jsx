@@ -12,6 +12,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { BrandIcon, BrandTitle } from '../components/common/BrandLogo';
 
 export function LoginPage() {
   const { login, isAuthenticated } = useAuth();
@@ -102,7 +103,7 @@ export function LoginPage() {
             width: '100%',
             margin: '0 auto',
           }}>
-            {/* Header Superior: Logo de CASETECH (50% más grande + animado) */}
+            {/* Header Superior: Logo oficial de CASETECH */}
             <div style={{ marginBottom: '2.5rem' }}>
               <div style={{
                 display: 'inline-flex',
@@ -111,39 +112,10 @@ export function LoginPage() {
                 textDecoration: 'none',
                 cursor: 'default',
               }}>
-                <div
-                  className="animate-logo"
-                  style={{
-                    width: '56px',
-                    height: '56px',
-                    borderRadius: '16px',
-                    backgroundColor: '#0f172a',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 8px 24px rgba(15, 23, 42, 0.15)',
-                    overflow: 'hidden',
-                    border: '2px solid #e2e8f0',
-                  }}
-                >
-                  <img
-                    src="/caseton-logo.jpg"
-                    alt="CASETECH Logo"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
+                <div className="animate-logo">
+                  <BrandIcon size={56} />
                 </div>
-                <span style={{
-                  fontSize: '1.95rem',
-                  fontWeight: '900',
-                  letterSpacing: '-0.04em',
-                  color: '#0f172a',
-                  lineHeight: '1',
-                }}>
-                  CASETECH
-                </span>
+                <BrandTitle size="2.15rem" letterSpacing="0.04em" />
               </div>
             </div>
 

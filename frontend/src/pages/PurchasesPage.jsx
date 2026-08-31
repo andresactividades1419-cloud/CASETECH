@@ -1,10 +1,10 @@
 /**
- * pages/PurchasesPage.jsx — Pantalla Principal de Compras a Proveedores e Ingreso de Stock (HU07).
+ * pages/PurchasesPage.jsx — Pantalla Principal de Compras a Proveedores e Ingreso de Stock.
  *
  * Características:
- * - Tarjetas KPI con métricas financieras y operativas de abastecimiento.
+ * - Tarjetas KPI con métricas financieras y operativas de abastecimiento (inversión monetaria restringida a ADMINISTRADOR).
  * - Barra de filtros por proveedor, código CMP y fechas.
- * - Tabla interactiva con desglose de órdenes de compra, total en COP y botón para ver detalle.
+ * - Tabla interactiva con desglose de órdenes de compra y visualizador de detalle.
  * - Integración con PurchaseModal para nuevas compras e ingreso atómico de inventario.
  * - Integración con PurchaseDetailModal para consultar el detalle de líneas de compra.
  * - Manejo de Toasts informativos.
@@ -15,6 +15,7 @@ import providersApi from '../api/providersApi';
 import purchasesApi from '../api/purchasesApi';
 import PurchaseDetailModal from '../components/purchases/PurchaseDetailModal';
 import PurchaseModal from '../components/purchases/PurchaseModal';
+import { useAuth } from '../context/AuthContext';
 
 const formatCOP = (val) => {
   return new Intl.NumberFormat('es-CO', {
@@ -76,6 +77,8 @@ function Toast({ message, type = 'success', onClose }) {
 /* ─── Componente Principal ───────────────────────────────────────────────── */
 
 export function PurchasesPage() {
+  const { isAdmin } = useAuth();
+
   const [purchases, setPurchases] = useState([]);
   const [providers, setProviders] = useState([]);
   const [total, setTotal] = useState(0);
@@ -97,13 +100,16 @@ export function PurchasesPage() {
   const [toast, setToast] = useState(null);
 
   const showToast = (message, type = 'success') => {
-    setToast({ message, type });
+    const text = typeof message === 'string'
+      ? message
+      : (message?.detail || message?.message || 'Operación completada.');
+    setToast({ message: text, type });
   };
 
   // Cargar proveedores para selector
   useEffect(() => {
     providersApi.getProviders({ limit: 100 })
-      .then((data) => setProviders(data.items || []))
+      .then((data) => setProviders(data?.items || []))
       .catch(() => {});
   }, []);
 
@@ -120,10 +126,14 @@ export function PurchasesPage() {
         fecha_hasta: fechaHasta || undefined,
       });
 
-      setPurchases(data.items || []);
-      setTotal(data.total || 0);
+      setPurchases(data?.items || []);
+      setTotal(data?.total || 0);
     } catch (err) {
-      showToast(err.response?.data?.detail || 'Error al cargar las órdenes de compra.', 'error');
+      const detail = err.response?.data?.detail;
+      const errorMsg = typeof detail === 'string'
+        ? detail
+        : (err.message || 'Error al cargar las órdenes de compra.');
+      showToast(errorMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -134,9 +144,9 @@ export function PurchasesPage() {
   }, [fetchPurchases]);
 
   // Métricas para KPI cards
-  const totalAmount = purchases.reduce((acc, p) => acc + (parseFloat(p.total) || 0), 0);
-  const totalItemsCount = purchases.reduce((acc, p) => acc + (p.items ? p.items.length : 0), 0);
-  const uniqueProvidersCount = new Set(purchases.map((p) => p.proveedor_id)).size;
+  const totalAmount = (purchases || []).reduce((acc, p) => acc + (parseFloat(p?.total) || 0), 0);
+  const totalItemsCount = (purchases || []).reduce((acc, p) => acc + (Array.isArray(p?.items) ? p.items.length : 0), 0);
+  const uniqueProvidersCount = new Set((purchases || []).map((p) => p?.proveedor_id).filter(Boolean)).size;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
@@ -190,41 +200,43 @@ export function PurchasesPage() {
 
       {/* Tarjetas KPI */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-        {/* KPI: Total Inversión */}
-        <div style={{
-          backgroundColor: '#111827',
-          border: '1px solid #1f2937',
-          borderRadius: '12px',
-          padding: '1.25rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '1rem',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)',
-        }}>
+        {/* KPI 1: Inversión en Compras (Solo para Administrador) */}
+        {isAdmin && (
           <div style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '10px',
-            backgroundColor: 'rgba(52, 211, 153, 0.12)',
-            border: '1px solid rgba(52, 211, 153, 0.25)',
+            backgroundColor: '#111827',
+            border: '1px solid #1f2937',
+            borderRadius: '12px',
+            padding: '1.25rem',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '1.35rem',
+            gap: '1rem',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)',
           }}>
-            💵
-          </div>
-          <div>
-            <div style={{ fontSize: '0.75rem', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Inversión en Compras
+            <div style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '10px',
+              backgroundColor: 'rgba(52, 211, 153, 0.12)',
+              border: '1px solid rgba(52, 211, 153, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.35rem',
+            }}>
+              💵
             </div>
-            <div style={{ fontSize: '1.35rem', fontWeight: '800', color: '#34d399', marginTop: '0.15rem' }}>
-              {formatCOP(totalAmount)}
+            <div>
+              <div style={{ fontSize: '0.75rem', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Inversión en Compras
+              </div>
+              <div style={{ fontSize: '1.35rem', fontWeight: '800', color: '#34d399', marginTop: '0.15rem' }}>
+                {formatCOP(totalAmount)}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* KPI: Compras Registradas */}
+        {/* KPI 2: Compras Registradas */}
         <div style={{
           backgroundColor: '#111827',
           border: '1px solid #1f2937',
@@ -258,7 +270,7 @@ export function PurchasesPage() {
           </div>
         </div>
 
-        {/* KPI: Insumos Abastecidos */}
+        {/* KPI 3: Total Ítems Recibidos */}
         <div style={{
           backgroundColor: '#111827',
           border: '1px solid #1f2937',
@@ -273,8 +285,8 @@ export function PurchasesPage() {
             width: '48px',
             height: '48px',
             borderRadius: '10px',
-            backgroundColor: 'rgba(251, 146, 60, 0.12)',
-            border: '1px solid rgba(251, 146, 60, 0.25)',
+            backgroundColor: 'rgba(192, 132, 252, 0.12)',
+            border: '1px solid rgba(192, 132, 252, 0.25)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -284,15 +296,15 @@ export function PurchasesPage() {
           </div>
           <div>
             <div style={{ fontSize: '0.75rem', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Líneas Abastecidas
+              Ítems Abastecidos
             </div>
-            <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#fb923c', marginTop: '0.15rem' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#c084fc', marginTop: '0.15rem' }}>
               {totalItemsCount}
             </div>
           </div>
         </div>
 
-        {/* KPI: Proveedores Involucrados */}
+        {/* KPI 4: Proveedores Activos */}
         <div style={{
           backgroundColor: '#111827',
           border: '1px solid #1f2937',
@@ -307,8 +319,8 @@ export function PurchasesPage() {
             width: '48px',
             height: '48px',
             borderRadius: '10px',
-            backgroundColor: 'rgba(168, 85, 247, 0.12)',
-            border: '1px solid rgba(168, 85, 247, 0.25)',
+            backgroundColor: 'rgba(251, 191, 36, 0.12)',
+            border: '1px solid rgba(251, 191, 36, 0.25)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -320,132 +332,146 @@ export function PurchasesPage() {
             <div style={{ fontSize: '0.75rem', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Proveedores
             </div>
-            <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#c084fc', marginTop: '0.15rem' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#fbbf24', marginTop: '0.15rem' }}>
               {uniqueProvidersCount}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Barra de Filtros y Búsqueda */}
+      {/* Barra de Filtros */}
       <div style={{
         backgroundColor: '#111827',
         border: '1px solid #1f2937',
         borderRadius: '12px',
-        padding: '1rem 1.25rem',
+        padding: '1.25rem',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '1rem',
+        alignItems: 'flex-end',
       }}>
-        {/* Selector de Proveedor */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <select
-            value={proveedorFilter}
-            onChange={(e) => { setProveedorFilter(e.target.value); setPage(1); }}
+        {/* Filtro por Código */}
+        <div style={{ flex: '1 1 180px' }}>
+          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', color: '#94a3b8', marginBottom: '0.35rem' }}>
+            CÓDIGO CMP
+          </label>
+          <input
+            type="text"
+            placeholder="Ej: CMP-2026..."
+            value={codigoFilter}
+            onChange={(e) => setCodigoFilter(e.target.value)}
             style={{
-              padding: '0.45rem 0.75rem',
-              backgroundColor: '#0f172a',
+              width: '100%',
+              padding: '0.55rem 0.85rem',
+              backgroundColor: '#0b0f19',
               border: '1px solid #334155',
               borderRadius: '8px',
-              color: '#cbd5e1',
-              fontSize: '0.8rem',
+              color: '#ffffff',
+              fontSize: '0.85rem',
               outline: 'none',
-              cursor: 'pointer',
+              boxSizing: 'border-box',
+            }}
+          />
+        </div>
+
+        {/* Filtro por Proveedor */}
+        <div style={{ flex: '1 1 200px' }}>
+          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', color: '#94a3b8', marginBottom: '0.35rem' }}>
+            PROVEEDOR
+          </label>
+          <select
+            value={proveedorFilter}
+            onChange={(e) => setProveedorFilter(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '0.55rem 0.85rem',
+              backgroundColor: '#0b0f19',
+              border: '1px solid #334155',
+              borderRadius: '8px',
+              color: '#ffffff',
+              fontSize: '0.85rem',
+              outline: 'none',
+              boxSizing: 'border-box',
             }}
           >
             <option value="">Todos los proveedores</option>
-            {providers.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nombre_empresa}
+            {providers.map((prv) => (
+              <option key={prv.id} value={prv.id}>
+                {prv.razon_social} ({prv.nit})
               </option>
             ))}
           </select>
-
-          {/* Rango de Fechas */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Desde:</span>
-            <input
-              type="date"
-              value={fechaDesde}
-              onChange={(e) => { setFechaDesde(e.target.value); setPage(1); }}
-              style={{
-                padding: '0.4rem 0.6rem',
-                backgroundColor: '#0f172a',
-                border: '1px solid #334155',
-                borderRadius: '8px',
-                color: '#cbd5e1',
-                fontSize: '0.8rem',
-                outline: 'none',
-              }}
-            />
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Hasta:</span>
-            <input
-              type="date"
-              value={fechaHasta}
-              onChange={(e) => { setFechaHasta(e.target.value); setPage(1); }}
-              style={{
-                padding: '0.4rem 0.6rem',
-                backgroundColor: '#0f172a',
-                border: '1px solid #334155',
-                borderRadius: '8px',
-                color: '#cbd5e1',
-                fontSize: '0.8rem',
-                outline: 'none',
-              }}
-            />
-          </div>
-
-          {(proveedorFilter || fechaDesde || fechaHasta || codigoFilter) && (
-            <button
-              onClick={() => {
-                setProveedorFilter('');
-                setFechaDesde('');
-                setFechaHasta('');
-                setCodigoFilter('');
-                setPage(1);
-              }}
-              style={{
-                padding: '0.4rem 0.75rem',
-                backgroundColor: 'transparent',
-                border: '1px solid #475569',
-                borderRadius: '8px',
-                color: '#94a3b8',
-                fontSize: '0.78rem',
-                cursor: 'pointer',
-              }}
-            >
-              Limpiar
-            </button>
-          )}
         </div>
 
-        {/* Buscador por Código CMP */}
-        <div style={{ position: 'relative' }}>
+        {/* Filtro Fecha Desde */}
+        <div style={{ flex: '1 1 140px' }}>
+          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', color: '#94a3b8', marginBottom: '0.35rem' }}>
+            DESDE
+          </label>
           <input
-            type="text"
-            placeholder="Buscar por código CMP..."
-            value={codigoFilter}
-            onChange={(e) => { setCodigoFilter(e.target.value); setPage(1); }}
+            type="date"
+            value={fechaDesde}
+            onChange={(e) => setFechaDesde(e.target.value)}
             style={{
-              padding: '0.45rem 0.75rem 0.45rem 2rem',
-              backgroundColor: '#0f172a',
+              width: '100%',
+              padding: '0.55rem 0.85rem',
+              backgroundColor: '#0b0f19',
               border: '1px solid #334155',
               borderRadius: '8px',
-              color: '#f1f5f9',
-              fontSize: '0.8rem',
+              color: '#ffffff',
+              fontSize: '0.85rem',
               outline: 'none',
-              minWidth: '220px',
+              boxSizing: 'border-box',
             }}
           />
-          <span style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontSize: '0.85rem' }}>
-            🔍
-          </span>
         </div>
+
+        {/* Filtro Fecha Hasta */}
+        <div style={{ flex: '1 1 140px' }}>
+          <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', color: '#94a3b8', marginBottom: '0.35rem' }}>
+            HASTA
+          </label>
+          <input
+            type="date"
+            value={fechaHasta}
+            onChange={(e) => setFechaHasta(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '0.55rem 0.85rem',
+              backgroundColor: '#0b0f19',
+              border: '1px solid #334155',
+              borderRadius: '8px',
+              color: '#ffffff',
+              fontSize: '0.85rem',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+        </div>
+
+        {/* Botón Limpiar */}
+        {(codigoFilter || proveedorFilter || fechaDesde || fechaHasta) && (
+          <button
+            onClick={() => {
+              setCodigoFilter('');
+              setProveedorFilter('');
+              setFechaDesde('');
+              setFechaHasta('');
+            }}
+            style={{
+              padding: '0.55rem 1rem',
+              backgroundColor: '#1f2937',
+              border: '1px solid #374151',
+              borderRadius: '8px',
+              color: '#94a3b8',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              fontWeight: '600',
+            }}
+          >
+            Limpiar
+          </button>
+        )}
       </div>
 
       {/* Tabla de Compras */}
@@ -463,146 +489,151 @@ export function PurchasesPage() {
           </div>
         ) : purchases.length === 0 ? (
           <div style={{ padding: '3.5rem 1.5rem', textAlign: 'center', color: '#94a3b8' }}>
-            <div style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>🛒</div>
+            <div style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>📦</div>
             <h3 style={{ margin: '0 0 0.25rem 0', color: '#cbd5e1', fontSize: '1rem', fontWeight: '600' }}>
-              No se encontraron órdenes de compra
+              No se encontraron compras registradas
             </h3>
             <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
-              Registre su primera compra con el botón "+ Registrar Compra".
+              Utilice el botón "Registrar Compra" para realizar el primer abastecimiento con ingreso a stock.
             </p>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
               <thead>
                 <tr style={{ backgroundColor: '#1e293b', borderBottom: '1px solid #334155', color: '#94a3b8', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  <th style={{ padding: '0.85rem 1rem' }}>Código / Fecha</th>
-                  <th style={{ padding: '0.85rem 1rem' }}>Proveedor</th>
-                  <th style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>Insumos</th>
-                  <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>Total (COP)</th>
-                  <th style={{ padding: '0.85rem 1rem' }}>Registrado Por</th>
-                  <th style={{ padding: '0.85rem 1rem' }}>Observaciones</th>
-                  <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>Acción</th>
+                  <th style={{ padding: '0.85rem 1.25rem' }}>Código / Fecha</th>
+                  <th style={{ padding: '0.85rem 1.25rem' }}>Proveedor</th>
+                  <th style={{ padding: '0.85rem 1.25rem' }}>Materias Primas Abastecidas</th>
+                  {isAdmin && <th style={{ padding: '0.85rem 1.25rem', textAlign: 'right' }}>Total (COP)</th>}
+                  <th style={{ padding: '0.85rem 1.25rem' }}>Registrado Por</th>
+                  <th style={{ padding: '0.85rem 1.25rem', textAlign: 'right' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {purchases.map((p) => (
-                  <tr
-                    key={p.id}
-                    style={{
-                      borderBottom: '1px solid #1f2937',
-                      transition: 'background-color 0.15s ease',
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(30, 41, 59, 0.4)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-                  >
-                    {/* Código y Fecha */}
-                    <td style={{ padding: '0.85rem 1rem', whiteSpace: 'nowrap' }}>
-                      <div style={{ fontWeight: '700', color: '#38bdf8' }}>{p.codigo_compra}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{p.fecha_compra}</div>
-                    </td>
+                {purchases.map((p) => {
+                  const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString() : '—';
+                  const itemsSummary = p.items && p.items.length > 0
+                    ? p.items.map((it) => `${it.material_nombre || `Mat #${it.material_id}`} (${it.cantidad})`).join(', ')
+                    : 'Sin ítems';
 
-                    {/* Proveedor */}
-                    <td style={{ padding: '0.85rem 1rem' }}>
-                      <div style={{ fontWeight: '600', color: '#f8fafc' }}>
-                        {p.proveedor_nombre || `Proveedor #${p.proveedor_id}`}
-                      </div>
-                    </td>
+                  return (
+                    <tr
+                      key={p.id}
+                      style={{
+                        borderBottom: '1px solid #1f2937',
+                        transition: 'background-color 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(30, 41, 59, 0.4)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                    >
+                      {/* Código y Fecha */}
+                      <td style={{ padding: '0.85rem 1.25rem', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontWeight: '700', color: '#38bdf8', fontSize: '0.9rem' }}>
+                          {p.codigo_compra}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                          {dateStr}
+                        </div>
+                      </td>
 
-                    {/* Cantidad de ítems */}
-                    <td style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>
-                      <span style={{
-                        padding: '0.2rem 0.55rem',
-                        backgroundColor: 'rgba(56, 189, 248, 0.12)',
-                        border: '1px solid rgba(56, 189, 248, 0.3)',
-                        borderRadius: '6px',
-                        fontSize: '0.75rem',
-                        fontWeight: '700',
-                        color: '#38bdf8',
-                      }}>
-                        {p.items ? p.items.length : 0} {p.items?.length === 1 ? 'ítem' : 'ítems'}
-                      </span>
-                    </td>
+                      {/* Proveedor */}
+                      <td style={{ padding: '0.85rem 1.25rem' }}>
+                        <div style={{ fontWeight: '600', color: '#f8fafc' }}>
+                          {p.proveedor_nombre || `Proveedor #${p.proveedor_id}`}
+                        </div>
+                        {p.proveedor_nit && (
+                          <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                            NIT: {p.proveedor_nit}
+                          </div>
+                        )}
+                      </td>
 
-                    {/* Total en COP */}
-                    <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
-                      <span style={{ fontWeight: '800', color: '#4ade80', fontSize: '0.95rem' }}>
-                        {formatCOP(p.total)}
-                      </span>
-                    </td>
+                      {/* Ítems Abastecidos */}
+                      <td style={{ padding: '0.85rem 1.25rem', maxWidth: '320px' }}>
+                        <div style={{
+                          color: '#cbd5e1',
+                          fontSize: '0.85rem',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }} title={itemsSummary}>
+                          {itemsSummary}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.15rem' }}>
+                          {p.items ? p.items.length : 0} {p.items?.length === 1 ? 'línea de insumo' : 'líneas de insumo'}
+                        </div>
+                      </td>
 
-                    {/* Registrado por */}
-                    <td style={{ padding: '0.85rem 1rem', fontSize: '0.8rem', color: '#cbd5e1' }}>
-                      👤 {p.registrado_por_nombre || `Usuario #${p.registrado_por}`}
-                    </td>
+                      {/* Total COP (Solo para Administrador) */}
+                      {isAdmin && (
+                        <td style={{ padding: '0.85rem 1.25rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontWeight: '800', color: '#34d399', fontSize: '0.95rem' }}>
+                            {formatCOP(p.total)}
+                          </span>
+                        </td>
+                      )}
 
-                    {/* Observaciones */}
-                    <td style={{ padding: '0.85rem 1rem', maxWidth: '240px' }}>
-                      <div style={{
-                        color: '#94a3b8',
-                        fontSize: '0.78rem',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }} title={p.observaciones || ''}>
-                        {p.observaciones || '—'}
-                      </div>
-                    </td>
+                      {/* Registrado Por */}
+                      <td style={{ padding: '0.85rem 1.25rem', fontSize: '0.8rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>
+                        👤 {p.usuario_nombre || `Usuario #${p.usuario_id}`}
+                      </td>
 
-                    {/* Botón Ver Detalle */}
-                    <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
-                      <button
-                        onClick={() => setSelectedPurchaseToView(p)}
-                        style={{
-                          padding: '0.4rem 0.75rem',
-                          backgroundColor: 'rgba(56, 189, 248, 0.12)',
-                          border: '1px solid rgba(56, 189, 248, 0.3)',
-                          borderRadius: '6px',
-                          color: '#38bdf8',
-                          fontSize: '0.78rem',
-                          fontWeight: '700',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.35rem',
-                          transition: 'all 0.15s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#0284c7';
-                          e.currentTarget.style.color = '#ffffff';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'rgba(56, 189, 248, 0.12)';
-                          e.currentTarget.style.color = '#38bdf8';
-                        }}
-                      >
-                        <span>👁️</span>
-                        <span>Ver Detalle</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      {/* Botón Ver Detalle */}
+                      <td style={{ padding: '0.85rem 1.25rem', textAlign: 'right' }}>
+                        <button
+                          onClick={() => setSelectedPurchaseToView(p)}
+                          style={{
+                            padding: '0.4rem 0.75rem',
+                            backgroundColor: '#1e293b',
+                            border: '1px solid #334155',
+                            borderRadius: '6px',
+                            color: '#38bdf8',
+                            fontSize: '0.8rem',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            transition: 'all 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#0284c7';
+                            e.currentTarget.style.color = '#ffffff';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#1e293b';
+                            e.currentTarget.style.color = '#38bdf8';
+                          }}
+                        >
+                          <span>🔍</span>
+                          <span>Detalle</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {/* Modal de Registro de Compra */}
+      {/* Modal: Registrar Compra */}
       <PurchaseModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        onSuccess={(created, msg) => {
-          showToast(msg || 'Compra registrada exitosamente.', 'success');
+        onSuccess={(msg) => {
+          showToast(msg);
           fetchPurchases();
         }}
       />
 
-      {/* Modal de Detalle */}
+      {/* Modal: Ver Detalle de Compra */}
       <PurchaseDetailModal
         isOpen={Boolean(selectedPurchaseToView)}
-        purchase={selectedPurchaseToView}
         onClose={() => setSelectedPurchaseToView(null)}
+        purchase={selectedPurchaseToView}
       />
     </div>
   );

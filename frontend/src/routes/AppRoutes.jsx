@@ -14,31 +14,32 @@ import OrdersPage from '../pages/OrdersPage';
 import AdjustmentsPage from '../pages/AdjustmentsPage';
 import PurchasesPage from '../pages/PurchasesPage';
 
+import ErrorBoundary from '../components/common/ErrorBoundary';
+
 export function AppRoutes() {
   return (
-    <Routes>
-      {/* Ruta Pública */}
-      <Route path="/login" element={<LoginPage />} />
+    <ErrorBoundary>
+      <Routes>
+        {/* Ruta Pública */}
+        <Route path="/login" element={<LoginPage />} />
 
-      {/* Rutas Privadas / Protegidas */}
-      <Route element={<ProtectedRoute />}>
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/providers" element={<ProvidersPage />} />
-          <Route path="/purchases" element={<PurchasesPage />} />
-          <Route path="/materials" element={<MaterialsPage />} />
-          <Route path="/orders" element={<OrdersPage />} />
-          <Route path="/adjustments" element={<AdjustmentsPage />} />
+        {/* Rutas Privadas / Protegidas */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/providers" element={<ProvidersPage />} />
+            <Route path="/purchases" element={<PurchasesPage />} />
+            <Route path="/materials" element={<MaterialsPage />} />
+            <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/adjustments" element={<AdjustmentsPage />} />
+          </Route>
         </Route>
-      </Route>
 
-
-
-
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </ErrorBoundary>
   );
 }
 

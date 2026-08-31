@@ -18,11 +18,6 @@ import ordersApi from '../../api/ordersApi';
 
 const today = () => new Date().toISOString().split('T')[0];
 
-const NATURE_BADGE = {
-  RECUPERABLE: { bg: 'rgba(16,185,129,0.15)', color: '#34d399', border: 'rgba(16,185,129,0.3)', label: 'Recuperable ♻️' },
-  PERDIDO:     { bg: 'rgba(248,113,113,0.15)', color: '#f87171', border: 'rgba(248,113,113,0.3)', label: 'Material Perdido 🔥' },
-};
-
 /* ─── Estilos base reutilizables ────────────────────────────────────────── */
 
 const INPUT_STYLE = {
@@ -299,36 +294,16 @@ export function OrderModal({ isOpen, onClose, onSuccess }) {
               </option>
               {productTypes.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.nombre} ({t.naturaleza})
+                  {t.nombre}
                 </option>
               ))}
             </select>
             {errors.tipo_caseton_id && <p style={ERROR_STYLE}>{errors.tipo_caseton_id}</p>}
 
-            {/* Badge BOM del tipo seleccionado */}
-            {selectedType && (
-              <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                {(() => {
-                  const badge = NATURE_BADGE[selectedType.naturaleza] || {};
-                  return (
-                    <span style={{
-                      fontSize: '0.72rem',
-                      fontWeight: '700',
-                      padding: '0.2rem 0.6rem',
-                      borderRadius: '9999px',
-                      backgroundColor: badge.bg,
-                      color: badge.color,
-                      border: `1px solid ${badge.border}`,
-                    }}>
-                      BOM: {badge.label}
-                    </span>
-                  );
-                })()}
-                {selectedType.descripcion && (
-                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                    {selectedType.descripcion}
-                  </span>
-                )}
+            {/* Descripción del tipo seleccionado */}
+            {selectedType && selectedType.descripcion && (
+              <div style={{ marginTop: '0.4rem', fontSize: '0.75rem', color: '#94a3b8' }}>
+                ℹ️ {selectedType.descripcion}
               </div>
             )}
           </div>

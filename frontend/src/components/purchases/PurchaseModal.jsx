@@ -175,22 +175,30 @@ export function PurchaseModal({ isOpen, onClose, onSuccess }) {
 
     try {
       const payload = {
-        proveedor_id: proveedorId,
+        proveedor_id: Number(proveedorId),
         fecha_compra: fechaCompra,
         items: items.map((it) => ({
-          material_id: it.material_id,
-          cantidad: it.cantidad,
-          precio_unitario: it.precio_unitario,
+          material_id: Number(it.material_id),
+          cantidad: Number(it.cantidad),
+          precio_unitario: Number(it.precio_unitario),
         })),
-        observaciones: observaciones,
+        observaciones: observaciones ? observaciones.trim() : null,
       };
 
       const response = await purchasesApi.createPurchase(payload);
-      onSuccess(response, `Orden de compra ${response.codigo_compra} registrada exitosamente.`);
+      const successMsg = response?.codigo_compra
+        ? `Orden de compra ${response.codigo_compra} registrada exitosamente con ingreso a inventario.`
+        : 'Orden de compra registrada exitosamente.';
+
+      onSuccess(successMsg);
       onClose();
     } catch (err) {
-      const msg = err.response?.data?.detail || err.message || 'Error al procesar la compra.';
-      setApiError(msg);
+      console.error('Error al registrar orden de compra:', err);
+      const detail = err.response?.data?.detail;
+      const errorMsg = typeof detail === 'string'
+        ? detail
+        : (Array.isArray(detail) ? detail.map((d) => d.msg).join(', ') : (err.message || 'Error al procesar la compra.'));
+      setApiError(errorMsg);
     } finally {
       setSubmitting(false);
     }

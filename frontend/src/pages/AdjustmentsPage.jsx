@@ -171,7 +171,10 @@ export function AdjustmentsPage() {
   const [toast, setToast] = useState(null);
 
   const showToast = (message, type = 'success') => {
-    setToast({ message, type });
+    const text = typeof message === 'string'
+      ? message
+      : (message?.detail || message?.message || 'Operación completada exitosamente.');
+    setToast({ message: text, type });
   };
 
   // Carga de datos
@@ -185,10 +188,14 @@ export function AdjustmentsPage() {
         tipo: tipoFilter !== 'TODOS' ? tipoFilter : undefined,
       });
 
-      setAdjustments(data.items || []);
-      setTotal(data.total || 0);
+      setAdjustments(data?.items || []);
+      setTotal(data?.total || 0);
     } catch (err) {
-      showToast(err.response?.data?.detail || 'Error al cargar los ajustes de inventario.', 'error');
+      const detail = err.response?.data?.detail;
+      const errorMsg = typeof detail === 'string'
+        ? detail
+        : (err.message || 'Error al cargar los ajustes de inventario.');
+      showToast(errorMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -674,7 +681,7 @@ export function AdjustmentsPage() {
       <AdjustmentModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        onSuccess={(created, msg) => {
+        onSuccess={(msg) => {
           showToast(msg || 'Solicitud de ajuste creada exitosamente.', 'success');
           fetchAdjustments();
         }}
@@ -685,7 +692,7 @@ export function AdjustmentsPage() {
         isOpen={Boolean(selectedAdjustmentToReview)}
         adjustment={selectedAdjustmentToReview}
         onClose={() => setSelectedAdjustmentToReview(null)}
-        onSuccess={(updated, msg) => {
+        onSuccess={(msg) => {
           showToast(msg || 'Ajuste evaluado correctamente.', 'success');
           fetchAdjustments();
         }}

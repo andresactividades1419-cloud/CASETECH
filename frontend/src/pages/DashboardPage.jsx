@@ -1,13 +1,11 @@
 /**
- * pages/DashboardPage.jsx — Panel de Control Ejecutivo, Kardex de Trazabilidad y Auditoría (HU14, HU15).
+ * pages/DashboardPage.jsx — Panel de Control Ejecutivo, Kardex de Trazabilidad y Auditoría para CASETECH ERP.
  *
  * Características:
- * - 5 Tarjetas KPI consolidadas en tiempo real.
- * - Desglose analítico de producción por tipo de casetón y naturaleza BOM (Recuperable vs. Perdido).
- * - Pestañas interactivas:
- *   * Tab 1: Kardex inmutable de movimientos de stock con filtros y snapshots (antes/después).
- *   * Tab 2: Bitácora de auditoría de acciones del sistema con visor de payloads JSON.
- * - Exportación de reporte a formato CSV e impresión ejecutiva.
+ * - Tarjetas KPI consolidadas en tiempo real (Gasto compras restringido a ADMINISTRADOR).
+ * - Desglose de producción por tipo de casetón (Lona, Guadua, Icopor) sin distinciones de recuperabilidad.
+ * - Pestañas de Kardex y Bitácora de Auditoría (auditoría exclusiva para ADMINISTRADOR).
+ * - Sin botones de exportación CSV ni tarjetas de ajustes manuales.
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
@@ -26,8 +24,9 @@ const formatCOP = (val) => {
 
 const MOVEMENT_TYPE_CONFIG = {
   INGRESO_COMPRA: { label: 'Ingreso Compra', icon: '📥', color: '#4ade80', bg: 'rgba(74, 222, 128, 0.12)', border: 'rgba(74, 222, 128, 0.3)' },
-  DESCUENTO_PRODUCCION: { label: 'Descuento BOM (Recup.)', icon: '♻️', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.12)', border: 'rgba(56, 189, 248, 0.3)' },
-  DESCUENTO_PRODUCCION_DEFINITIVO: { label: 'Consumo BOM (Perdido)', icon: '🔥', color: '#f87171', bg: 'rgba(248, 113, 113, 0.12)', border: 'rgba(248, 113, 113, 0.3)' },
+  DESCUENTO_PRODUCCION: { label: 'Consumo de Producción', icon: '🧱', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.35)' },
+  DESCUENTO_PRODUCCION_DEFINITIVO: { label: 'Consumo de Producción', icon: '🧱', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.35)' },
+  CONSUMO_PRODUCCION: { label: 'Consumo de Producción', icon: '🧱', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.35)' },
   AJUSTE_APROBADO: { label: 'Ajuste Aprobado', icon: '⚖️', color: '#c084fc', bg: 'rgba(192, 132, 252, 0.12)', border: 'rgba(192, 132, 252, 0.3)' },
   DEVOLUCION_CANCELACION: { label: 'Devolución Cancelación', icon: '↩️', color: '#fbbf24', bg: 'rgba(251, 191, 36, 0.12)', border: 'rgba(251, 191, 36, 0.3)' },
 };
@@ -119,40 +118,11 @@ export function DashboardPage() {
     }
   }, [activeTab, fetchMovements, fetchAuditLogs]);
 
-  // Exportar Kardex a CSV
-  const handleExportCSV = () => {
-    if (movements.length === 0) return;
-
-    const headers = ['ID', 'Fecha', 'Material', 'Tipo Movimiento', 'Cantidad', 'Stock Antes', 'Stock Después', 'Referencia Tipo', 'Referencia ID', 'Usuario'];
-    const rows = movements.map((m) => [
-      m.id,
-      `"${new Date(m.created_at).toLocaleString()}"`,
-      `"${m.material_nombre}"`,
-      `"${m.tipo_movimiento}"`,
-      m.cantidad,
-      m.stock_antes,
-      m.stock_despues,
-      `"${m.referencia_tipo || ''}"`,
-      m.referencia_id || '',
-      `"${m.usuario_nombre || ''}"`,
-    ]);
-
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `kardex_casetech_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   const kpis = metrics?.kpis || {
     total_pedidos: 0,
     pedidos_en_produccion: 0,
     compras_mes_cop: 0,
     materiales_alerta_stock: 0,
-    ajustes_pendientes: 0,
   };
 
   const produccion = metrics?.produccion_por_tipo || [];
@@ -160,7 +130,7 @@ export function DashboardPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-      {/* Banner de Bienvenida y Accesos Rápidos */}
+      {/* Banner de Bienvenida */}
       <div style={{
         backgroundColor: '#111827',
         borderRadius: '16px',
@@ -192,7 +162,7 @@ export function DashboardPage() {
             </span>
           </div>
           <p style={{ color: '#94a3b8', margin: 0, fontSize: '0.9rem' }}>
-            Monitor central de producción BOM, abastecimiento a proveedores y Kardex inmutable de inventario.
+            Monitor central de producción, abastecimiento a proveedores y trazabilidad de inventario.
           </p>
         </div>
 
@@ -218,27 +188,6 @@ export function DashboardPage() {
           </button>
 
           <button
-            onClick={handleExportCSV}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.6rem 1rem',
-              backgroundColor: '#0369a1',
-              color: '#ffffff',
-              borderRadius: '8px',
-              border: 'none',
-              fontWeight: '600',
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(3, 105, 161, 0.3)',
-            }}
-          >
-            <span>📥</span>
-            <span>Exportar CSV</span>
-          </button>
-
-          <button
             onClick={() => window.print()}
             style={{
               display: 'inline-flex',
@@ -260,8 +209,8 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* 5 Tarjetas KPI Superiores */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '1rem' }}>
+      {/* Tarjetas KPI Superiores (Gasto compras solo para Administrador) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
         {/* KPI 1: Pedidos Totales */}
         <Link to="/orders" style={{ textDecoration: 'none' }}>
           <div style={{
@@ -341,44 +290,46 @@ export function DashboardPage() {
           </div>
         </Link>
 
-        {/* KPI 3: Inversión en Compras */}
-        <Link to="/purchases" style={{ textDecoration: 'none' }}>
-          <div style={{
-            backgroundColor: '#111827',
-            border: '1px solid #1f2937',
-            borderRadius: '14px',
-            padding: '1.25rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '1rem',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#34d399'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#1f2937'; }}
-          >
+        {/* KPI 3: Inversión en Compras (Solo para Administrador) */}
+        {isAdmin && (
+          <Link to="/purchases" style={{ textDecoration: 'none' }}>
             <div style={{
-              width: '46px',
-              height: '46px',
-              borderRadius: '10px',
-              backgroundColor: 'rgba(52, 211, 153, 0.12)',
-              border: '1px solid rgba(52, 211, 153, 0.25)',
+              backgroundColor: '#111827',
+              border: '1px solid #1f2937',
+              borderRadius: '14px',
+              padding: '1.25rem',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.35rem',
-            }}>
-              💵
-            </div>
-            <div>
-              <div style={{ fontSize: '0.72rem', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase' }}>
-                Gasto Compras (COP)
+              gap: '1rem',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#34d399'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#1f2937'; }}
+            >
+              <div style={{
+                width: '46px',
+                height: '46px',
+                borderRadius: '10px',
+                backgroundColor: 'rgba(52, 211, 153, 0.12)',
+                border: '1px solid rgba(52, 211, 153, 0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.35rem',
+              }}>
+                💵
               </div>
-              <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#34d399', marginTop: '0.15rem' }}>
-                {loadingMetrics ? '—' : formatCOP(kpis.compras_mes_cop)}
+              <div>
+                <div style={{ fontSize: '0.72rem', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase' }}>
+                  Gasto Compras (COP)
+                </div>
+                <div style={{ fontSize: '1.25rem', fontWeight: '800', color: '#34d399', marginTop: '0.15rem' }}>
+                  {loadingMetrics ? '—' : formatCOP(kpis.compras_mes_cop)}
+                </div>
               </div>
             </div>
-          </div>
-        </Link>
+          </Link>
+        )}
 
         {/* KPI 4: Alertas de Stock */}
         <Link to="/materials" style={{ textDecoration: 'none' }}>
@@ -418,48 +369,9 @@ export function DashboardPage() {
             </div>
           </div>
         </Link>
-
-        {/* KPI 5: Ajustes Pendientes */}
-        <Link to="/adjustments" style={{ textDecoration: 'none' }}>
-          <div style={{
-            backgroundColor: '#111827',
-            border: kpis.ajustes_pendientes > 0 ? '1px solid rgba(251, 191, 36, 0.4)' : '1px solid #1f2937',
-            borderRadius: '14px',
-            padding: '1.25rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '1rem',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#fbbf24'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = kpis.ajustes_pendientes > 0 ? 'rgba(251, 191, 36, 0.4)' : '#1f2937'; }}
-          >
-            <div style={{
-              width: '46px',
-              height: '46px',
-              borderRadius: '10px',
-              backgroundColor: 'rgba(251, 191, 36, 0.12)',
-              border: '1px solid rgba(251, 191, 36, 0.25)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.35rem',
-            }}>
-              ⏳
-            </div>
-            <div>
-              <div style={{ fontSize: '0.72rem', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase' }}>
-                Ajustes por Firma
-              </div>
-              <div style={{ fontSize: '1.45rem', fontWeight: '800', color: '#fbbf24', marginTop: '0.15rem' }}>
-                {loadingMetrics ? '—' : kpis.ajustes_pendientes}
-              </div>
-            </div>
-          </div>
-        </Link>
       </div>
 
-      {/* Desglose de Producción BOM */}
+      {/* Desglose de Producción por Tipo de Casetón */}
       <div style={{
         backgroundColor: '#111827',
         border: '1px solid #1f2937',
@@ -472,10 +384,10 @@ export function DashboardPage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div>
             <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', color: '#f8fafc' }}>
-              Distribución de Producción por Tipo de Casetón (BOM)
+              Distribución de Producción por Tipo de Casetón
             </h3>
             <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>
-              Comparativa de volumen según naturaleza de consumo: Material Recuperable ♻️ vs. Material Perdido 🔥.
+              Volumen total fabricado por referencia de casetón.
             </p>
           </div>
           <div style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: '700' }}>
@@ -485,7 +397,6 @@ export function DashboardPage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
           {produccion.map((item, idx) => {
-            const isRecuperable = item.naturaleza === 'RECUPERABLE';
             const percentage = totalUnidadesProd > 0 ? Math.round((parseFloat(item.total_unidades) / totalUnidadesProd) * 100) : 0;
 
             return (
@@ -495,7 +406,7 @@ export function DashboardPage() {
                   backgroundColor: '#0b0f19',
                   border: '1px solid #1f2937',
                   borderRadius: '12px',
-                  padding: '1rem 1.25rem',
+                  padding: '1.1rem 1.25rem',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '0.75rem',
@@ -506,24 +417,20 @@ export function DashboardPage() {
                     {item.tipo_caseton}
                   </span>
                   <span style={{
-                    fontSize: '0.7rem',
+                    fontSize: '0.75rem',
                     fontWeight: '700',
-                    padding: '0.2rem 0.5rem',
-                    borderRadius: '4px',
-                    backgroundColor: isRecuperable ? 'rgba(74, 222, 128, 0.15)' : 'rgba(248, 113, 113, 0.15)',
-                    color: isRecuperable ? '#4ade80' : '#f87171',
-                    border: `1px solid ${isRecuperable ? 'rgba(74, 222, 128, 0.3)' : 'rgba(248, 113, 113, 0.3)'}`,
+                    color: '#38bdf8',
                   }}>
-                    {isRecuperable ? 'Recuperable ♻️' : 'Material Perdido 🔥'}
+                    {percentage}%
                   </span>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '1.25rem', fontWeight: '800', color: isRecuperable ? '#4ade80' : '#f87171' }}>
+                  <span style={{ fontSize: '1.35rem', fontWeight: '800', color: '#38bdf8' }}>
                     {item.total_unidades} <span style={{ fontSize: '0.8rem', fontWeight: '500', color: '#94a3b8' }}>unidades</span>
                   </span>
                   <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                    {item.total_pedidos} {item.total_pedidos === 1 ? 'pedido' : 'pedidos'} ({percentage}%)
+                    {item.total_pedidos} {item.total_pedidos === 1 ? 'pedido' : 'pedidos'}
                   </span>
                 </div>
 
@@ -532,7 +439,7 @@ export function DashboardPage() {
                   <div style={{
                     width: `${percentage}%`,
                     height: '100%',
-                    backgroundColor: isRecuperable ? '#4ade80' : '#f87171',
+                    backgroundColor: '#38bdf8',
                     borderRadius: '9999px',
                     transition: 'width 0.4s ease',
                   }} />
@@ -622,8 +529,7 @@ export function DashboardPage() {
             >
               <option value="TODOS">Todos los movimientos</option>
               <option value="INGRESO_COMPRA">Ingreso Compra</option>
-              <option value="DESCUENTO_PRODUCCION">Descuento BOM (Recuperable)</option>
-              <option value="DESCUENTO_PRODUCCION_DEFINITIVO">Consumo BOM (Perdido)</option>
+              <option value="CONSUMO_PRODUCCION">Consumo de Producción</option>
               <option value="AJUSTE_APROBADO">Ajustes de Inventario</option>
               <option value="DEVOLUCION_CANCELACION">Devoluciones</option>
             </select>
@@ -728,7 +634,7 @@ export function DashboardPage() {
           </div>
         )}
 
-        {/* Contenido: Tab 2 (Auditoría del Sistema) */}
+        {/* Contenido: Tab 2 (Auditoría del Sistema — Solo Administrador) */}
         {activeTab === 'audit' && isAdmin && (
           <div>
             {loadingAudit ? (
@@ -813,16 +719,16 @@ export function DashboardPage() {
         <div style={{
           position: 'fixed',
           inset: 0,
-          backgroundColor: 'rgba(0,0,0,0.8)',
+          backgroundColor: 'rgba(0,0,0,0.75)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 999,
-          padding: '1rem',
+          zIndex: 100,
+          padding: '1.5rem',
         }}>
           <div style={{
             backgroundColor: '#111827',
-            border: '1px solid #334155',
+            border: '1px solid #1f2937',
             borderRadius: '14px',
             width: '100%',
             maxWidth: '600px',
@@ -834,48 +740,34 @@ export function DashboardPage() {
             <div style={{
               padding: '1rem 1.25rem',
               borderBottom: '1px solid #1f2937',
-              backgroundColor: '#1e293b',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
             }}>
-              <span style={{ fontWeight: '700', color: '#f8fafc', fontSize: '0.9rem' }}>
-                Payload Estructurado de Auditoría
+              <span style={{ fontWeight: '700', color: '#f8fafc', fontSize: '1rem' }}>
+                🔍 Payload de Auditoría
               </span>
               <button
                 onClick={() => setSelectedJsonPayload(null)}
-                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '1.1rem' }}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.25rem', cursor: 'pointer' }}
               >
                 ✕
               </button>
             </div>
-            <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1, backgroundColor: '#0b0f19' }}>
+            <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1 }}>
               <pre style={{
-                margin: 0,
+                backgroundColor: '#0b0f19',
+                padding: '1rem',
+                borderRadius: '8px',
+                border: '1px solid #1f2937',
                 color: '#38bdf8',
                 fontSize: '0.8rem',
-                fontFamily: 'monospace',
+                margin: 0,
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-all',
               }}>
                 {JSON.stringify(selectedJsonPayload, null, 2)}
               </pre>
-            </div>
-            <div style={{ padding: '0.75rem 1.25rem', borderTop: '1px solid #1f2937', textAlign: 'right' }}>
-              <button
-                onClick={() => setSelectedJsonPayload(null)}
-                style={{
-                  padding: '0.45rem 1rem',
-                  backgroundColor: '#334155',
-                  border: 'none',
-                  borderRadius: '6px',
-                  color: '#ffffff',
-                  fontSize: '0.8rem',
-                  cursor: 'pointer',
-                }}
-              >
-                Cerrar
-              </button>
             </div>
           </div>
         </div>
