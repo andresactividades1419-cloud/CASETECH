@@ -1,11 +1,11 @@
 /**
- * components/adjustments/ReviewModal.jsx — Modal de revisión de ajustes para ADMINISTRADORES (HU13).
+ * components/adjustments/ReviewModal.jsx — Modal de revisión de ajustes para ADMINISTRADORES.
  *
  * Permite:
  * - Visualizar la auditoría de la solicitud (Material, Tipo, Cantidad, Solicitante, Motivo).
  * - Seleccionar decisión: APROBAR (aplica al inventario vía SP) o RECHAZAR.
  * - Agregar observaciones de auditoría opcionales.
- * - Control de regla de doble firma (evita que el solicitante sea el revisor).
+ * - Control y aviso informativo de regla de doble firma, habilitado para administradores.
  */
 
 import React, { useState } from 'react';
@@ -13,7 +13,7 @@ import adjustmentsApi from '../../api/adjustmentsApi';
 import { useAuth } from '../../context/AuthContext';
 
 export function ReviewModal({ isOpen, onClose, adjustment, onSuccess }) {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [aprobado, setAprobado] = useState(true);
   const [observaciones, setObservaciones] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -21,7 +21,7 @@ export function ReviewModal({ isOpen, onClose, adjustment, onSuccess }) {
 
   if (!isOpen || !adjustment) return null;
 
-  const isSelfRequester = user && Number(user.id) === Number(adjustment.solicitante_id);
+  const isSelfRequester = user && (Number(user.id) === Number(adjustment.solicitante_id) || Number(user.id) === Number(adjustment.solicitado_por));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -141,7 +141,7 @@ export function ReviewModal({ isOpen, onClose, adjustment, onSuccess }) {
             </div>
             <div>
               <span style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', display: 'block' }}>Solicitante</span>
-              <span style={{ color: '#cbd5e1' }}>{adjustment.solicitante_nombre || `Usuario #${adjustment.solicitante_id}`}</span>
+              <span style={{ color: '#cbd5e1' }}>{adjustment.solicitante_nombre || `Usuario #${adjustment.solicitante_id || adjustment.solicitado_por}`}</span>
             </div>
           </div>
 
@@ -174,17 +174,17 @@ export function ReviewModal({ isOpen, onClose, adjustment, onSuccess }) {
           {isSelfRequester && (
             <div style={{
               padding: '0.75rem 1rem',
-              backgroundColor: 'rgba(234, 179, 8, 0.12)',
-              border: '1px solid rgba(234, 179, 8, 0.3)',
+              backgroundColor: 'rgba(56, 189, 248, 0.12)',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
               borderRadius: '8px',
-              color: '#facc15',
+              color: '#38bdf8',
               fontSize: '0.8rem',
               display: 'flex',
               gap: '0.5rem',
             }}>
-              <span>🚫</span>
+              <span>ℹ️</span>
               <span>
-                <strong>Regla de Doble Firma:</strong> Tú eres el usuario que solicitó este ajuste. Las políticas de auditoría exigen que otro administrador lo revise.
+                <strong>Aviso de Auditoría:</strong> Fuiste el solicitante inicial de este ajuste. Como Administrador, estás facultado para autorizar la aplicación en stock.
               </span>
             </div>
           )}
@@ -295,7 +295,7 @@ export function ReviewModal({ isOpen, onClose, adjustment, onSuccess }) {
             </button>
             <button
               type="submit"
-              disabled={submitting || isSelfRequester}
+              disabled={submitting || (!isAdmin && isSelfRequester)}
               style={{
                 padding: '0.6rem 1.4rem',
                 backgroundColor: aprobado ? '#16a34a' : '#dc2626',
@@ -304,8 +304,7 @@ export function ReviewModal({ isOpen, onClose, adjustment, onSuccess }) {
                 color: '#ffffff',
                 fontSize: '0.85rem',
                 fontWeight: '600',
-                cursor: (submitting || isSelfRequester) ? 'not-allowed' : 'pointer',
-                opacity: isSelfRequester ? 0.5 : 1,
+                cursor: submitting ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',

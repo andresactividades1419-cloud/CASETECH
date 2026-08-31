@@ -51,22 +51,27 @@ async def create_provider(
         ProviderRead: Proveedor recién creado recuperado desde la BD.
     """
     try:
+        query = text("""
+            CALL sp_crear_proveedor(
+                CAST(:nit AS VARCHAR),
+                CAST(:nombre_empresa AS VARCHAR),
+                CAST(:contacto_nombre AS VARCHAR),
+                CAST(:contacto_telefono AS VARCHAR),
+                CAST(:contacto_email AS VARCHAR),
+                CAST(:direccion AS TEXT),
+                CAST(:usuario_id AS BIGINT),
+                NULL
+            )
+        """)
         await db.execute(
-            text(
-                "CALL sp_crear_proveedor("
-                ":nit, :nombre_empresa, :contacto_nombre, "
-                ":contacto_telefono, :direccion, :contacto_email, :usuario_id"
-                ")"
-            ),
+            query,
             {
-                "nit": provider_in.nit,
-                "nombre_empresa": provider_in.nombre_empresa,
-                "contacto_nombre": provider_in.contacto_nombre,
-                "contacto_telefono": provider_in.contacto_telefono,
-                "direccion": provider_in.direccion,
-                "contacto_email": str(provider_in.contacto_email)
-                if provider_in.contacto_email
-                else None,
+                "nit": str(provider_in.nit).strip(),
+                "nombre_empresa": str(provider_in.nombre_empresa).strip(),
+                "contacto_nombre": str(provider_in.contacto_nombre).strip() if provider_in.contacto_nombre else "",
+                "contacto_telefono": str(provider_in.contacto_telefono).strip() if provider_in.contacto_telefono else "",
+                "contacto_email": str(provider_in.contacto_email).strip() if provider_in.contacto_email else "",
+                "direccion": str(provider_in.direccion).strip() if provider_in.direccion else "",
                 "usuario_id": user_id,
             },
         )
@@ -88,21 +93,31 @@ async def create_provider(
 
     except DBAPIError as exc:
         await db.rollback()
-        # Errores internos del SP (ej: validaciones personalizadas con RAISE EXCEPTION)
-        detail_lower = str(exc.orig).lower() if exc.orig else str(exc).lower()
-        if "nit" in detail_lower or "duplicate" in detail_lower or "ya existe" in detail_lower:
+        orig_msg = str(exc.orig) if exc.orig else str(exc)
+
+        # Capturar excepción de unicidad lanzada explícitamente por el SP (ERRCODE 23505)
+        if "23505" in orig_msg or "unique" in orig_msg.lower() or "ya existe" in orig_msg.lower():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"El NIT '{provider_in.nit}' ya está registrado en el sistema.",
+                detail=f"Ya existe un proveedor registrado con el NIT '{provider_in.nit}'. El NIT es un identificador único e inmutable.",
             ) from exc
+
+        # Errores de validación personalizados lanzados con RAISE EXCEPTION en el SP
+        if "P0001" in orig_msg or "EXCEPTION" in orig_msg:
+            clean_msg = orig_msg.split("\n")[0] if "\n" in orig_msg else orig_msg
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Error de validación en la base de datos: {clean_msg}",
+            ) from exc
+
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al ejecutar el procedimiento almacenado: {exc.orig}",
         ) from exc
 
     # Recuperar el proveedor recién creado para retornarlo serializado
     result = await db.execute(
-        select(Provider).where(Provider.nit == provider_in.nit)
+        select(Provider).where(func.upper(Provider.nit) == provider_in.nit.strip().upper())
     )
     provider = result.scalar_one_or_none()
 

@@ -148,8 +148,12 @@ async def get_stock_movements_log(
     # Filtros
     if tipo_movimiento and tipo_movimiento.strip() and tipo_movimiento != "TODOS":
         tipo_clean = tipo_movimiento.strip().upper()
-        query = query.where(StockMovement.tipo_movimiento.ilike(f"%{tipo_clean}%"))
-        count_query = count_query.where(StockMovement.tipo_movimiento.ilike(f"%{tipo_clean}%"))
+        if tipo_clean in ("CONSUMO_PRODUCCION", "PRODUCCION", "DESCUENTO_PRODUCCION", "DESCUENTO_PRODUCCION_DEFINITIVO"):
+            query = query.where(StockMovement.tipo_movimiento.ilike("%PRODUCCION%"))
+            count_query = count_query.where(StockMovement.tipo_movimiento.ilike("%PRODUCCION%"))
+        else:
+            query = query.where(StockMovement.tipo_movimiento.ilike(f"%{tipo_clean}%"))
+            count_query = count_query.where(StockMovement.tipo_movimiento.ilike(f"%{tipo_clean}%"))
 
     if material_id:
         query = query.where(StockMovement.material_id == material_id)

@@ -24,8 +24,9 @@ const formatCOP = (val) => {
 
 const MOVEMENT_TYPE_CONFIG = {
   INGRESO_COMPRA: { label: 'Ingreso Compra', icon: '📥', color: '#4ade80', bg: 'rgba(74, 222, 128, 0.12)', border: 'rgba(74, 222, 128, 0.3)' },
-  DESCUENTO_PRODUCCION: { label: 'Descuento BOM', icon: '🧱', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.12)', border: 'rgba(56, 189, 248, 0.3)' },
-  DESCUENTO_PRODUCCION_DEFINITIVO: { label: 'Consumo BOM', icon: '📦', color: '#f87171', bg: 'rgba(248, 113, 113, 0.12)', border: 'rgba(248, 113, 113, 0.3)' },
+  DESCUENTO_PRODUCCION: { label: 'Consumo de Producción', icon: '🧱', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.35)' },
+  DESCUENTO_PRODUCCION_DEFINITIVO: { label: 'Consumo de Producción', icon: '🧱', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.35)' },
+  CONSUMO_PRODUCCION: { label: 'Consumo de Producción', icon: '🧱', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.35)' },
   AJUSTE_APROBADO: { label: 'Ajuste Aprobado', icon: '⚖️', color: '#c084fc', bg: 'rgba(192, 132, 252, 0.12)', border: 'rgba(192, 132, 252, 0.3)' },
   DEVOLUCION_CANCELACION: { label: 'Devolución Cancelación', icon: '↩️', color: '#fbbf24', bg: 'rgba(251, 191, 36, 0.12)', border: 'rgba(251, 191, 36, 0.3)' },
 };
@@ -528,8 +529,7 @@ export function DashboardPage() {
             >
               <option value="TODOS">Todos los movimientos</option>
               <option value="INGRESO_COMPRA">Ingreso Compra</option>
-              <option value="DESCUENTO_PRODUCCION">Descuento BOM</option>
-              <option value="DESCUENTO_PRODUCCION_DEFINITIVO">Consumo BOM</option>
+              <option value="CONSUMO_PRODUCCION">Consumo de Producción</option>
               <option value="AJUSTE_APROBADO">Ajustes de Inventario</option>
               <option value="DEVOLUCION_CANCELACION">Devoluciones</option>
             </select>
