@@ -13,7 +13,7 @@ from math import ceil
 from typing import Optional
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, select, text
+from sqlalchemy import func, select, text, update
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -303,12 +303,19 @@ async def review_adjustment(
 
     # 3. Invocar el Stored Procedure atómico
     try:
+        query = text("""
+            CALL sp_ajuste_inventario(
+                CAST(:ajuste_id AS BIGINT),
+                CAST(:aprobador_id AS BIGINT),
+                CAST(:aprobar AS BOOLEAN)
+            )
+        """)
         await db.execute(
-            text("CALL sp_ajuste_inventario(:ajuste_id, :aprobador_id, :aprobar)"),
+            query,
             {
-                "ajuste_id": adjustment_id,
-                "aprobador_id": admin_user.id,
-                "aprobar": review_data.aprobado,
+                "ajuste_id": int(adjustment_id),
+                "aprobador_id": int(admin_user.id),
+                "aprobar": bool(review_data.aprobado),
             },
         )
         await db.commit()
