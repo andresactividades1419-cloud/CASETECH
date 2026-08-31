@@ -39,12 +39,13 @@ export function MainLayout() {
     }
   };
 
-  // 5 Enlaces Planos Directos
+  // Enlaces Planos Directos
   const navLinks = [
     { to: '/', label: 'Dashboard', icon: '📊' },
     { to: '/providers', label: 'Proveedores', icon: '🏢' },
     { to: '/orders', label: 'Pedidos', icon: '📋' },
     { to: '/materials', label: 'Control de Inventario', icon: '📦' },
+    { to: '/adjustments', label: 'Ajustes de Inventario', icon: '⚖️' },
     { to: '/purchases', label: 'Abastecimiento', icon: '🛒' },
   ];
 
