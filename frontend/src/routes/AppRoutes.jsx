@@ -27,6 +27,7 @@ export function AppRoutes() {
         {/* Rutas Privadas / Protegidas */}
         <Route element={<ProtectedRoute />}>
           <Route element={<MainLayout />}>
+            {/* Rutas para cualquier rol autenticado */}
             <Route path="/" element={<DashboardPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/providers" element={<ProvidersPage />} />
@@ -34,7 +35,11 @@ export function AppRoutes() {
             <Route path="/materials" element={<MaterialsPage />} />
             <Route path="/orders" element={<OrdersPage />} />
             <Route path="/adjustments" element={<AdjustmentsPage />} />
-            <Route path="/users" element={<UsersPage />} />
+
+            {/* Rutas exclusivas para ADMINISTRADOR */}
+            <Route element={<ProtectedRoute allowedRoles={['ADMINISTRADOR']} />}>
+              <Route path="/users" element={<UsersPage />} />
+            </Route>
           </Route>
         </Route>
 

@@ -102,7 +102,7 @@ class UserRead(UserBase):
 # Schemas para Gestión Administrativa de Usuarios (HU02)
 # ---------------------------------------------------------------------------
 
-class UserUpdateAdmin(BaseModel):
+class UserUpdate(BaseModel):
     """Payload para actualizar usuarios por parte del Administrador."""
 
     nombre_completo: str | None = Field(
@@ -128,19 +128,35 @@ class UserUpdateAdmin(BaseModel):
         default=None,
         min_length=8,
         max_length=128,
-        description="Nueva contraseña (opcional). Si se envía, se rehashea.",
+        description="Nueva contraseña (opcional). Si se envía, se rehashea con bcrypt.",
     )
 
     @field_validator("password")
     @classmethod
     def validate_new_password(cls, v: str | None) -> str | None:
-        if v is None:
-            return v
+        if v is None or not v.strip():
+            return None
+        v = v.strip()
+        if len(v) < 8:
+            raise ValueError("La contraseña debe tener al menos 8 caracteres.")
         if not any(c.isupper() for c in v):
             raise ValueError("La contraseña debe contener al menos una letra mayúscula.")
         if not any(c.isdigit() for c in v):
             raise ValueError("La contraseña debe contener al menos un dígito numérico.")
         return v
+
+
+# Alias para compatibilidad
+UserUpdateAdmin = UserUpdate
+
+
+class UserStatusToggle(BaseModel):
+    """Respuesta o payload del cambio de estado activo/inactivo."""
+
+    id: int = Field(..., description="ID del usuario.")
+    email: str = Field(..., description="Email del usuario.")
+    activo: bool = Field(..., description="Nuevo estado de la cuenta.")
+    message: str = Field(..., description="Mensaje descriptivo del resultado.")
 
 
 class UserAdminRead(BaseModel):
@@ -158,9 +174,16 @@ class UserAdminRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# Alias de respuesta
+UserResponse = UserAdminRead
+
+
 class UserListResponse(BaseModel):
     """Listado paginado/completo de usuarios para el panel de administración."""
 
     total: int
+    skip: int = 0
+    limit: int = 50
     items: list[UserAdminRead]
+
 
