@@ -1,5 +1,6 @@
 from datetime import date, datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
+
 from sqlalchemy import (
     BigInteger,
     CheckConstraint,
@@ -58,13 +59,13 @@ class Order(Base):
     creado_por: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=False, index=True
     )
-    observaciones: Mapped[Optional[str]] = mapped_column(
+    observaciones: Mapped[str | None] = mapped_column(
         Text, nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
-    updated_at: Mapped[Optional[datetime]] = mapped_column(
+    updated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True, onupdate=func.now()
     )
 

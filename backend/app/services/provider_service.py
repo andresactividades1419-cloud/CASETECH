@@ -8,7 +8,6 @@ Convenciones:
 - Las funciones son ``async`` para mantener compatibilidad con asyncpg.
 """
 
-from typing import Optional
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, or_, select, text, update
@@ -22,7 +21,6 @@ from app.schemas.provider import (
     ProviderRead,
     ProviderUpdate,
 )
-
 
 # ---------------------------------------------------------------------------
 # create_provider — HU02: Registro vía SP con validación de duplicidad
@@ -139,7 +137,7 @@ async def get_providers(
     skip: int = 0,
     limit: int = 50,
     include_inactive: bool = False,
-    search: Optional[str] = None,
+    search: str | None = None,
 ) -> ProviderListResponse:
     """
     Retorna proveedores paginados con soporte de búsqueda por nombre o NIT.

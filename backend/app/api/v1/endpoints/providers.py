@@ -10,7 +10,6 @@ Rutas expuestas bajo el prefijo ``/api/v1/providers``:
   PATCH  /{id}/status → Borrado lógico (toggle activo)           [ADMINISTRADOR]
 """
 
-from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -89,7 +88,7 @@ async def list_providers(
     db: AsyncSession = Depends(get_db),
     skip: int = Query(default=0, ge=0, description="Número de registros a omitir."),
     limit: int = Query(default=50, ge=1, le=200, description="Máximo de registros a retornar."),
-    search: Optional[str] = Query(
+    search: str | None = Query(
         default=None,
         max_length=100,
         description="Texto para buscar por NIT o nombre de empresa.",

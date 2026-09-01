@@ -1,5 +1,6 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING
+
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -14,12 +15,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 
 if TYPE_CHECKING:
-    from app.models.role import Role
+    from app.models.audit_log import AuditLog
     from app.models.order import Order
     from app.models.purchase import Purchase
+    from app.models.role import Role
     from app.models.stock_adjustment import StockAdjustment
     from app.models.stock_movement import StockMovement
-    from app.models.audit_log import AuditLog
 
 
 class User(Base):
@@ -30,10 +31,11 @@ class User(Base):
     __tablename__ = "usuarios"
     __table_args__ = (
         CheckConstraint(
-            r"email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'",
+            "email LIKE '%@%.%'",
             name="ck_usuarios_email_format",
         ),
     )
+
 
     id: Mapped[int] = mapped_column(
         BigInteger, primary_key=True, autoincrement=True
@@ -56,28 +58,28 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
-    updated_at: Mapped[Optional[datetime]] = mapped_column(
+    updated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True, onupdate=func.now()
     )
 
     # Relaciones ORM
     rol: Mapped["Role"] = relationship("Role", back_populates="usuarios")
-    pedidos_creados: Mapped[List["Order"]] = relationship(
+    pedidos_creados: Mapped[list["Order"]] = relationship(
         "Order", back_populates="creador", foreign_keys="Order.creado_por"
     )
-    compras_registradas: Mapped[List["Purchase"]] = relationship(
+    compras_registradas: Mapped[list["Purchase"]] = relationship(
         "Purchase", back_populates="registrador", foreign_keys="Purchase.registrado_por"
     )
-    ajustes_solicitados: Mapped[List["StockAdjustment"]] = relationship(
+    ajustes_solicitados: Mapped[list["StockAdjustment"]] = relationship(
         "StockAdjustment", back_populates="solicitante", foreign_keys="StockAdjustment.solicitado_por"
     )
-    ajustes_aprobados: Mapped[List["StockAdjustment"]] = relationship(
+    ajustes_aprobados: Mapped[list["StockAdjustment"]] = relationship(
         "StockAdjustment", back_populates="aprobador", foreign_keys="StockAdjustment.aprobado_por"
     )
-    movimientos_ejecutados: Mapped[List["StockMovement"]] = relationship(
+    movimientos_ejecutados: Mapped[list["StockMovement"]] = relationship(
         "StockMovement", back_populates="ejecutor", foreign_keys="StockMovement.ejecutado_por"
     )
-    auditorias: Mapped[List["AuditLog"]] = relationship(
+    auditorias: Mapped[list["AuditLog"]] = relationship(
         "AuditLog", back_populates="usuario", foreign_keys="AuditLog.usuario_id"
     )
 

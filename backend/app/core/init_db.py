@@ -128,3 +128,4 @@ async def init_db() -> None:
         logger.warning(
             "init_db omitido o pendiente de migraciones Alembic: %s", exc
         )
+

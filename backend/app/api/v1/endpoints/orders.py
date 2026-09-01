@@ -14,7 +14,6 @@ Ruta auxiliar expuesta bajo ``/api/v1/product-types``:
 """
 
 from datetime import date
-from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,6 +22,7 @@ from app.api.deps import CurrentUser, get_db
 from app.schemas.order import (
     OrderCreate,
     OrderListResponse,
+    OrderRecipePreviewResponse,
     OrderResponse,
     OrderStatusUpdate,
 )
@@ -30,6 +30,7 @@ from app.schemas.product_type import ProductTypeListResponse
 from app.services import order_service
 
 router = APIRouter()
+
 
 
 # ---------------------------------------------------------------------------
@@ -91,25 +92,25 @@ async def list_orders(
     db: AsyncSession = Depends(get_db),
     skip: int = Query(default=0, ge=0, description="Registros a omitir (offset de paginación)."),
     limit: int = Query(default=50, ge=1, le=200, description="Límite de registros por página."),
-    estado: Optional[str] = Query(
+    estado: str | None = Query(
         default=None,
         description="Filtrar por estado: PENDIENTE | EN_PRODUCCION | COMPLETADO | CANCELADO.",
     ),
-    cliente: Optional[str] = Query(
+    cliente: str | None = Query(
         default=None,
         max_length=255,
         description="Búsqueda parcial por nombre de cliente (case-insensitive).",
     ),
-    tipo_caseton_id: Optional[int] = Query(
+    tipo_caseton_id: int | None = Query(
         default=None,
         gt=0,
         description="Filtrar por ID de tipo de casetón específico.",
     ),
-    fecha_inicio: Optional[date] = Query(
+    fecha_inicio: date | None = Query(
         default=None,
         description="Fecha de inicio del rango (YYYY-MM-DD, basada en created_at).",
     ),
-    fecha_fin: Optional[date] = Query(
+    fecha_fin: date | None = Query(
         default=None,
         description="Fecha de fin del rango (YYYY-MM-DD, basada en created_at).",
     ),
@@ -201,8 +202,39 @@ async def update_order_status(
 
 
 # ---------------------------------------------------------------------------
+# GET /{order_id}/recipe-preview — HU11: Previsualización de Consumo BOM
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/{order_id}/recipe-preview",
+    response_model=OrderRecipePreviewResponse,
+    summary="Previsualización de consumo BOM y balance de stock (HU11)",
+    description=(
+        "Calcula la explosión de materiales requeridos para el pedido según su receta BOM "
+        "y los contrasta con el stock disponible en bodega. Retorna si la producción es viable "
+        "y el detalle descriptivo de cualquier déficit existente."
+    ),
+    responses={
+        200: {"description": "Balance y viabilidad del consumo BOM."},
+        401: {"description": "No autenticado."},
+        404: {"description": "Pedido no encontrado."},
+    },
+)
+async def get_order_recipe_preview(
+    order_id: int,
+    _user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+) -> OrderRecipePreviewResponse:
+    """
+    Retorna la explosión de materiales requeridos vs stock actual para un pedido.
+    """
+    return await order_service.get_order_recipe_preview(db=db, order_id=order_id)
+
+
+# ---------------------------------------------------------------------------
 # Router auxiliar: tipos de casetón (selector frontend)
 # ---------------------------------------------------------------------------
+
 
 product_types_router = APIRouter()
 

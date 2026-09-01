@@ -1,6 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Optional
+
 from sqlalchemy import (
     BigInteger,
     CheckConstraint,
@@ -56,7 +57,7 @@ class StockAdjustment(Base):
     stock_antes: Mapped[Decimal] = mapped_column(
         Numeric(12, 3), nullable=False
     )
-    stock_despues: Mapped[Optional[Decimal]] = mapped_column(
+    stock_despues: Mapped[Decimal | None] = mapped_column(
         Numeric(12, 3), nullable=True
     )
     justificacion: Mapped[str] = mapped_column(
@@ -72,13 +73,13 @@ class StockAdjustment(Base):
     solicitado_por: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=False, index=True
     )
-    aprobado_por: Mapped[Optional[int]] = mapped_column(
+    aprobado_por: Mapped[int | None] = mapped_column(
         BigInteger, ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=True, index=True
     )
     fecha_solicitud: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
-    fecha_aprobacion: Mapped[Optional[datetime]] = mapped_column(
+    fecha_aprobacion: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 

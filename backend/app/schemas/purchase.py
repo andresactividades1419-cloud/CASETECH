@@ -7,7 +7,7 @@ y modelos de respuesta para visualización y kardex.
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import List, Optional
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -34,12 +34,12 @@ class PurchaseCreate(BaseModel):
     """Esquema de creación para la cabecera y líneas de una orden de compra."""
     proveedor_id: int = Field(..., gt=0, description="ID del proveedor activo")
     fecha_compra: date = Field(..., description="Fecha de emisión o entrega de la compra")
-    items: List[PurchaseItemCreate] = Field(
+    items: list[PurchaseItemCreate] = Field(
         ...,
         min_length=1,
         description="Lista de materias primas adquiridas (mínimo 1 ítem)",
     )
-    observaciones: Optional[str] = Field(
+    observaciones: str | None = Field(
         None,
         max_length=500,
         description="Observaciones, número de factura o remisión del proveedor",
@@ -51,8 +51,8 @@ class PurchaseItemResponse(BaseModel):
     id: int
     compra_id: int
     material_id: int
-    material_nombre: Optional[str] = None
-    unidad_medida: Optional[str] = None
+    material_nombre: str | None = None
+    unidad_medida: str | None = None
     cantidad: Decimal
     precio_unitario: Decimal
     subtotal: Decimal
@@ -65,13 +65,13 @@ class PurchaseResponse(BaseModel):
     id: int
     codigo_compra: str
     proveedor_id: int
-    proveedor_nombre: Optional[str] = None
+    proveedor_nombre: str | None = None
     fecha_compra: date
     total: Decimal
     registrado_por: int
-    registrado_por_nombre: Optional[str] = None
-    observaciones: Optional[str] = None
-    items: List[PurchaseItemResponse] = []
+    registrado_por_nombre: str | None = None
+    observaciones: str | None = None
+    items: list[PurchaseItemResponse] = []
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -79,7 +79,7 @@ class PurchaseResponse(BaseModel):
 
 class PurchaseListResponse(BaseModel):
     """Respuesta paginada para listados de compras."""
-    items: List[PurchaseResponse]
+    items: list[PurchaseResponse]
     total: int
     page: int
     limit: int

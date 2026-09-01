@@ -1,6 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Optional
+
 from sqlalchemy import (
     BigInteger,
     CheckConstraint,
@@ -60,13 +61,13 @@ class StockMovement(Base):
     stock_despues: Mapped[Decimal] = mapped_column(
         Numeric(12, 3), nullable=False
     )
-    referencia_id: Mapped[Optional[int]] = mapped_column(
+    referencia_id: Mapped[int | None] = mapped_column(
         BigInteger, nullable=True, index=True
     )
-    referencia_tipo: Mapped[Optional[str]] = mapped_column(
+    referencia_tipo: Mapped[str | None] = mapped_column(
         String(20), nullable=True, index=True
     )
-    ejecutado_por: Mapped[Optional[int]] = mapped_column(
+    ejecutado_por: Mapped[int | None] = mapped_column(
         BigInteger, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True, index=True
     )
     created_at: Mapped[datetime] = mapped_column(

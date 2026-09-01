@@ -7,12 +7,12 @@ con soporte para doble firma, Stored Procedure sp_ajuste_inventario y trazabilid
 
 from datetime import datetime
 from decimal import Decimal
-from enum import Enum
-from typing import List, Optional
+from enum import StrEnum
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class AdjustmentType(str, Enum):
+class AdjustmentType(StrEnum):
     """
     Tipos de ajuste manual soportados por el motor de inventario.
     """
@@ -23,7 +23,7 @@ class AdjustmentType(str, Enum):
     DEVOLUCION_PROVEEDOR = "DEVOLUCION_PROVEEDOR"
 
 
-class AdjustmentStatus(str, Enum):
+class AdjustmentStatus(StrEnum):
     """
     Estados posibles de una solicitud de ajuste de inventario.
     """
@@ -31,6 +31,7 @@ class AdjustmentStatus(str, Enum):
     PENDIENTE_APROBACION = "PENDIENTE_APROBACION"
     APROBADO = "APROBADO"
     RECHAZADO = "RECHAZADO"
+
 
 
 class StockAdjustmentBase(BaseModel):
@@ -60,7 +61,7 @@ class StockAdjustmentCreate(StockAdjustmentBase):
 class StockAdjustmentReview(BaseModel):
     """Esquema para que un Administrador apruebe o rechace una solicitud."""
     aprobado: bool = Field(..., description="True para aprobar y aplicar al stock, False para rechazar")
-    observaciones: Optional[str] = Field(
+    observaciones: str | None = Field(
         None,
         max_length=500,
         description="Observaciones o notas adicionales del revisor",
@@ -74,23 +75,23 @@ class StockAdjustmentResponse(BaseModel):
     tipo: str
     cantidad: Decimal
     motivo: str
-    stock_antes: Optional[Decimal] = None
-    stock_despues: Optional[Decimal] = None
+    stock_antes: Decimal | None = None
+    stock_despues: Decimal | None = None
     estado: str
     solicitante_id: int
-    revisor_id: Optional[int] = None
-    solicitante_nombre: Optional[str] = None
-    material_nombre: Optional[str] = None
-    revisor_nombre: Optional[str] = None
+    revisor_id: int | None = None
+    solicitante_nombre: str | None = None
+    material_nombre: str | None = None
+    revisor_nombre: str | None = None
     created_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class StockAdjustmentListResponse(BaseModel):
     """Respuesta paginada para listados de ajustes de inventario."""
-    items: List[StockAdjustmentResponse]
+    items: list[StockAdjustmentResponse]
     total: int
     page: int
     limit: int
