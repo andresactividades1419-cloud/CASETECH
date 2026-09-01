@@ -14,7 +14,6 @@ Gestiona de forma transaccional y atómica:
 from datetime import date, datetime
 from decimal import Decimal
 from math import ceil
-from typing import Optional
 
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
@@ -253,10 +252,10 @@ async def create_purchase(
 
 async def get_purchases(
     db: AsyncSession,
-    proveedor_id: Optional[int] = None,
-    fecha_desde: Optional[date] = None,
-    fecha_hasta: Optional[date] = None,
-    codigo_compra: Optional[str] = None,
+    proveedor_id: int | None = None,
+    fecha_desde: date | None = None,
+    fecha_hasta: date | None = None,
+    codigo_compra: str | None = None,
     page: int = 1,
     limit: int = 20,
 ) -> PurchaseListResponse:

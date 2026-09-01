@@ -47,6 +47,7 @@ export function DashboardPage() {
   const [movementsPage, setMovementsPage] = useState(1);
   const [movementTypeFilter, setMovementTypeFilter] = useState('TODOS');
   const [loadingMovements, setLoadingMovements] = useState(false);
+  const [exportingCsv, setExportingCsv] = useState(false);
 
   // Audit logs state
   const [auditLogs, setAuditLogs] = useState([]);
@@ -55,6 +56,22 @@ export function DashboardPage() {
   const [entityFilter, setEntityFilter] = useState('TODAS');
   const [loadingAudit, setLoadingAudit] = useState(false);
   const [selectedJsonPayload, setSelectedJsonPayload] = useState(null);
+
+  // Exportar Kardex a CSV (HU06, RF12)
+  const handleExportCsv = async () => {
+    setExportingCsv(true);
+    try {
+      await dashboardApi.exportKardexCsv({
+        tipo_movimiento: movementTypeFilter !== 'TODOS' ? movementTypeFilter : undefined,
+      });
+    } catch (err) {
+      console.error('Error al exportar CSV de Kardex:', err);
+      alert('Error al descargar el reporte CSV de Kardex. Verifique permisos de administrador.');
+    } finally {
+      setExportingCsv(false);
+    }
+  };
+
 
   // 1. Cargar Métricas Principales
   const fetchMetrics = useCallback(async () => {
@@ -514,26 +531,56 @@ export function DashboardPage() {
 
           {/* Filtros para la pestaña activa */}
           {activeTab === 'kardex' ? (
-            <select
-              value={movementTypeFilter}
-              onChange={(e) => { setMovementTypeFilter(e.target.value); setMovementsPage(1); }}
-              style={{
-                padding: '0.4rem 0.75rem',
-                backgroundColor: '#0f172a',
-                border: '1px solid #334155',
-                borderRadius: '6px',
-                color: '#cbd5e1',
-                fontSize: '0.8rem',
-                outline: 'none',
-              }}
-            >
-              <option value="TODOS">Todos los movimientos</option>
-              <option value="INGRESO_COMPRA">Ingreso Compra</option>
-              <option value="CONSUMO_PRODUCCION">Consumo de Producción</option>
-              <option value="AJUSTE_APROBADO">Ajustes de Inventario</option>
-              <option value="DEVOLUCION_CANCELACION">Devoluciones</option>
-            </select>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+              <select
+                value={movementTypeFilter}
+                onChange={(e) => { setMovementTypeFilter(e.target.value); setMovementsPage(1); }}
+                style={{
+                  padding: '0.4rem 0.75rem',
+                  backgroundColor: '#0f172a',
+                  border: '1px solid #334155',
+                  borderRadius: '6px',
+                  color: '#cbd5e1',
+                  fontSize: '0.8rem',
+                  outline: 'none',
+                }}
+              >
+                <option value="TODOS">Todos los movimientos</option>
+                <option value="INGRESO_COMPRA">Ingreso Compra</option>
+                <option value="CONSUMO_PRODUCCION">Consumo de Producción</option>
+                <option value="AJUSTE_APROBADO">Ajustes de Inventario</option>
+                <option value="DEVOLUCION_CANCELACION">Devoluciones</option>
+              </select>
+
+              {isAdmin && (
+                <button
+                  id="btn-export-kardex-csv"
+                  onClick={handleExportCsv}
+                  disabled={exportingCsv}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.4rem 0.85rem',
+                    backgroundColor: '#0369a1',
+                    color: '#f0f9ff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '0.8rem',
+                    fontWeight: '600',
+                    cursor: exportingCsv ? 'wait' : 'pointer',
+                    transition: 'background-color 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => { if (!exportingCsv) e.currentTarget.style.backgroundColor = '#075985'; }}
+                  onMouseLeave={(e) => { if (!exportingCsv) e.currentTarget.style.backgroundColor = '#0369a1'; }}
+                >
+                  <span>📥</span>
+                  <span>{exportingCsv ? 'Exportando...' : 'Exportar CSV'}</span>
+                </button>
+              )}
+            </div>
           ) : (
+
             <select
               value={entityFilter}
               onChange={(e) => { setEntityFilter(e.target.value); setAuditPage(1); }}

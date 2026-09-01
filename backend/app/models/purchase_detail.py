@@ -1,5 +1,6 @@
 from decimal import Decimal
 from typing import TYPE_CHECKING
+
 from sqlalchemy import (
     BigInteger,
     CheckConstraint,
@@ -12,8 +13,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 
 if TYPE_CHECKING:
-    from app.models.purchase import Purchase
     from app.models.material import Material
+    from app.models.purchase import Purchase
 
 
 class PurchaseDetail(Base):

@@ -1,12 +1,15 @@
 """
 core/init_db.py — Inicialización y siembra automática (seeding) de datos esenciales.
 
-Garantiza que cualquier entorno nuevo (ej. clonar el repo en otra máquina)
-tenga creados automáticamente los roles y los usuarios iniciales (Admin y Operario).
+Garantiza que en entornos de desarrollo y pruebas se inicialicen roles y usuarios
+sin alterar contraseñas de cuentas existentes ni crear puertas traseras en producción.
 """
 
 import logging
+
 from sqlalchemy import select
+
+from app.core.config import settings
 from app.core.database import AsyncSessionLocal
 from app.core.security import get_password_hash
 from app.models.role import Role
@@ -18,8 +21,15 @@ logger = logging.getLogger("casetech.init_db")
 async def init_db() -> None:
     """
     Verifica y siembra roles y usuarios iniciales si no existen.
-    Se ejecuta de forma segura e idempotente al iniciar la aplicación.
+    Únicamente se ejecuta cuando ENVIRONMENT != 'production'.
+    En producción, la siembra automática se omite por seguridad.
     """
+    if settings.ENVIRONMENT == "production":
+        logger.info("init_db: Omitiendo siembra automática en entorno de producción.")
+        return
+
+    admin_password = settings.SEED_ADMIN_PASSWORD or "Admin1234"
+
     try:
         async with AsyncSessionLocal() as session:
             # 1. Asegurar Roles
@@ -38,7 +48,7 @@ async def init_db() -> None:
 
             await session.flush()
 
-            # 2. Asegurar Usuario Administrador
+            # 2. Asegurar Usuario Administrador (Idempotente: no reescribe contraseña si existe)
             admin_user = (
                 await session.execute(
                     select(User).where(User.email == "admin@casetech.com")
@@ -48,12 +58,14 @@ async def init_db() -> None:
                 admin = User(
                     nombre_completo="Administrador CASETECH",
                     email="admin@casetech.com",
-                    password_hash=get_password_hash("Admin1234"),
+                    password_hash=get_password_hash(admin_password),
                     rol_id=1,
                     activo=True,
                 )
                 session.add(admin)
                 logger.info("Usuario Administrador sembrado: admin@casetech.com")
+            else:
+                logger.debug("Usuario Administrador ya existe; preservando credenciales.")
 
             # 3. Asegurar Usuario Operario
             operario_user = (
@@ -71,10 +83,13 @@ async def init_db() -> None:
                 )
                 session.add(operario)
                 logger.info("Usuario Operario sembrado: operario@casetech.com")
+            else:
+                logger.debug("Usuario Operario ya existe; preservando credenciales.")
 
             await session.commit()
-            logger.info("Verificación de datos iniciales completada.")
+            logger.info("Verificación de datos iniciales de desarrollo completada.")
     except Exception as exc:
         logger.warning(
             "init_db omitido o pendiente de migraciones Alembic: %s", exc
         )
+

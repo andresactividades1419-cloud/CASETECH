@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING
+
 from sqlalchemy import (
     BigInteger,
     CheckConstraint,
@@ -18,8 +19,8 @@ from app.core.database import Base
 
 if TYPE_CHECKING:
     from app.models.provider import Provider
-    from app.models.user import User
     from app.models.purchase_detail import PurchaseDetail
+    from app.models.user import User
 
 
 class Purchase(Base):
@@ -50,7 +51,7 @@ class Purchase(Base):
     registrado_por: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=False, index=True
     )
-    observaciones: Mapped[Optional[str]] = mapped_column(
+    observaciones: Mapped[str | None] = mapped_column(
         Text, nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(
@@ -60,7 +61,7 @@ class Purchase(Base):
     # Relaciones
     proveedor: Mapped["Provider"] = relationship("Provider", back_populates="compras")
     registrador: Mapped["User"] = relationship("User", back_populates="compras_registradas", foreign_keys=[registrado_por])
-    detalles: Mapped[List["PurchaseDetail"]] = relationship(
+    detalles: Mapped[list["PurchaseDetail"]] = relationship(
         "PurchaseDetail", back_populates="compra", cascade="all, delete-orphan", passive_deletes=True
     )
 

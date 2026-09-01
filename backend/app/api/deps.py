@@ -90,16 +90,18 @@ async def get_current_user(
     try:
         payload = jwt.decode(
             token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM],
+            settings.JWT_SECRET,
+            algorithms=[settings.JWT_ALGORITHM],
         )
         token_data = TokenPayload(**payload)
+
 
         if token_data.sub is None:
             raise credentials_exception
 
     except JWTError:
-        raise credentials_exception
+        raise credentials_exception from None
+
 
     # Buscar usuario en BD por email (claim 'sub')
     result = await db.execute(

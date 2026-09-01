@@ -13,9 +13,11 @@ from app.api.v1.endpoints import (
     materials,
     providers,
     purchases,
+    reports,
     stock_adjustments,
 )
-from app.api.v1.endpoints.orders import product_types_router, router as orders_router
+from app.api.v1.endpoints.orders import product_types_router
+from app.api.v1.endpoints.orders import router as orders_router
 
 api_router = APIRouter()
 
@@ -27,6 +29,16 @@ api_router.include_router(
     prefix="/dashboard",
     tags=["Dashboard & Auditoría"],
 )
+
+# -----------------------------------------------------------------------
+# Reportes y Exportación de Datos  (HU06, RF12)
+# -----------------------------------------------------------------------
+api_router.include_router(
+    reports.router,
+    prefix="/reports",
+    tags=["Reportes"],
+)
+
 
 # -----------------------------------------------------------------------
 # Autenticación y gestión de usuarios  (HU01, HU14)

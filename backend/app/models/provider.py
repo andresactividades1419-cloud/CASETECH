@@ -1,5 +1,6 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING
+
 from sqlalchemy import BigInteger, Boolean, DateTime, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -25,16 +26,16 @@ class Provider(Base):
     nombre_empresa: Mapped[str] = mapped_column(
         String(255), nullable=False, index=True
     )
-    contacto_nombre: Mapped[Optional[str]] = mapped_column(
+    contacto_nombre: Mapped[str | None] = mapped_column(
         String(255), nullable=True
     )
-    contacto_telefono: Mapped[Optional[str]] = mapped_column(
+    contacto_telefono: Mapped[str | None] = mapped_column(
         String(20), nullable=True
     )
-    contacto_email: Mapped[Optional[str]] = mapped_column(
+    contacto_email: Mapped[str | None] = mapped_column(
         String(255), nullable=True
     )
-    direccion: Mapped[Optional[str]] = mapped_column(
+    direccion: Mapped[str | None] = mapped_column(
         Text, nullable=True
     )
     activo: Mapped[bool] = mapped_column(
@@ -43,12 +44,12 @@ class Provider(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
-    updated_at: Mapped[Optional[datetime]] = mapped_column(
+    updated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True, onupdate=func.now()
     )
 
     # Relaciones
-    compras: Mapped[List["Purchase"]] = relationship(
+    compras: Mapped[list["Purchase"]] = relationship(
         "Purchase", back_populates="proveedor", passive_deletes=True
     )
 

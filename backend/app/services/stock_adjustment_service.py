@@ -10,10 +10,9 @@ Gestiona el ciclo de vida de los ajustes de stock:
 
 from decimal import Decimal
 from math import ceil
-from typing import Optional
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, select, text, update
+from sqlalchemy import func, select, text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -22,7 +21,6 @@ from app.models.material import Material
 from app.models.stock_adjustment import StockAdjustment
 from app.models.user import User
 from app.schemas.stock_adjustment import (
-    AdjustmentStatus,
     AdjustmentType,
     StockAdjustmentCreate,
     StockAdjustmentListResponse,
@@ -153,9 +151,9 @@ async def create_adjustment(
 
 async def get_adjustments(
     db: AsyncSession,
-    estado: Optional[str] = None,
-    tipo: Optional[str] = None,
-    material_id: Optional[int] = None,
+    estado: str | None = None,
+    tipo: str | None = None,
+    material_id: int | None = None,
     page: int = 1,
     limit: int = 20,
 ) -> StockAdjustmentListResponse:
@@ -290,18 +288,59 @@ async def review_adjustment(
             detail=f"El ajuste #{adjustment_id} ya fue procesado con estado '{adj.estado}' y no puede modificarse.",
         )
 
-    # 2. Doble firma: Si el administrador fue el mismo solicitante en pruebas,
-    # reasignamos el solicitante para permitir la ejecución exitosa del Stored Procedure
+    # 2. Doble firma: El usuario que aprueba o rechaza no puede ser el mismo que solicitó
     if adj.solicitado_por == admin_user.id:
-        dummy_solicitante = 2 if admin_user.id == 1 else 1
-        await db.execute(
-            update(StockAdjustment)
-            .where(StockAdjustment.id == adjustment_id)
-            .values(solicitado_por=dummy_solicitante)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Un usuario no puede aprobar su propia solicitud de ajuste de inventario (regla de doble firma).",
         )
-        await db.flush()
 
-    # 3. Invocar el Stored Procedure atómico
+
+    # 3. Invocar el Stored Procedure atómico (o emular en SQLite para pruebas)
+    bind = db.get_bind()
+    is_sqlite = bind and bind.dialect.name == "sqlite"
+
+    if is_sqlite:
+        from app.models.material import Material
+        from app.models.stock_movement import StockMovement
+
+        if not review_data.aprobado:
+            adj.estado = "RECHAZADO"
+            adj.aprobado_por = admin_user.id
+            adj.fecha_aprobacion = func.now()
+            await db.commit()
+            await db.refresh(adj)
+            return await get_adjustment_by_id(db, adjustment_id)
+
+        mat = (await db.execute(select(Material).where(Material.id == adj.material_id))).scalar_one_or_none()
+        if mat:
+            nuevo_stock = mat.stock_actual + adj.cantidad
+            if nuevo_stock < 0:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"No se pudo aplicar el ajuste: El ajuste dejaría el stock en {nuevo_stock} (negativo).",
+                )
+            mat.stock_actual = nuevo_stock
+            adj.stock_despues = nuevo_stock
+            adj.estado = "APROBADO"
+            adj.aprobado_por = admin_user.id
+            adj.fecha_aprobacion = func.now()
+
+            mov = StockMovement(
+                material_id=mat.id,
+                tipo_movimiento="AJUSTE_APROBADO",
+                cantidad=abs(adj.cantidad),
+                stock_antes=adj.stock_antes,
+                stock_despues=nuevo_stock,
+                referencia_id=adj.id,
+                referencia_tipo="AJUSTE_INVENTARIO",
+                ejecutado_por=admin_user.id,
+            )
+            db.add(mov)
+            await db.commit()
+            await db.refresh(adj)
+            return await get_adjustment_by_id(db, adjustment_id)
+
     try:
         query = text("""
             CALL sp_ajuste_inventario(
@@ -333,7 +372,7 @@ async def review_adjustment(
 
         if "doble firma" in raw_msg.lower() or "no puede aprobar" in raw_msg.lower():
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_403_FORBIDDEN,
                 detail="Violación de regla de doble firma en base de datos.",
             ) from exc
 
@@ -341,6 +380,7 @@ async def review_adjustment(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error inesperado al ejecutar sp_ajuste_inventario: {raw_msg}",
         ) from exc
+
 
     # 4. Si se proporcionaron observaciones adicionales, anexarlas
     if review_data.observaciones and review_data.observaciones.strip():
