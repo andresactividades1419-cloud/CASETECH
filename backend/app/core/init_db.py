@@ -76,18 +76,24 @@ async def init_db() -> None:
                     if hasattr(settings.ADMIN_INITIAL_PASSWORD, "get_secret_value")
                     else str(settings.ADMIN_INITIAL_PASSWORD)
                 )
-                admin = User(
-                    nombre_completo="Administrador CASETECH",
-                    email="admin@casetech.com",
-                    password_hash=get_password_hash(admin_password),
-                    rol_id=1,
-                    activo=True,
-                )
-                session.add(admin)
-                logger.info(
-                    "Usuario Administrador sembrado: admin@casetech.com "
-                    "(contraseña desde ADMIN_INITIAL_PASSWORD)"
-                )
+                if not admin_password:
+                    logger.info(
+                        "ADMIN_INITIAL_PASSWORD no configurado — "
+                        "siembra del usuario administrador omitida."
+                    )
+                else:
+                    admin = User(
+                        nombre_completo="Administrador CASETECH",
+                        email="admin@casetech.com",
+                        password_hash=get_password_hash(admin_password),
+                        rol_id=1,
+                        activo=True,
+                    )
+                    session.add(admin)
+                    logger.info(
+                        "Usuario Administrador sembrado: admin@casetech.com "
+                        "(contraseña desde ADMIN_INITIAL_PASSWORD)"
+                    )
             else:
                 logger.info(
                     "Usuario Administrador ya existe (admin@casetech.com) — "
@@ -109,18 +115,24 @@ async def init_db() -> None:
                     if hasattr(settings.OPERARIO_INITIAL_PASSWORD, "get_secret_value")
                     else str(settings.OPERARIO_INITIAL_PASSWORD)
                 )
-                operario = User(
-                    nombre_completo="Operario Producción",
-                    email="operario@casetech.com",
-                    password_hash=get_password_hash(operario_password),
-                    rol_id=2,
-                    activo=True,
-                )
-                session.add(operario)
-                logger.info(
-                    "Usuario Operario sembrado: operario@casetech.com "
-                    "(contraseña desde OPERARIO_INITIAL_PASSWORD)"
-                )
+                if not operario_password:
+                    logger.info(
+                        "OPERARIO_INITIAL_PASSWORD no configurado — "
+                        "siembra del usuario operario omitida."
+                    )
+                else:
+                    operario = User(
+                        nombre_completo="Operario Producción",
+                        email="operario@casetech.com",
+                        password_hash=get_password_hash(operario_password),
+                        rol_id=2,
+                        activo=True,
+                    )
+                    session.add(operario)
+                    logger.info(
+                        "Usuario Operario sembrado: operario@casetech.com "
+                        "(contraseña desde OPERARIO_INITIAL_PASSWORD)"
+                    )
             else:
                 logger.info(
                     "Usuario Operario ya existe (operario@casetech.com) — "

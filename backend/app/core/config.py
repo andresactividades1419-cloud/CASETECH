@@ -47,24 +47,28 @@ class Settings(BaseSettings):
     # --------------------------------------------------------------------------
     # Seguridad y JWT
     # --------------------------------------------------------------------------
-    JWT_SECRET: SecretStr = SecretStr(
-        "super-secret-casetech-erp-jwt-token-key-minimum-32-bytes-long"
-    )
+    # SEGURIDAD: JWT_SECRET no tiene valor por defecto.
+    # Si la variable no está definida en el entorno / .env, Pydantic lanzará
+    # ValidationError en el arranque (fail-fast). Generar con:
+    #   python -c "import secrets; print(secrets.token_hex(32))"
+    JWT_SECRET: SecretStr
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     @field_validator("JWT_SECRET")
     @classmethod
     def validate_jwt_secret(cls, v: SecretStr | str) -> SecretStr:
-        """Valida que JWT_SECRET tenga al menos 32 bytes y no sea una clave por defecto insegura."""
+        """Valida que JWT_SECRET tenga mínimo 32 bytes y no sea una clave insegura conocida."""
         val = v.get_secret_value() if isinstance(v, SecretStr) else v
         if not val or len(val.encode("utf-8")) < 32:
             raise ValueError(
-                "JWT_SECRET debe tener una longitud mínima de 32 bytes (256 bits) para garantizar seguridad criptográfica."
+                "JWT_SECRET debe tener una longitud mínima de 32 bytes (256 bits). "
+                'Genera una clave segura con: python -c "import secrets; print(secrets.token_hex(32))"'
             )
         if val.strip() in INSECURE_SECRET_KEYS:
             raise ValueError(
-                "JWT_SECRET no puede ser una clave predeterminada o insegura conocida."
+                "JWT_SECRET no puede ser una clave predeterminada o insegura conocida. "
+                "Usa una clave aleatoria generada para cada entorno."
             )
         return SecretStr(val) if isinstance(v, str) else v
 
@@ -74,7 +78,8 @@ class Settings(BaseSettings):
     POSTGRES_SERVER: str = "localhost"
     POSTGRES_PORT: int = 5432
     POSTGRES_USER: str = "casetech"
-    POSTGRES_PASSWORD: SecretStr = SecretStr("testpassword123")
+    # SEGURIDAD: POSTGRES_PASSWORD sin valor por defecto → fail-fast si falta en .env
+    POSTGRES_PASSWORD: SecretStr
     POSTGRES_DB: str = "casetech_db"
 
     DATABASE_URL: str | None = None
@@ -83,8 +88,9 @@ class Settings(BaseSettings):
     # --------------------------------------------------------------------------
     # Siembra inicial (seeding)
     # --------------------------------------------------------------------------
-    ADMIN_INITIAL_PASSWORD: SecretStr = SecretStr("Admin1234")
-    OPERARIO_INITIAL_PASSWORD: SecretStr = SecretStr("Operario1234")
+    # String vacío = omitir siembra. Configurar en .env solo en dev/staging.
+    ADMIN_INITIAL_PASSWORD: SecretStr = SecretStr("")
+    OPERARIO_INITIAL_PASSWORD: SecretStr = SecretStr("")
 
     # --------------------------------------------------------------------------
     # CORS
@@ -150,4 +156,4 @@ class Settings(BaseSettings):
         )
 
 
-settings = Settings()
+settings = Settings()  # type: ignore[call-arg]  # Los campos obligatorios se leen desde .env

@@ -9,13 +9,13 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Instalar dependencias del sistema y habilitar PNPM
+# Instalar dependencias del sistema y habilitar PNPM en versión fija
 RUN apk add --no-cache libc6-compat curl && \
-    corepack enable && corepack prepare pnpm@latest --activate
+    corepack enable && corepack prepare pnpm@9.1.0 --activate
 
 # Copiar manifiestos de dependencias e instalar
 COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile || pnpm install
+RUN pnpm install --frozen-lockfile
 
 # Copiar código fuente de la aplicación
 COPY . .

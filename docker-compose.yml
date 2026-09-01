@@ -8,7 +8,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-casetech}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Error: POSTGRES_PASSWORD debe configurarse en .env}
       POSTGRES_DB: ${POSTGRES_DB:-casetech_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -33,14 +33,14 @@ services:
     container_name: casetech-backend
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-casetech}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-casetech_db}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-      JWT_SECRET: ${JWT_SECRET:-super-secret-change-in-production}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-casetech}:${POSTGRES_PASSWORD:?Error: POSTGRES_PASSWORD debe configurarse en .env}@db:5432/${POSTGRES_DB:-casetech_db}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Error: POSTGRES_PASSWORD debe configurarse en .env}
+      JWT_SECRET: ${JWT_SECRET:?Error: JWT_SECRET debe configurarse en .env (generar con: python -c "import secrets; print(secrets.token_hex(32))")}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
       ENVIRONMENT: ${ENVIRONMENT:-development}
       CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:3000","http://127.0.0.1:3000"]}
-      ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD}
-      OPERARIO_INITIAL_PASSWORD: ${OPERARIO_INITIAL_PASSWORD}
+      ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-}
+      OPERARIO_INITIAL_PASSWORD: ${OPERARIO_INITIAL_PASSWORD:-}
     volumes:
       - ./backend:/app
       # Excluir .venv del volumen para preservar las dependencias del contenedor
