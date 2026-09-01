@@ -69,7 +69,7 @@ async def get_current_user(
     Decodifica y valida el JWT del header ``Authorization: Bearer <token>``.
 
     Pasos realizados:
-    1. Decodifica el token con SECRET_KEY y ALGORITHM.
+    1. Decodifica el token con JWT_SECRET y JWT_ALGORITHM.
     2. Extrae el claim ``sub`` (email del usuario).
     3. Busca el usuario en PostgreSQL por email.
     4. Verifica que la cuenta esté activa (``activo == True``).
@@ -90,8 +90,8 @@ async def get_current_user(
     try:
         payload = jwt.decode(
             token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM],
+            settings.JWT_SECRET.get_secret_value(),
+            algorithms=[settings.JWT_ALGORITHM],
         )
         token_data = TokenPayload(**payload)
 

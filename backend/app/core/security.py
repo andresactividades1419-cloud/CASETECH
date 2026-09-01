@@ -92,7 +92,7 @@ def create_access_token(
 
     encoded_jwt: str = jwt.encode(
         to_encode,
-        settings.SECRET_KEY,
-        algorithm=settings.ALGORITHM,
+        settings.JWT_SECRET.get_secret_value(),
+        algorithm=settings.JWT_ALGORITHM,
     )
     return encoded_jwt
