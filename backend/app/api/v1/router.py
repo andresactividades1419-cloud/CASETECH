@@ -112,8 +112,3 @@ api_router.include_router(
     prefix="/stock-adjustments",
     tags=["Ajustes de Inventario"],
 )
-
-
-
-
-

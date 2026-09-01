@@ -40,8 +40,12 @@ router = APIRouter()
 async def export_kardex_csv(
     db: DBSession,
     _admin_user: AdminUser,
-    tipo_movimiento: str | None = Query(None, description="Filtrar por tipo de movimiento"),
-    material_id: int | None = Query(None, description="Filtrar por materia prima", gt=0),
+    tipo_movimiento: str | None = Query(
+        None, description="Filtrar por tipo de movimiento"
+    ),
+    material_id: int | None = Query(
+        None, description="Filtrar por materia prima", gt=0
+    ),
     fecha_desde: date | None = Query(None, description="Fecha mínima (YYYY-MM-DD)"),
     fecha_hasta: date | None = Query(None, description="Fecha máxima (YYYY-MM-DD)"),
 ) -> StreamingResponse:
@@ -64,10 +68,16 @@ async def export_kardex_csv(
         query = query.where(StockMovement.material_id == material_id)
 
     if fecha_desde:
-        query = query.where(StockMovement.created_at >= datetime.combine(fecha_desde, datetime.min.time()))
+        query = query.where(
+            StockMovement.created_at
+            >= datetime.combine(fecha_desde, datetime.min.time())
+        )
 
     if fecha_hasta:
-        query = query.where(StockMovement.created_at <= datetime.combine(fecha_hasta, datetime.max.time()))
+        query = query.where(
+            StockMovement.created_at
+            <= datetime.combine(fecha_hasta, datetime.max.time())
+        )
 
     result = await db.execute(query)
     movements = result.scalars().all()
@@ -79,39 +89,45 @@ async def export_kardex_csv(
     writer = csv.writer(output, delimiter=";", quoting=csv.QUOTE_MINIMAL)
 
     # Encabezados
-    writer.writerow([
-        "ID Movimiento",
-        "Fecha y Hora (UTC)",
-        "Materia Prima",
-        "Unidad Medida",
-        "Tipo Movimiento",
-        "Cantidad",
-        "Stock Antes",
-        "Stock Después",
-        "Tipo Referencia",
-        "ID Referencia",
-        "Ejecutado Por",
-    ])
+    writer.writerow(
+        [
+            "ID Movimiento",
+            "Fecha y Hora (UTC)",
+            "Materia Prima",
+            "Unidad Medida",
+            "Tipo Movimiento",
+            "Cantidad",
+            "Stock Antes",
+            "Stock Después",
+            "Tipo Referencia",
+            "ID Referencia",
+            "Ejecutado Por",
+        ]
+    )
 
     for mov in movements:
         mat_nombre = mov.material.nombre if mov.material else f"ID #{mov.material_id}"
         unidad = mov.material.unidad_medida if mov.material else "UND"
         ejecutor = mov.ejecutor.nombre_completo if mov.ejecutor else "Sistema"
-        fecha_str = mov.created_at.strftime("%Y-%m-%d %H:%M:%S") if mov.created_at else ""
+        fecha_str = (
+            mov.created_at.strftime("%Y-%m-%d %H:%M:%S") if mov.created_at else ""
+        )
 
-        writer.writerow([
-            mov.id,
-            fecha_str,
-            mat_nombre,
-            unidad,
-            mov.tipo_movimiento,
-            f"{float(mov.cantidad):.3f}",
-            f"{float(mov.stock_antes):.3f}",
-            f"{float(mov.stock_despues):.3f}",
-            mov.referencia_tipo or "N/A",
-            mov.referencia_id or "N/A",
-            ejecutor,
-        ])
+        writer.writerow(
+            [
+                mov.id,
+                fecha_str,
+                mat_nombre,
+                unidad,
+                mov.tipo_movimiento,
+                f"{float(mov.cantidad):.3f}",
+                f"{float(mov.stock_antes):.3f}",
+                f"{float(mov.stock_despues):.3f}",
+                mov.referencia_tipo or "N/A",
+                mov.referencia_id or "N/A",
+                ejecutor,
+            ]
+        )
 
     output.seek(0)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

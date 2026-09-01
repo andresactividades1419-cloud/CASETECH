@@ -32,10 +32,10 @@ from app.services import order_service
 router = APIRouter()
 
 
-
 # ---------------------------------------------------------------------------
 # POST / — Crear pedido de producción
 # ---------------------------------------------------------------------------
+
 
 @router.post(
     "/",
@@ -74,6 +74,7 @@ async def create_order(
 # GET / — Listar pedidos con filtros
 # ---------------------------------------------------------------------------
 
+
 @router.get(
     "/",
     response_model=OrderListResponse,
@@ -90,8 +91,12 @@ async def create_order(
 async def list_orders(
     _user: CurrentUser,
     db: AsyncSession = Depends(get_db),
-    skip: int = Query(default=0, ge=0, description="Registros a omitir (offset de paginación)."),
-    limit: int = Query(default=50, ge=1, le=200, description="Límite de registros por página."),
+    skip: int = Query(
+        default=0, ge=0, description="Registros a omitir (offset de paginación)."
+    ),
+    limit: int = Query(
+        default=50, ge=1, le=200, description="Límite de registros por página."
+    ),
     estado: str | None = Query(
         default=None,
         description="Filtrar por estado: PENDIENTE | EN_PRODUCCION | COMPLETADO | CANCELADO.",
@@ -134,6 +139,7 @@ async def list_orders(
 # GET /{order_id} — Detalle de pedido
 # ---------------------------------------------------------------------------
 
+
 @router.get(
     "/{order_id}",
     response_model=OrderResponse,
@@ -159,6 +165,7 @@ async def get_order(
 # ---------------------------------------------------------------------------
 # PATCH /{order_id}/status — Actualizar estado e invocar SP BOM
 # ---------------------------------------------------------------------------
+
 
 @router.patch(
     "/{order_id}/status",
@@ -204,6 +211,7 @@ async def update_order_status(
 # ---------------------------------------------------------------------------
 # GET /{order_id}/recipe-preview — HU11: Previsualización de Consumo BOM
 # ---------------------------------------------------------------------------
+
 
 @router.get(
     "/{order_id}/recipe-preview",

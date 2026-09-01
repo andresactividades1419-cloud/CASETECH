@@ -9,6 +9,7 @@ Convenciones:
 """
 
 from datetime import date, datetime
+from decimal import Decimal
 
 from fastapi import HTTPException, status
 from sqlalchemy import and_, func, select, text, update
@@ -34,6 +35,7 @@ from app.schemas.product_type import ProductTypeListResponse, ProductTypeRespons
 # Helpers internos
 # ---------------------------------------------------------------------------
 
+
 async def _generate_codigo_pedido(db: AsyncSession) -> str:
     """
     Genera el código consecutivo del pedido con el formato PED-YYYY-XXXXX.
@@ -51,9 +53,7 @@ async def _generate_codigo_pedido(db: AsyncSession) -> str:
     year = datetime.now().year
     # Contar pedidos del año en curso como base del consecutivo
     result = await db.execute(
-        select(func.count(Order.id)).where(
-            Order.codigo_pedido.like(f"PED-{year}-%")
-        )
+        select(func.count(Order.id)).where(Order.codigo_pedido.like(f"PED-{year}-%"))
     )
     count: int = result.scalar_one()
     return f"PED-{year}-{str(count + 1).zfill(5)}"
@@ -107,6 +107,7 @@ async def _enrich_order(db: AsyncSession, order: Order) -> OrderResponse:
 # ---------------------------------------------------------------------------
 # create_order — HU07: Registrar pedido de producción
 # ---------------------------------------------------------------------------
+
 
 async def create_order(
     db: AsyncSession,
@@ -190,10 +191,10 @@ async def create_order(
 
 # Mapa de transiciones válidas de la máquina de estados
 _VALID_TRANSITIONS: dict[str, set[str]] = {
-    "PENDIENTE":     {"EN_PRODUCCION", "CANCELADO"},
+    "PENDIENTE": {"EN_PRODUCCION", "CANCELADO"},
     "EN_PRODUCCION": {"COMPLETADO", "CANCELADO"},
-    "COMPLETADO":    set(),  # Estado terminal
-    "CANCELADO":     set(),  # Estado terminal
+    "COMPLETADO": set(),  # Estado terminal
+    "CANCELADO": set(),  # Estado terminal
 }
 
 
@@ -280,7 +281,7 @@ async def update_order_status(
                         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                         detail=(
                             f"No se puede iniciar la producción del pedido '{order.codigo_pedido}'. "
-                            f"Stock insuficiente en inventario: Stock insuficiente para \"{material_item.nombre}\". "
+                            f'Stock insuficiente en inventario: Stock insuficiente para "{material_item.nombre}". '
                             f"Disponible: {material_item.stock_actual} {material_item.unidad_medida} — "
                             f"Requerido: {consumo_total} {material_item.unidad_medida} — "
                             f"Déficit: {deficit} {material_item.unidad_medida}."
@@ -359,14 +360,11 @@ async def update_order_status(
         await db.refresh(order)
         return await _enrich_order(db, order)
 
-
     # ─────────────────────────────────────────────────────────────
     # Otras transiciones: actualización directa
     # ─────────────────────────────────────────────────────────────
     await db.execute(
-        update(Order)
-        .where(Order.id == order_id)
-        .values(estado=new_status)
+        update(Order).where(Order.id == order_id).values(estado=new_status)
     )
     await db.commit()
     await db.refresh(order)
@@ -376,6 +374,7 @@ async def update_order_status(
 # ---------------------------------------------------------------------------
 # get_orders — Listado paginado con filtros
 # ---------------------------------------------------------------------------
+
 
 async def get_orders(
     db: AsyncSession,
@@ -418,10 +417,14 @@ async def get_orders(
         base_query = base_query.where(Order.tipo_caseton_id == tipo_caseton_id)
 
     if fecha_inicio:
-        base_query = base_query.where(Order.created_at >= datetime.combine(fecha_inicio, datetime.min.time()))
+        base_query = base_query.where(
+            Order.created_at >= datetime.combine(fecha_inicio, datetime.min.time())
+        )
 
     if fecha_fin:
-        base_query = base_query.where(Order.created_at <= datetime.combine(fecha_fin, datetime.max.time()))
+        base_query = base_query.where(
+            Order.created_at <= datetime.combine(fecha_fin, datetime.max.time())
+        )
 
     # Total sin paginación
     count_query = select(func.count()).select_from(base_query.subquery())
@@ -429,11 +432,7 @@ async def get_orders(
     total: int = total_result.scalar_one()
 
     # Consulta paginada (más recientes primero)
-    paginated = (
-        base_query.order_by(Order.created_at.desc())
-        .offset(skip)
-        .limit(limit)
-    )
+    paginated = base_query.order_by(Order.created_at.desc()).offset(skip).limit(limit)
     rows = await db.execute(paginated)
     orders = rows.scalars().all()
 
@@ -448,6 +447,7 @@ async def get_orders(
 # ---------------------------------------------------------------------------
 # get_order_by_id — Detalle completo
 # ---------------------------------------------------------------------------
+
 
 async def get_order_by_id(db: AsyncSession, order_id: int) -> OrderResponse:
     """
@@ -470,6 +470,7 @@ async def get_order_by_id(db: AsyncSession, order_id: int) -> OrderResponse:
 # ---------------------------------------------------------------------------
 # get_product_types — Catálogo de tipos de casetón para el selector frontend
 # ---------------------------------------------------------------------------
+
 
 async def get_product_types(db: AsyncSession) -> ProductTypeListResponse:
     """
@@ -497,8 +498,6 @@ async def get_product_types(db: AsyncSession) -> ProductTypeListResponse:
 # ---------------------------------------------------------------------------
 # preview_order_recipe — HU11: Explosión y Previsualización de Consumo BOM
 # ---------------------------------------------------------------------------
-
-from decimal import Decimal
 
 
 async def preview_order_recipe(
@@ -546,8 +545,12 @@ async def preview_order_recipe(
 
     for recipe_row, material_row in rows:
         cant_unit_dec = Decimal(str(recipe_row.cantidad_por_unidad))
-        cant_req_dec = (cant_unit_dec * Decimal(cantidad_casetones)).quantize(Decimal("0.0001"))
-        stock_disp_dec = Decimal(str(material_row.stock_actual)).quantize(Decimal("0.0001"))
+        cant_req_dec = (cant_unit_dec * Decimal(cantidad_casetones)).quantize(
+            Decimal("0.0001")
+        )
+        stock_disp_dec = Decimal(str(material_row.stock_actual)).quantize(
+            Decimal("0.0001")
+        )
 
         suficiente = stock_disp_dec >= cant_req_dec
         deficit = Decimal("0.0")
@@ -598,5 +601,3 @@ async def preview_order_recipe(
 
 # Alias para retrocompatibilidad
 get_order_recipe_preview = preview_order_recipe
-
-

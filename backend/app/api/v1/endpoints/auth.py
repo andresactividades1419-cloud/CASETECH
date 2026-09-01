@@ -34,6 +34,7 @@ router = APIRouter()
 # POST /login  — HU01: Autenticación con credenciales y emisión de JWT
 # ---------------------------------------------------------------------------
 
+
 @router.post(
     "/login",
     response_model=Token,
@@ -60,9 +61,7 @@ async def login(
     Retorna un objeto ``Token`` con ``access_token`` y ``token_type = "bearer"``.
     """
     # Buscar usuario por email (username en el form de OAuth2)
-    result = await db.execute(
-        select(User).where(User.email == form_data.username)
-    )
+    result = await db.execute(select(User).where(User.email == form_data.username))
     user: User | None = result.scalar_one_or_none()
 
     # Verificar existencia y hash de contraseña
@@ -82,16 +81,12 @@ async def login(
         )
 
     # Cargar el rol para incluirlo en el JWT
-    role_result = await db.execute(
-        select(Role).where(Role.id == user.rol_id)
-    )
+    role_result = await db.execute(select(Role).where(Role.id == user.rol_id))
     role: Role | None = role_result.scalar_one_or_none()
     role_name: str = role.nombre if role else "DESCONOCIDO"
 
     # Emitir el token con sub=email y rol=nombre_rol
-    access_token = create_access_token(
-        data={"sub": user.email, "rol": role_name}
-    )
+    access_token = create_access_token(data={"sub": user.email, "rol": role_name})
 
     return Token(access_token=access_token, token_type="bearer")
 
@@ -99,6 +94,7 @@ async def login(
 # ---------------------------------------------------------------------------
 # POST /register — HU14: Registro de nuevos usuarios (requiere ADMINISTRADOR)
 # ---------------------------------------------------------------------------
+
 
 @router.post(
     "/register",
@@ -127,9 +123,7 @@ async def register(
     Registra un nuevo usuario con rol asignado.
     """
     # 1. Verificar unicidad del email
-    existing = await db.execute(
-        select(User).where(User.email == user_in.email)
-    )
+    existing = await db.execute(select(User).where(User.email == user_in.email))
     if existing.scalar_one_or_none() is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -137,9 +131,7 @@ async def register(
         )
 
     # 2. Verificar existencia del rol
-    role_result = await db.execute(
-        select(Role).where(Role.id == user_in.rol_id)
-    )
+    role_result = await db.execute(select(Role).where(Role.id == user_in.rol_id))
     role: Role | None = role_result.scalar_one_or_none()
     if role is None:
         raise HTTPException(
@@ -176,6 +168,7 @@ async def register(
 # GET /me — Datos del usuario autenticado actualmente
 # ---------------------------------------------------------------------------
 
+
 @router.get(
     "/me",
     response_model=UserRead,
@@ -196,6 +189,7 @@ async def me(current_user: CurrentUser) -> User:
 # ---------------------------------------------------------------------------
 # GET /users — HU02: Listado de usuarios del sistema (solo ADMINISTRADOR)
 # ---------------------------------------------------------------------------
+
 
 @router.get(
     "/users",
@@ -239,6 +233,7 @@ async def list_users(
 # ---------------------------------------------------------------------------
 # PATCH /users/{user_id} — HU02: Actualizar cuenta de usuario (solo ADMINISTRADOR)
 # ---------------------------------------------------------------------------
+
 
 @router.patch(
     "/users/{user_id}",
@@ -323,6 +318,7 @@ async def update_user(
 # DELETE /users/{user_id} — HU02: Desactivación lógica de usuario
 # ---------------------------------------------------------------------------
 
+
 @router.delete(
     "/users/{user_id}",
     summary="Desactivar lógicamente un usuario (HU02)",
@@ -355,4 +351,3 @@ async def deactivate_user(
     await db.commit()
 
     return {"message": f"Usuario '{user.email}' desactivado exitosamente."}
-

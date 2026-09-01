@@ -31,6 +31,7 @@ router = APIRouter()
 # GET / — Listar usuarios con paginación y búsqueda
 # ---------------------------------------------------------------------------
 
+
 @router.get(
     "/",
     response_model=UserListResponse,
@@ -47,8 +48,12 @@ async def list_users(
     db: AsyncSession = Depends(get_db),
     skip: int = Query(default=0, ge=0, description="Offset de paginación."),
     limit: int = Query(default=50, ge=1, le=200, description="Límite por página."),
-    search: str | None = Query(default=None, description="Búsqueda por nombre o email."),
-    rol_id: int | None = Query(default=None, description="Filtrar por ID de rol (1: ADMIN, 2: OPERARIO)."),
+    search: str | None = Query(
+        default=None, description="Búsqueda por nombre o email."
+    ),
+    rol_id: int | None = Query(
+        default=None, description="Filtrar por ID de rol (1: ADMIN, 2: OPERARIO)."
+    ),
 ) -> UserListResponse:
     """
     Retorna la lista paginada de usuarios registrados en el ERP.
@@ -65,6 +70,7 @@ async def list_users(
 # ---------------------------------------------------------------------------
 # POST / — Crear nuevo usuario
 # ---------------------------------------------------------------------------
+
 
 @router.post(
     "/",
@@ -95,6 +101,7 @@ async def create_user(
 # GET /{user_id} — Detalle de usuario
 # ---------------------------------------------------------------------------
 
+
 @router.get(
     "/{user_id}",
     response_model=UserAdminRead,
@@ -122,6 +129,7 @@ async def get_user(
 # PUT /{user_id} — Actualizar usuario
 # ---------------------------------------------------------------------------
 
+
 @router.put(
     "/{user_id}",
     response_model=UserAdminRead,
@@ -133,7 +141,9 @@ async def get_user(
         403: {"description": "Acceso restringido a ADMINISTRADOR."},
         404: {"description": "Usuario no encontrado."},
         409: {"description": "El email ya está en uso por otra cuenta."},
-        422: {"description": "No puede auto-desactivar su propia cuenta de administrador."},
+        422: {
+            "description": "No puede auto-desactivar su propia cuenta de administrador."
+        },
     },
 )
 async def update_user(
@@ -157,6 +167,7 @@ async def update_user(
 # PATCH /{user_id}/status — Activar o desactivar cuenta (borrado lógico)
 # ---------------------------------------------------------------------------
 
+
 @router.patch(
     "/{user_id}/status",
     response_model=UserStatusToggle,
@@ -167,7 +178,9 @@ async def update_user(
         401: {"description": "No autenticado."},
         403: {"description": "Acceso restringido a ADMINISTRADOR."},
         404: {"description": "Usuario no encontrado."},
-        422: {"description": "No puede desactivar su propia cuenta de administrador en sesión."},
+        422: {
+            "description": "No puede desactivar su propia cuenta de administrador en sesión."
+        },
     },
 )
 async def toggle_user_status(

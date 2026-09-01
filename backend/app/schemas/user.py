@@ -74,9 +74,7 @@ class UserCreate(UserBase):
                 "La contraseña debe contener al menos una letra mayúscula."
             )
         if not any(c.isdigit() for c in v):
-            raise ValueError(
-                "La contraseña debe contener al menos un dígito numérico."
-            )
+            raise ValueError("La contraseña debe contener al menos un dígito numérico.")
         return v
 
 
@@ -101,6 +99,7 @@ class UserRead(UserBase):
 # ---------------------------------------------------------------------------
 # Schemas para Gestión Administrativa de Usuarios (HU02)
 # ---------------------------------------------------------------------------
+
 
 class UserUpdate(BaseModel):
     """Payload para actualizar usuarios por parte del Administrador."""
@@ -140,7 +139,9 @@ class UserUpdate(BaseModel):
         if len(v) < 8:
             raise ValueError("La contraseña debe tener al menos 8 caracteres.")
         if not any(c.isupper() for c in v):
-            raise ValueError("La contraseña debe contener al menos una letra mayúscula.")
+            raise ValueError(
+                "La contraseña debe contener al menos una letra mayúscula."
+            )
         if not any(c.isdigit() for c in v):
             raise ValueError("La contraseña debe contener al menos un dígito numérico.")
         return v
@@ -185,5 +186,3 @@ class UserListResponse(BaseModel):
     skip: int = 0
     limit: int = 50
     items: list[UserAdminRead]
-
-

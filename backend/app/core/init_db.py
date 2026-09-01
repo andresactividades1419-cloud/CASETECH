@@ -47,7 +47,11 @@ async def init_db() -> None:
             # 1. Asegurar Roles (idempotente por nombre)
             # ------------------------------------------------------------------
             roles_data = [
-                (1, "ADMINISTRADOR", "Acceso completo a todos los módulos y configuraciones"),
+                (
+                    1,
+                    "ADMINISTRADOR",
+                    "Acceso completo a todos los módulos y configuraciones",
+                ),
                 (2, "OPERARIO", "Acceso a operaciones de producción e inventario"),
             ]
             for role_id, nombre, desc in roles_data:
@@ -102,7 +106,9 @@ async def init_db() -> None:
             ).scalar_one_or_none()
 
             if not operario_user:
-                operario_password = settings.OPERARIO_INITIAL_PASSWORD.get_secret_value()
+                operario_password = (
+                    settings.OPERARIO_INITIAL_PASSWORD.get_secret_value()
+                )
                 operario = User(
                     nombre_completo="Operario Producción",
                     email="operario@casetech.com",
@@ -125,7 +131,4 @@ async def init_db() -> None:
             logger.info("Verificación de datos iniciales completada.")
 
     except Exception as exc:
-        logger.warning(
-            "init_db omitido o pendiente de migraciones Alembic: %s", exc
-        )
-
+        logger.warning("init_db omitido o pendiente de migraciones Alembic: %s", exc)

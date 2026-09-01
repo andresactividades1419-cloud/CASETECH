@@ -15,17 +15,14 @@ class Role(Base):
     Catálogo de roles del sistema (ADMINISTRADOR, OPERARIO).
     Tabla: roles
     """
+
     __tablename__ = "roles"
 
-    id: Mapped[int] = mapped_column(
-        BigInteger, primary_key=True, autoincrement=True
-    )
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     nombre: Mapped[str] = mapped_column(
         String(50), nullable=False, unique=True, index=True
     )
-    descripcion: Mapped[str | None] = mapped_column(
-        Text, nullable=True
-    )
+    descripcion: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

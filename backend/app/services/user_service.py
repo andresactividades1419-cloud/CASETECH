@@ -29,7 +29,9 @@ async def _enrich_user_read(db: AsyncSession, user: User) -> UserAdminRead:
     Construye la representación UserAdminRead con el nombre del rol asignado.
     """
     role_res = await db.execute(select(Role.nombre).where(Role.id == user.rol_id))
-    rol_nombre = role_res.scalar_one_or_none() or ("ADMINISTRADOR" if user.rol_id == 1 else "OPERARIO")
+    rol_nombre = role_res.scalar_one_or_none() or (
+        "ADMINISTRADOR" if user.rol_id == 1 else "OPERARIO"
+    )
 
     return UserAdminRead(
         id=user.id,
@@ -53,9 +55,8 @@ async def get_users(
     """
     Retorna la lista de usuarios con soporte de paginación y filtros por nombre/email y rol.
     """
-    query = (
-        select(User, Role.nombre.label("rol_nombre"))
-        .outerjoin(Role, Role.id == User.rol_id)
+    query = select(User, Role.nombre.label("rol_nombre")).outerjoin(
+        Role, Role.id == User.rol_id
     )
 
     if search and search.strip():
@@ -86,7 +87,8 @@ async def get_users(
                 nombre_completo=user.nombre_completo,
                 email=user.email,
                 rol_id=user.rol_id,
-                rol_nombre=rol_nombre or ("ADMINISTRADOR" if user.rol_id == 1 else "OPERARIO"),
+                rol_nombre=rol_nombre
+                or ("ADMINISTRADOR" if user.rol_id == 1 else "OPERARIO"),
                 activo=user.activo,
                 created_at=user.created_at,
                 updated_at=user.updated_at,
@@ -190,7 +192,11 @@ async def update_user(
 
     if user_in.activo is not None:
         # Prevenir que el administrador autenticado desactive su propia cuenta
-        if current_admin_id is not None and user.id == current_admin_id and not user_in.activo:
+        if (
+            current_admin_id is not None
+            and user.id == current_admin_id
+            and not user_in.activo
+        ):
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="No puede desactivar su propia cuenta de Administrador en sesión.",

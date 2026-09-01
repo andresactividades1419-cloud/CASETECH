@@ -15,6 +15,7 @@ class Base(DeclarativeBase):
     """
     Clase base declarativa para todos los modelos ORM de SQLAlchemy 2.0.
     """
+
     pass
 
 

@@ -23,6 +23,7 @@ from app.core.init_db import init_db
 # Ciclo de vida de la aplicación (lifespan handler — FastAPI 0.110+)
 # ---------------------------------------------------------------------------
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
@@ -86,6 +87,7 @@ app.include_router(
 # ---------------------------------------------------------------------------
 # Health-check (sin autenticación)
 # ---------------------------------------------------------------------------
+
 
 @app.get(
     "/health",

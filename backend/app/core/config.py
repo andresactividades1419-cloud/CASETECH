@@ -10,9 +10,9 @@ Principios de seguridad aplicados (Issue #48):
 - ``CORS_ORIGINS`` define explícitamente los orígenes permitidos (sin wildcard).
 """
 
-from typing import Optional
+from typing import Any
 
-from pydantic import SecretStr, computed_field
+from pydantic import SecretStr, computed_field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 INSECURE_SECRET_KEYS = {
@@ -81,13 +81,14 @@ class Settings(BaseSettings):
 
     @field_validator("JWT_SECRET")
     @classmethod
-    def validate_jwt_secret(cls, v: str) -> str:
+    def validate_jwt_secret(cls, v: SecretStr | str) -> SecretStr | str:
         """Valida que JWT_SECRET tenga al menos 32 bytes y no sea una clave por defecto insegura."""
-        if not v or len(v.encode("utf-8")) < 32:
+        secret_val = v.get_secret_value() if isinstance(v, SecretStr) else v
+        if not secret_val or len(secret_val.encode("utf-8")) < 32:
             raise ValueError(
                 "JWT_SECRET debe tener una longitud mínima de 32 bytes (256 bits) para garantizar seguridad criptográfica."
             )
-        if v.strip() in INSECURE_SECRET_KEYS:
+        if secret_val.strip() in INSECURE_SECRET_KEYS:
             raise ValueError(
                 "JWT_SECRET no puede ser una clave predeterminada o insegura conocida."
             )
@@ -109,7 +110,9 @@ class Settings(BaseSettings):
         if self.ENVIRONMENT == "production":
             self.DEBUG = False
             if not self.POSTGRES_PASSWORD:
-                raise ValueError("POSTGRES_PASSWORD es obligatoria en entorno de producción.")
+                raise ValueError(
+                    "POSTGRES_PASSWORD es obligatoria en entorno de producción."
+                )
         return self
 
     # Aliases para compatibilidad con código existente
@@ -127,7 +130,7 @@ class Settings(BaseSettings):
     # ADMIN_INITIAL_PASSWORD: SecretStr sin default → fail-fast si falta.
     # OPERARIO_INITIAL_PASSWORD: SecretStr sin default → fail-fast si falta.
     # --------------------------------------------------------------------------
-    ADMIN_INITIAL_PASSWORD: SecretStr   # Sin default: fail-fast si no está definida
+    ADMIN_INITIAL_PASSWORD: SecretStr  # Sin default: fail-fast si no está definida
     OPERARIO_INITIAL_PASSWORD: SecretStr  # Sin default: fail-fast si no está definida
 
     # --------------------------------------------------------------------------
@@ -155,7 +158,9 @@ class Settings(BaseSettings):
             return self.ASYNC_DATABASE_URL
         if self.DATABASE_URL:
             if self.DATABASE_URL.startswith("postgresql://"):
-                return self.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+                return self.DATABASE_URL.replace(
+                    "postgresql://", "postgresql+asyncpg://", 1
+                )
             return self.DATABASE_URL
         return (
             f"postgresql+asyncpg://{self.POSTGRES_USER}:"
@@ -169,7 +174,9 @@ class Settings(BaseSettings):
         """
         Retorna la URL síncrona con psycopg2 para Alembic o tareas de mantenimiento.
         """
-        if self.DATABASE_URL and not self.DATABASE_URL.startswith("postgresql+asyncpg://"):
+        if self.DATABASE_URL and not self.DATABASE_URL.startswith(
+            "postgresql+asyncpg://"
+        ):
             return self.DATABASE_URL
         return (
             f"postgresql+psycopg2://{self.POSTGRES_USER}:"
@@ -179,4 +186,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-

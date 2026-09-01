@@ -2,7 +2,6 @@
 services/material_service.py — Lógica de negocio y persistencia para Materiales e Insumos (HU10 y HU12).
 """
 
-
 from fastapi import HTTPException, status
 from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
@@ -39,7 +38,9 @@ async def create_material(
     """
     # 1. Validar duplicidad de nombre (case-insensitive)
     existing = await db.execute(
-        select(Material).where(func.lower(Material.nombre) == material_in.nombre.lower())
+        select(Material).where(
+            func.lower(Material.nombre) == material_in.nombre.lower()
+        )
     )
     if existing.scalar_one_or_none() is not None:
         raise HTTPException(
@@ -115,9 +116,7 @@ async def get_materials(
 
     # Consulta paginada ordenada por nombre
     paginated_query = (
-        base_query.order_by(Material.nombre.asc())
-        .offset(skip)
-        .limit(limit)
+        base_query.order_by(Material.nombre.asc()).offset(skip).limit(limit)
     )
     rows = await db.execute(paginated_query)
     materials = rows.scalars().all()
@@ -134,9 +133,7 @@ async def get_material_by_id(db: AsyncSession, material_id: int) -> MaterialResp
     """
     Consulta un material por su PK o retorna HTTP 404.
     """
-    result = await db.execute(
-        select(Material).where(Material.id == material_id)
-    )
+    result = await db.execute(select(Material).where(Material.id == material_id))
     material: Material | None = result.scalar_one_or_none()
 
     if material is None:
@@ -157,9 +154,7 @@ async def update_material(
     """
     Actualiza los datos editables de un insumo existente.
     """
-    result = await db.execute(
-        select(Material).where(Material.id == material_id)
-    )
+    result = await db.execute(select(Material).where(Material.id == material_id))
     material: Material | None = result.scalar_one_or_none()
 
     if material is None:
@@ -189,9 +184,7 @@ async def update_material(
         update_data["nombre"] = new_name
 
     await db.execute(
-        update(Material)
-        .where(Material.id == material_id)
-        .values(**update_data)
+        update(Material).where(Material.id == material_id).values(**update_data)
     )
     await db.commit()
     await db.refresh(material)
@@ -207,9 +200,7 @@ async def toggle_material_status(
     """
     Alterna el estado activo/inactivo (borrado lógico) de un insumo.
     """
-    result = await db.execute(
-        select(Material).where(Material.id == material_id)
-    )
+    result = await db.execute(select(Material).where(Material.id == material_id))
     material: Material | None = result.scalar_one_or_none()
 
     if material is None:
@@ -220,9 +211,7 @@ async def toggle_material_status(
 
     new_status = not material.activo
     await db.execute(
-        update(Material)
-        .where(Material.id == material_id)
-        .values(activo=new_status)
+        update(Material).where(Material.id == material_id).values(activo=new_status)
     )
     await db.commit()
     await db.refresh(material)

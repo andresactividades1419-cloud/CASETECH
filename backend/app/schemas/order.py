@@ -9,6 +9,7 @@ Modelo de datos real:
 """
 
 from datetime import date, datetime
+from decimal import Decimal
 from enum import StrEnum
 
 from pydantic import BaseModel, Field, field_validator
@@ -17,18 +18,20 @@ from pydantic import BaseModel, Field, field_validator
 # Enum de estados válidos según constraint de BD
 # ---------------------------------------------------------------------------
 
+
 class OrderStatus(StrEnum):
     """Estados válidos de la máquina de estados de pedidos."""
+
     PENDIENTE = "PENDIENTE"
     EN_PRODUCCION = "EN_PRODUCCION"
     COMPLETADO = "COMPLETADO"
     CANCELADO = "CANCELADO"
 
 
-
 # ---------------------------------------------------------------------------
 # Schemas de entrada
 # ---------------------------------------------------------------------------
+
 
 class OrderBase(BaseModel):
     """Campos base compartidos por creación y lectura de pedidos."""
@@ -76,7 +79,9 @@ class OrderBase(BaseModel):
     @classmethod
     def validate_fecha_futura(cls, v: date) -> date:
         if v < date.today():
-            raise ValueError("La fecha de entrega estimada no puede ser una fecha pasada.")
+            raise ValueError(
+                "La fecha de entrega estimada no puede ser una fecha pasada."
+            )
         return v
 
 
@@ -109,6 +114,7 @@ class OrderStatusUpdate(BaseModel):
 # Schemas de salida
 # ---------------------------------------------------------------------------
 
+
 class OrderResponse(OrderBase):
     """Respuesta completa de un pedido de producción."""
 
@@ -118,7 +124,9 @@ class OrderResponse(OrderBase):
         description="Código consecutivo único del pedido (formato PED-YYYY-XXXXX).",
         examples=["PED-2026-00001"],
     )
-    estado: str = Field(..., description="Estado actual del pedido en la máquina de estados.")
+    estado: str = Field(
+        ..., description="Estado actual del pedido en la máquina de estados."
+    )
     creado_por: int = Field(..., description="ID del usuario que registró el pedido.")
     tipo_caseton_nombre: str | None = Field(
         default=None,
@@ -136,17 +144,19 @@ class OrderResponse(OrderBase):
 class OrderListResponse(BaseModel):
     """Respuesta paginada para el listado de pedidos."""
 
-    total: int = Field(..., description="Total de registros encontrados con los filtros aplicados.")
+    total: int = Field(
+        ..., description="Total de registros encontrados con los filtros aplicados."
+    )
     skip: int = Field(..., description="Offset aplicado en la paginación.")
     limit: int = Field(..., description="Límite de registros por página.")
-    items: list[OrderResponse] = Field(..., description="Lista de pedidos de producción.")
+    items: list[OrderResponse] = Field(
+        ..., description="Lista de pedidos de producción."
+    )
 
 
 # ---------------------------------------------------------------------------
 # Schemas de Previsualización BOM (HU11)
 # ---------------------------------------------------------------------------
-
-from decimal import Decimal
 
 
 class RecipeItemPreview(BaseModel):
@@ -154,36 +164,72 @@ class RecipeItemPreview(BaseModel):
 
     material_id: int = Field(..., description="ID de la materia prima.")
     material_nombre: str = Field(..., description="Nombre del material.")
-    unidad_medida: str = Field(..., description="Unidad de medida (ej. M2, M, KG, UNIDAD).")
-    cantidad_requerida: Decimal = Field(..., description="Consumo total requerido para el pedido completo.")
-    stock_disponible: Decimal = Field(..., description="Stock actualmente disponible en inventario.")
-    deficit: Decimal = Field(default=Decimal("0.0"), description="Déficit de material si el stock es insuficiente (0 si stock >= requerido).")
-    suficiente: bool = Field(..., description="Indica si hay suficiente stock para cubrir el pedido.")
+    unidad_medida: str = Field(
+        ..., description="Unidad de medida (ej. M2, M, KG, UNIDAD)."
+    )
+    cantidad_requerida: Decimal = Field(
+        ..., description="Consumo total requerido para el pedido completo."
+    )
+    stock_disponible: Decimal = Field(
+        ..., description="Stock actualmente disponible en inventario."
+    )
+    deficit: Decimal = Field(
+        default=Decimal("0.0"),
+        description="Déficit de material si el stock es insuficiente (0 si stock >= requerido).",
+    )
+    suficiente: bool = Field(
+        ..., description="Indica si hay suficiente stock para cubrir el pedido."
+    )
 
     # Campos auxiliares para compatibilidad de frontend
-    cantidad_por_unidad: Decimal | None = Field(default=None, description="Consumo unitario por casetón.")
-    cantidad_total_requerida: Decimal | None = Field(default=None, description="Alias de cantidad_requerida.")
-    stock_actual: Decimal | None = Field(default=None, description="Alias de stock_disponible.")
+    cantidad_por_unidad: Decimal | None = Field(
+        default=None, description="Consumo unitario por casetón."
+    )
+    cantidad_total_requerida: Decimal | None = Field(
+        default=None, description="Alias de cantidad_requerida."
+    )
+    stock_actual: Decimal | None = Field(
+        default=None, description="Alias de stock_disponible."
+    )
 
 
 class OrderRecipePreviewResponse(BaseModel):
     """Respuesta completa de la explosión y viabilidad de la receta BOM para un pedido."""
 
     pedido_id: int = Field(..., description="Identificador único del pedido.")
-    codigo_pedido: str = Field(..., description="Código del pedido (ej. PED-2026-00001).")
+    codigo_pedido: str = Field(
+        ..., description="Código del pedido (ej. PED-2026-00001)."
+    )
     tipo_caseton: str = Field(..., description="Nombre del tipo de casetón.")
-    cantidad_casetones: int = Field(..., description="Cantidad de casetones a fabricar.")
-    es_factible: bool = Field(..., description="True si todos los insumos tienen suficiente = True.")
-    items: list[RecipeItemPreview] = Field(..., description="Lista de insumos requeridos con cálculo de balance.")
+    cantidad_casetones: int = Field(
+        ..., description="Cantidad de casetones a fabricar."
+    )
+    es_factible: bool = Field(
+        ..., description="True si todos los insumos tienen suficiente = True."
+    )
+    items: list[RecipeItemPreview] = Field(
+        ..., description="Lista de insumos requeridos con cálculo de balance."
+    )
 
     # Campos auxiliares para compatibilidad
     order_id: int | None = Field(default=None, description="Alias de pedido_id.")
-    cliente: str | None = Field(default=None, description="Nombre del cliente del pedido.")
-    tipo_caseton_id: int | None = Field(default=None, description="ID del tipo de casetón.")
-    tipo_caseton_nombre: str | None = Field(default=None, description="Alias de tipo_caseton.")
-    cantidad: int | None = Field(default=None, description="Alias de cantidad_casetones.")
+    cliente: str | None = Field(
+        default=None, description="Nombre del cliente del pedido."
+    )
+    tipo_caseton_id: int | None = Field(
+        default=None, description="ID del tipo de casetón."
+    )
+    tipo_caseton_nombre: str | None = Field(
+        default=None, description="Alias de tipo_caseton."
+    )
+    cantidad: int | None = Field(
+        default=None, description="Alias de cantidad_casetones."
+    )
     es_viable: bool | None = Field(default=None, description="Alias de es_factible.")
-    materiales: list[RecipeItemPreview] | None = Field(default=None, description="Alias de items.")
-    resumen_deficits: list[str] = Field(default_factory=list, description="Lista textual de mensajes descriptivos de déficit.")
-
-
+    materiales: list[RecipeItemPreview] | None = Field(
+        default=None, description="Alias de items."
+    )
+    resumen_deficits: list[str] = Field(
+        default_factory=list,
+        description="Lista textual de mensajes descriptivos de déficit.",
+    )

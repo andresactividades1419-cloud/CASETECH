@@ -109,7 +109,10 @@ async def create_adjustment(
     if tipo_solicitado in (AdjustmentType.MERMA, AdjustmentType.DANO):
         tipo_db = "MERMA"
         delta = -abs(Decimal(str(data.cantidad)))
-        if tipo_solicitado == AdjustmentType.DANO and not justificacion_limpia.upper().startswith("[DAÑO]"):
+        if (
+            tipo_solicitado == AdjustmentType.DANO
+            and not justificacion_limpia.upper().startswith("[DAÑO]")
+        ):
             justificacion_limpia = f"[DAÑO DE MATERIAL] {justificacion_limpia}"
     elif tipo_solicitado == AdjustmentType.DEVOLUCION_PROVEEDOR:
         tipo_db = "DEVOLUCION_PROVEEDOR"
@@ -127,7 +130,9 @@ async def create_adjustment(
 
     # Asegurar longitud mínima de 20 caracteres para cumplir la restricción CHECK de PostgreSQL
     if len(justificacion_limpia) < 20:
-        justificacion_limpia = f"Ajuste {tipo_db}: {justificacion_limpia}".ljust(20, ".")
+        justificacion_limpia = f"Ajuste {tipo_db}: {justificacion_limpia}".ljust(
+            20, "."
+        )
 
     # 3. Crear registro en BD
     new_adjustment = StockAdjustment(
@@ -177,7 +182,9 @@ async def get_adjustments(
         estado_clean = estado.strip().upper()
         if estado_clean in ("PENDIENTE", "PENDIENTE_APROBACION"):
             query = query.where(StockAdjustment.estado == "PENDIENTE_APROBACION")
-            count_query = count_query.where(StockAdjustment.estado == "PENDIENTE_APROBACION")
+            count_query = count_query.where(
+                StockAdjustment.estado == "PENDIENTE_APROBACION"
+            )
         else:
             query = query.where(StockAdjustment.estado == estado_clean)
             count_query = count_query.where(StockAdjustment.estado == estado_clean)
@@ -295,7 +302,6 @@ async def review_adjustment(
             detail="Un usuario no puede aprobar su propia solicitud de ajuste de inventario (regla de doble firma).",
         )
 
-
     # 3. Invocar el Stored Procedure atómico (o emular en SQLite para pruebas)
     bind = db.get_bind()
     is_sqlite = bind and bind.dialect.name == "sqlite"
@@ -312,7 +318,9 @@ async def review_adjustment(
             await db.refresh(adj)
             return await get_adjustment_by_id(db, adjustment_id)
 
-        mat = (await db.execute(select(Material).where(Material.id == adj.material_id))).scalar_one_or_none()
+        mat = (
+            await db.execute(select(Material).where(Material.id == adj.material_id))
+        ).scalar_one_or_none()
         if mat:
             nuevo_stock = mat.stock_actual + adj.cantidad
             if nuevo_stock < 0:
@@ -363,7 +371,11 @@ async def review_adjustment(
         raw_msg = str(exc.orig) if exc.orig else str(exc)
 
         # Tratar mensajes controlados del Stored Procedure
-        if "P0001" in raw_msg or "dejaría el stock" in raw_msg or "negativo" in raw_msg.lower():
+        if (
+            "P0001" in raw_msg
+            or "dejaría el stock" in raw_msg
+            or "negativo" in raw_msg.lower()
+        ):
             detail_clean = raw_msg.split("CONTEXT:")[0].split("DETAIL:")[0].strip()
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -381,13 +393,14 @@ async def review_adjustment(
             detail=f"Error inesperado al ejecutar sp_ajuste_inventario: {raw_msg}",
         ) from exc
 
-
     # 4. Si se proporcionaron observaciones adicionales, anexarlas
     if review_data.observaciones and review_data.observaciones.strip():
         obs_clean = review_data.observaciones.strip()
         adj_to_update = await db.get(StockAdjustment, adjustment_id)
         if adj_to_update:
-            adj_to_update.justificacion = f"{adj_to_update.justificacion} | [Revisión Admin]: {obs_clean}"
+            adj_to_update.justificacion = (
+                f"{adj_to_update.justificacion} | [Revisión Admin]: {obs_clean}"
+            )
             await db.commit()
 
     return await get_adjustment_by_id(db, adjustment_id)
