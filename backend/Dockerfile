@@ -28,10 +28,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 COPY --from=uv-installer /uv /usr/local/bin/uv
 COPY --from=uv-installer /uvx /usr/local/bin/uvx
 
-# Instalar dependencias del sistema mínimas necesarias
+# Instalar dependencias del sistema mínimas necesarias (wheels precompilados no requieren gcc)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        gcc \
-        libpq-dev \
         curl \
     && rm -rf /var/lib/apt/lists/*
 

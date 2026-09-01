@@ -1,30 +1,35 @@
 # ============================================================
 # Frontend Dockerfile — CASETECH ERP
 # Base: node:20-alpine (LTS) con PNPM via Corepack
-# Multi-stage: builder -> runner (Nginx Alpine)
+# Multi-stage: development -> builder -> production (Nginx)
 # ============================================================
 
-# --- Stage 1: Compilación (Builder) ---
-FROM node:20-alpine AS builder
+# --- Stage 1: Desarrollo y dependencias (Dev) ---
+FROM node:20-alpine AS development
 
 WORKDIR /app
 
 # Instalar dependencias del sistema y habilitar PNPM en versión fija
-RUN apk add --no-cache libc6-compat curl && \
+RUN apk add --no-cache libc6-compat curl gcompat && \
     corepack enable && corepack prepare pnpm@9.1.0 --activate
 
-# Copiar manifiestos de dependencias e instalar
+# Copiar manifiestos e instalar dependencias completas
 COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
-# Copiar código fuente de la aplicación
+# Copiar código fuente
 COPY . .
 
-# Variables de entorno y compilación del bundle para producción
+EXPOSE 3000
+CMD ["pnpm", "run", "dev"]
+
+# --- Stage 2: Compilación de Producción (Builder) ---
+FROM development AS builder
+
 ENV NODE_ENV=production
 RUN pnpm run build
 
-# --- Stage 2: Servidor Web Nginx (Runner) ---
+# --- Stage 3: Servidor Web Nginx de Producción (Runner) ---
 FROM nginx:1.27-alpine AS production
 
 LABEL maintainer="CASETECH Team"
@@ -39,7 +44,6 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copiar artefactos estáticos compilados desde la etapa builder
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Exponer puerto HTTP estándar
 EXPOSE 80
 
 # Healthcheck HTTP interno

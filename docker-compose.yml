@@ -8,7 +8,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-casetech}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Error: POSTGRES_PASSWORD debe configurarse en .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD debe configurarse en .env}
       POSTGRES_DB: ${POSTGRES_DB:-casetech_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -33,9 +33,9 @@ services:
     container_name: casetech-backend
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-casetech}:${POSTGRES_PASSWORD:?Error: POSTGRES_PASSWORD debe configurarse en .env}@db:5432/${POSTGRES_DB:-casetech_db}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Error: POSTGRES_PASSWORD debe configurarse en .env}
-      JWT_SECRET: ${JWT_SECRET:?Error: JWT_SECRET debe configurarse en .env (generar con: python -c "import secrets; print(secrets.token_hex(32))")}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-casetech}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD debe configurarse en .env}@db:5432/${POSTGRES_DB:-casetech_db}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD debe configurarse en .env}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET debe configurarse en .env}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
       ENVIRONMENT: ${ENVIRONMENT:-development}
       CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:3000","http://127.0.0.1:3000"]}
@@ -52,13 +52,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: >
-      sh -c "alembic upgrade head &&
-             uvicorn app.main:app
-             --host 0.0.0.0
-             --port 8000
-             --reload
-             --reload-dir /app/app"
+    command: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/app"]
 
   # ============================================================
   # Servicio: Frontend React 18 (Node 20 LTS + PNPM)
@@ -67,6 +61,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: development
     container_name: casetech-frontend
     restart: unless-stopped
     environment:
@@ -77,6 +72,7 @@ services:
       - frontend_node_modules:/app/node_modules
     ports:
       - "3000:3000"
+    command: sh -c "pnpm install --config.confirmModulesPurge=false && pnpm run dev"
     networks:
       - casetech-network
     depends_on:

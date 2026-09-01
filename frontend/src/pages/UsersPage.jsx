@@ -173,7 +173,7 @@ export function UsersPage() {
             👥 Gestión de Cuentas de Usuario
           </h1>
           <p style={{ margin: '0.25rem 0 0', color: '#64748b', fontSize: '0.88rem' }}>
-            Administración de credenciales, roles y acceso al sistema CASETECH ERP (HU02)
+            Administración de credenciales, roles y accesos al sistema CASETECH ERP
           </p>
         </div>
         <button
