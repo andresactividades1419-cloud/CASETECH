@@ -19,7 +19,13 @@ from app.core.security import create_access_token, get_password_hash, verify_pas
 from app.models.role import Role
 from app.models.user import User
 from app.schemas.token import Token
-from app.schemas.user import UserCreate, UserRead
+from app.schemas.user import (
+    UserAdminRead,
+    UserCreate,
+    UserListResponse,
+    UserRead,
+    UserUpdateAdmin,
+)
 
 router = APIRouter()
 
@@ -96,7 +102,7 @@ async def login(
 
 @router.post(
     "/register",
-    response_model=UserRead,
+    response_model=UserAdminRead,
     status_code=status.HTTP_201_CREATED,
     summary="Registrar nuevo usuario",
     description=(
@@ -116,16 +122,9 @@ async def register(
     user_in: UserCreate,
     _admin: AdminUser,
     db: AsyncSession = Depends(get_db),
-) -> User:
+) -> UserAdminRead:
     """
     Registra un nuevo usuario con rol asignado.
-
-    Validaciones:
-    - El email debe ser único en la tabla ``usuarios``.
-    - El ``rol_id`` debe existir en la tabla ``roles``.
-    - La contraseña se hashea con bcrypt antes de persistir.
-
-    Solo los usuarios con rol **ADMINISTRADOR** pueden invocar este endpoint.
     """
     # 1. Verificar unicidad del email
     existing = await db.execute(
@@ -161,7 +160,16 @@ async def register(
     await db.commit()
     await db.refresh(new_user)
 
-    return new_user
+    return UserAdminRead(
+        id=new_user.id,
+        nombre_completo=new_user.nombre_completo,
+        email=new_user.email,
+        rol_id=new_user.rol_id,
+        rol_nombre=role.nombre,
+        activo=new_user.activo,
+        created_at=new_user.created_at,
+        updated_at=new_user.updated_at,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -181,8 +189,170 @@ async def register(
 async def me(current_user: CurrentUser) -> User:
     """
     Retorna el perfil del usuario autenticado.
-
-    No requiere parámetros adicionales; la identidad se extrae
-    directamente del JWT mediante la dependencia ``get_current_user``.
     """
     return current_user
+
+
+# ---------------------------------------------------------------------------
+# GET /users — HU02: Listado de usuarios del sistema (solo ADMINISTRADOR)
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/users",
+    response_model=UserListResponse,
+    summary="Listar usuarios del sistema (HU02)",
+    description="Retorna la lista de todas las cuentas de usuario con sus roles y estados asociados. **Solo ADMINISTRADOR**.",
+)
+async def list_users(
+    _admin: AdminUser,
+    db: AsyncSession = Depends(get_db),
+) -> UserListResponse:
+    """
+    Consulta todas las cuentas de usuario registradas con sus roles.
+    """
+    query = (
+        select(User, Role.nombre.label("rol_nombre"))
+        .outerjoin(Role, Role.id == User.rol_id)
+        .order_by(User.id.asc())
+    )
+    result = await db.execute(query)
+    rows = result.all()
+
+    items: list[UserAdminRead] = []
+    for user, rol_nombre in rows:
+        items.append(
+            UserAdminRead(
+                id=user.id,
+                nombre_completo=user.nombre_completo,
+                email=user.email,
+                rol_id=user.rol_id,
+                rol_nombre=rol_nombre or "OPERARIO",
+                activo=user.activo,
+                created_at=user.created_at,
+                updated_at=user.updated_at,
+            )
+        )
+
+    return UserListResponse(total=len(items), items=items)
+
+
+# ---------------------------------------------------------------------------
+# PATCH /users/{user_id} — HU02: Actualizar cuenta de usuario (solo ADMINISTRADOR)
+# ---------------------------------------------------------------------------
+
+@router.patch(
+    "/users/{user_id}",
+    response_model=UserAdminRead,
+    summary="Actualizar cuenta de usuario (HU02)",
+    description="Permite modificar rol, estado activo/inactivo, nombre o restablecer contraseña. **Solo ADMINISTRADOR**.",
+)
+async def update_user(
+    user_id: int,
+    user_update: UserUpdateAdmin,
+    _admin: AdminUser,
+    db: AsyncSession = Depends(get_db),
+) -> UserAdminRead:
+    """
+    Actualiza la información y credenciales de un usuario existente.
+    """
+    result = await db.execute(select(User).where(User.id == user_id))
+    user: User | None = result.scalar_one_or_none()
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Usuario con ID {user_id} no encontrado.",
+        )
+
+    # Validar email único si se modifica
+    if user_update.email and user_update.email != user.email:
+        email_check = await db.execute(
+            select(User).where(User.email == user_update.email)
+        )
+        if email_check.scalar_one_or_none() is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"El correo '{user_update.email}' ya está en uso por otro usuario.",
+            )
+        user.email = user_update.email
+
+    if user_update.nombre_completo is not None:
+        user.nombre_completo = user_update.nombre_completo
+
+    if user_update.rol_id is not None:
+        role_res = await db.execute(select(Role).where(Role.id == user_update.rol_id))
+        if role_res.scalar_one_or_none() is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"El rol con ID {user_update.rol_id} no existe.",
+            )
+        user.rol_id = user_update.rol_id
+
+    if user_update.activo is not None:
+        # Prevenir que el administrador autenticado desactive su propia cuenta
+        if user.id == _admin.id and not user_update.activo:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="No puede desactivar su propia cuenta de Administrador en sesión.",
+            )
+        user.activo = user_update.activo
+
+    if user_update.password is not None and user_update.password.strip():
+        user.password_hash = get_password_hash(user_update.password.strip())
+
+    await db.commit()
+    await db.refresh(user)
+
+    # Obtener nombre del rol
+    role_res = await db.execute(select(Role.nombre).where(Role.id == user.rol_id))
+    rol_nombre = role_res.scalar_one_or_none() or "OPERARIO"
+
+    return UserAdminRead(
+        id=user.id,
+        nombre_completo=user.nombre_completo,
+        email=user.email,
+        rol_id=user.rol_id,
+        rol_nombre=rol_nombre,
+        activo=user.activo,
+        created_at=user.created_at,
+        updated_at=user.updated_at,
+    )
+
+
+# ---------------------------------------------------------------------------
+# DELETE /users/{user_id} — HU02: Desactivación lógica de usuario
+# ---------------------------------------------------------------------------
+
+@router.delete(
+    "/users/{user_id}",
+    summary="Desactivar lógicamente un usuario (HU02)",
+    description="Marca una cuenta de usuario como inactiva (activo = False). **Solo ADMINISTRADOR**.",
+)
+async def deactivate_user(
+    user_id: int,
+    _admin: AdminUser,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    """
+    Desactiva lógicamente la cuenta impidiendo inicios de sesión posteriores.
+    """
+    if user_id == _admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="No puede desactivar su propia cuenta de Administrador en sesión.",
+        )
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user: User | None = result.scalar_one_or_none()
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Usuario con ID {user_id} no encontrado.",
+        )
+
+    user.activo = False
+    await db.commit()
+
+    return {"message": f"Usuario '{user.email}' desactivado exitosamente."}
+

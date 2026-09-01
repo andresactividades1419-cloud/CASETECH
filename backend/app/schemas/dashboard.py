@@ -7,7 +7,8 @@ kardex inmutable de movimientos de stock y logs de auditoría del sistema.
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -40,9 +41,9 @@ class StockMovementAuditItem(BaseModel):
     cantidad: Decimal
     stock_antes: Decimal
     stock_despues: Decimal
-    referencia_tipo: Optional[str] = None
-    referencia_id: Optional[int] = None
-    usuario_nombre: Optional[str] = None
+    referencia_tipo: str | None = None
+    referencia_id: int | None = None
+    usuario_nombre: str | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -50,7 +51,7 @@ class StockMovementAuditItem(BaseModel):
 
 class StockMovementListResponse(BaseModel):
     """Respuesta paginada para la trazabilidad de movimientos de inventario."""
-    items: List[StockMovementAuditItem]
+    items: list[StockMovementAuditItem]
     total: int
     page: int
     limit: int
@@ -62,10 +63,10 @@ class AuditLogItem(BaseModel):
     id: int
     accion: str
     entidad: str
-    entidad_id: Optional[int] = None
-    usuario_nombre: Optional[str] = None
-    ip_address: Optional[str] = None
-    detalles_json: Optional[Dict[str, Any]] = None
+    entidad_id: int | None = None
+    usuario_nombre: str | None = None
+    ip_address: str | None = None
+    detalles_json: dict[str, Any] | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -73,7 +74,7 @@ class AuditLogItem(BaseModel):
 
 class AuditLogListResponse(BaseModel):
     """Respuesta paginada para los logs de auditoría administrativa."""
-    items: List[AuditLogItem]
+    items: list[AuditLogItem]
     total: int
     page: int
     limit: int
@@ -83,6 +84,6 @@ class AuditLogListResponse(BaseModel):
 class DashboardMetricsResponse(BaseModel):
     """Respuesta agregada completa para el panel principal del Dashboard."""
     kpis: DashboardKPIs
-    produccion_por_tipo: List[ProductionByType]
+    produccion_por_tipo: list[ProductionByType]
 
     model_config = ConfigDict(from_attributes=True)

@@ -8,7 +8,6 @@ Cubre:
 """
 
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
@@ -92,8 +91,76 @@ class UserRead(UserBase):
     id: int = Field(..., description="PK del usuario.", examples=[1])
     rol_id: int = Field(..., description="FK del rol asignado.", examples=[1])
     created_at: datetime = Field(..., description="Timestamp de creación UTC.")
-    updated_at: Optional[datetime] = Field(
+    updated_at: datetime | None = Field(
         default=None, description="Timestamp de última modificación UTC."
     )
 
     model_config = {"from_attributes": True}
+
+
+# ---------------------------------------------------------------------------
+# Schemas para Gestión Administrativa de Usuarios (HU02)
+# ---------------------------------------------------------------------------
+
+class UserUpdateAdmin(BaseModel):
+    """Payload para actualizar usuarios por parte del Administrador."""
+
+    nombre_completo: str | None = Field(
+        default=None,
+        min_length=2,
+        max_length=255,
+        description="Nombre completo del usuario.",
+    )
+    email: EmailStr | None = Field(
+        default=None,
+        description="Nuevo correo electrónico del usuario.",
+    )
+    rol_id: int | None = Field(
+        default=None,
+        gt=0,
+        description="Nuevo ID de rol asignado (1: ADMINISTRADOR, 2: OPERARIO).",
+    )
+    activo: bool | None = Field(
+        default=None,
+        description="Estado activo o inactivo de la cuenta.",
+    )
+    password: str | None = Field(
+        default=None,
+        min_length=8,
+        max_length=128,
+        description="Nueva contraseña (opcional). Si se envía, se rehashea.",
+    )
+
+    @field_validator("password")
+    @classmethod
+    def validate_new_password(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        if not any(c.isupper() for c in v):
+            raise ValueError("La contraseña debe contener al menos una letra mayúscula.")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("La contraseña debe contener al menos un dígito numérico.")
+        return v
+
+
+class UserAdminRead(BaseModel):
+    """Representación enriquecida del usuario para la vista de administración."""
+
+    id: int
+    nombre_completo: str
+    email: str
+    rol_id: int
+    rol_nombre: str
+    activo: bool
+    created_at: datetime
+    updated_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class UserListResponse(BaseModel):
+    """Listado paginado/completo de usuarios para el panel de administración."""
+
+    total: int
+    items: list[UserAdminRead]
+

@@ -1,0 +1,117 @@
+name: CI Pipeline — CASETECH ERP
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================
+  # Job: Backend (Python 3.11 + FastAPI + UV + PostgreSQL 16)
+  # ============================================================
+  backend:
+    name: Backend CI (Lint, Typecheck, Audit, Tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: casetech
+          POSTGRES_PASSWORD: testpassword123
+          POSTGRES_DB: casetech_test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://casetech:testpassword123@localhost:5432/casetech_test_db
+      JWT_SECRET: super-secret-test-key-minimum-32-bytes-long-for-testing-ci-12345
+      JWT_ALGORITHM: HS256
+      ENVIRONMENT: test
+      DEBUG: "False"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Astral UV
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.4.18"
+          enable-cache: true
+          cache-dependency-glob: "backend/pyproject.toml"
+
+      - name: Set up Python 3.11
+        run: uv python pin 3.11
+
+      - name: Install dependencies with UV
+        run: uv sync --all-groups
+
+      - name: Run Ruff Linter & Formatter Check
+        run: uv run ruff check .
+
+      - name: Run MyPy Static Type Checker
+        run: uv run mypy app/
+
+      - name: Security Audit (pip-audit)
+        run: |
+          uv export --no-dev --format requirements-txt > req.txt
+          uv run pip-audit -r req.txt --strict
+
+      - name: Run Pytest Integration Suite
+        run: uv run pytest -v tests/
+
+  # ============================================================
+  # Job: Frontend (Node 20 + React 18 + PNPM + Vite/Vitest)
+  # ============================================================
+  frontend:
+    name: Frontend CI (Lint, Security Audit, Vitest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v3
+        with:
+          version: "9.1.0"
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ESLint
+        run: pnpm run lint
+
+      - name: Security Audit (pnpm audit)
+        run: pnpm audit --audit-level=moderate
+
+      - name: Run Unit & Component Tests (Vitest)
+        run: pnpm run test -- --run

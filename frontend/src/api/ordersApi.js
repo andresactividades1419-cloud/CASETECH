@@ -61,6 +61,16 @@ export const ordersApi = {
     const response = await apiClient.patch(`/orders/${id}/status`, { estado });
     return response.data;
   },
+
+  /**
+   * Obtiene la previsualización de consumo BOM y balance de stock para un pedido (HU11).
+   * @param {number|string} id
+   */
+  async getRecipePreview(id) {
+    const response = await apiClient.get(`/orders/${id}/recipe-preview`);
+    return response.data;
+  },
 };
 
 export default ordersApi;
+

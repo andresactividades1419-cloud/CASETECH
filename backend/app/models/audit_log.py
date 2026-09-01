@@ -1,10 +1,13 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional
-from sqlalchemy import BigInteger, DateTime, ForeignKey, String, func
+from typing import TYPE_CHECKING, Any, Optional
+
+from sqlalchemy import JSON, BigInteger, DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+JSON_TYPE = JSONB().with_variant(JSON(), "sqlite")
 
 if TYPE_CHECKING:
     from app.models.user import User
@@ -20,7 +23,7 @@ class AuditLog(Base):
     id: Mapped[int] = mapped_column(
         BigInteger, primary_key=True, autoincrement=True
     )
-    usuario_id: Mapped[Optional[int]] = mapped_column(
+    usuario_id: Mapped[int | None] = mapped_column(
         BigInteger, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True, index=True
     )
     accion: Mapped[str] = mapped_column(
@@ -29,16 +32,17 @@ class AuditLog(Base):
     entidad: Mapped[str] = mapped_column(
         String(50), nullable=False, index=True
     )
-    entidad_id: Mapped[Optional[int]] = mapped_column(
+    entidad_id: Mapped[int | None] = mapped_column(
         BigInteger, nullable=True, index=True
     )
-    payload_antes: Mapped[Optional[Dict[str, Any]]] = mapped_column(
-        JSONB, nullable=True
+    payload_antes: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON_TYPE, nullable=True
     )
-    payload_despues: Mapped[Optional[Dict[str, Any]]] = mapped_column(
-        JSONB, nullable=True
+    payload_despues: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON_TYPE, nullable=True
     )
-    ip_origen: Mapped[Optional[str]] = mapped_column(
+
+    ip_origen: Mapped[str | None] = mapped_column(
         String(45), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(

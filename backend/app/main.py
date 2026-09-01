@@ -9,8 +9,8 @@ Responsabilidades:
 - Health-check accesible sin autenticación.
 """
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -58,17 +58,15 @@ app = FastAPI(
 # ---------------------------------------------------------------------------
 # Middleware CORS
 # ---------------------------------------------------------------------------
-# En producción, reemplazar ["*"] por los orígenes permitidos explícitamente.
-# Ejemplo: ["https://app.casetech.com", "https://admin.casetech.com"]
-# ---------------------------------------------------------------------------
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],          # ← Restringir en producción
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # ---------------------------------------------------------------------------
 # Registro de routers

@@ -13,7 +13,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ordersApi from '../api/ordersApi';
 import OrderModal from '../components/orders/OrderModal';
+import RecipePreviewModal from '../components/orders/RecipePreviewModal';
 import { useAuth } from '../context/AuthContext';
+
 
 /* ─── Configuración de estados ─────────────────────────────────────────── */
 
@@ -183,8 +185,9 @@ export function OrdersPage() {
   const [clienteSearch, setClienteSearch] = useState('');
   const [debouncedCliente, setDebouncedCliente] = useState('');
 
-  // ── Modal ────────────────────────────────────────────────────────────
+  // ── Modal ────────────────────────────────────────────────────
   const [modalOpen, setModalOpen] = useState(false);
+  const [previewOrder, setPreviewOrder] = useState(null);
 
   // ── Toasts ───────────────────────────────────────────────────────────
   const [stockError, setStockError] = useState('');
@@ -275,7 +278,7 @@ export function OrdersPage() {
         <SuccessToast message={successMsg} onDismiss={() => setSuccessMsg('')} />
       )}
 
-      {/* ── Modal ──────────────────────────────────────────────────── */}
+      {/* ── Modales ────────────────────────────────────────────────── */}
       <OrderModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -284,6 +287,15 @@ export function OrdersPage() {
           fetchOrders();
         }}
       />
+
+      <RecipePreviewModal
+        order={previewOrder}
+        isOpen={!!previewOrder}
+        onClose={() => setPreviewOrder(null)}
+        onConfirmStart={(order) => handleStatusChange(order, 'EN_PRODUCCION')}
+        isStarting={actionLoading === previewOrder?.id}
+      />
+
 
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.75rem', flexWrap: 'wrap', gap: '1rem' }}>
@@ -480,6 +492,7 @@ export function OrdersPage() {
               idx={idx}
               isActionLoading={actionLoading === order.id}
               onStatusChange={handleStatusChange}
+              onPreviewRecipe={(ord) => setPreviewOrder(ord)}
               fmtDate={fmtDate}
             />
           ))
@@ -498,7 +511,7 @@ export function OrdersPage() {
 
 /* ─── Sub-componente: Fila de tabla ────────────────────────────────────── */
 
-function OrderRow({ order, idx, isActionLoading, onStatusChange, fmtDate }) {
+function OrderRow({ order, idx, isActionLoading, onStatusChange, onPreviewRecipe, fmtDate }) {
   const isEven = idx % 2 === 0;
 
   return (
@@ -549,6 +562,7 @@ function OrderRow({ order, idx, isActionLoading, onStatusChange, fmtDate }) {
         order={order}
         isLoading={isActionLoading}
         onStatusChange={onStatusChange}
+        onPreviewRecipe={onPreviewRecipe}
       />
     </div>
   );
@@ -556,7 +570,7 @@ function OrderRow({ order, idx, isActionLoading, onStatusChange, fmtDate }) {
 
 /* ─── Sub-componente: Botones de acción ────────────────────────────────── */
 
-function ActionButtons({ order, isLoading, onStatusChange }) {
+function ActionButtons({ order, isLoading, onStatusChange, onPreviewRecipe }) {
   if (isLoading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#64748b', fontSize: '0.78rem' }}>
@@ -589,8 +603,8 @@ function ActionButtons({ order, isLoading, onStatusChange }) {
         <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
           <button
             id={`btn-iniciar-${order.id}`}
-            title="Inicia producción y descuenta materiales del inventario (BOM)"
-            onClick={() => onStatusChange(order, 'EN_PRODUCCION')}
+            title="Previsualizar balance BOM e iniciar producción"
+            onClick={() => onPreviewRecipe(order)}
             style={{
               ...btnBase,
               backgroundColor: 'rgba(56,189,248,0.12)',
@@ -618,6 +632,7 @@ function ActionButtons({ order, isLoading, onStatusChange }) {
           </button>
         </div>
       );
+
 
     case 'EN_PRODUCCION':
       return (
