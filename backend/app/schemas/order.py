@@ -9,6 +9,7 @@ Modelo de datos:
 """
 
 from datetime import date, datetime
+from decimal import Decimal
 from enum import StrEnum
 
 from pydantic import BaseModel, Field, field_validator
