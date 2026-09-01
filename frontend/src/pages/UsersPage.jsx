@@ -7,6 +7,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import usersApi from '../api/usersApi';
+import { UserModal } from '../components/users/UserModal';
 import { useAuth } from '../context/AuthContext';
 
 export function UsersPage() {
@@ -21,17 +22,8 @@ export function UsersPage() {
   // Modal states
   const [modalOpen, setModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null); // null = nuevo usuario, objeto = editar
-  const [submitting, setSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalError, setModalError] = useState('');
-
-  // Form states
-  const [formData, setFormData] = useState({
-    nombre_completo: '',
-    email: '',
-    password: '',
-    rol_id: 2,
-    activo: true,
-  });
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -53,13 +45,6 @@ export function UsersPage() {
   // Abrir modal de creación
   const handleOpenCreate = () => {
     setEditingUser(null);
-    setFormData({
-      nombre_completo: '',
-      email: '',
-      password: '',
-      rol_id: 2,
-      activo: true,
-    });
     setModalError('');
     setModalOpen(true);
   };
@@ -67,39 +52,34 @@ export function UsersPage() {
   // Abrir modal de edición
   const handleOpenEdit = (u) => {
     setEditingUser(u);
-    setFormData({
-      nombre_completo: u.nombre_completo,
-      email: u.email,
-      password: '',
-      rol_id: u.rol_id,
-      activo: u.activo,
-    });
     setModalError('');
     setModalOpen(true);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
+  // Guardar (Crear o Editar)
+  const handleSaveUser = async (formData) => {
+    setIsSubmitting(true);
     setModalError('');
 
     try {
       if (editingUser) {
+        // Actualización
         const payload = {
           nombre_completo: formData.nombre_completo,
           email: formData.email,
           rol_id: Number(formData.rol_id),
           activo: formData.activo,
         };
-        if (formData.password.trim()) {
+        if (formData.password?.trim()) {
           payload.password = formData.password.trim();
         }
         await usersApi.updateUser(editingUser.id, payload);
         setSuccessMsg(`Usuario ${formData.email} actualizado correctamente.`);
       } else {
-        if (!formData.password.trim()) {
-          setModalError('La contraseña es requerida para nuevos usuarios.');
-          setSubmitting(false);
+        // Creación
+        if (!formData.password?.trim()) {
+          setModalError('La contraseña es requerida para registrar un nuevo usuario.');
+          setIsSubmitting(false);
           return;
         }
         await usersApi.createUser({
@@ -118,19 +98,25 @@ export function UsersPage() {
       const msg = err?.response?.data?.detail || 'Ocurrió un error al procesar la solicitud.';
       setModalError(typeof msg === 'string' ? msg : JSON.stringify(msg));
     } finally {
-      setSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
-  const handleToggleActive = async (u) => {
+  // Toggle rápido de estado (Activar / Desactivar)
+  const handleToggleStatus = async (u) => {
     if (u.id === currentUser?.id && u.activo) {
-      alert('No puede desactivar su propia cuenta de Administrador.');
+      alert('No puede desactivar su propia cuenta de Administrador en sesión.');
       return;
     }
 
     try {
-      await usersApi.updateUser(u.id, { activo: !u.activo });
-      setSuccessMsg(`Usuario ${u.email} ${!u.activo ? 'activado' : 'desactivado'}.`);
+      if (usersApi.toggleUserStatus) {
+        const res = await usersApi.toggleUserStatus(u.id);
+        setSuccessMsg(res.message || `Estado de ${u.email} modificado correctamente.`);
+      } else {
+        await usersApi.updateUser(u.id, { activo: !u.activo });
+        setSuccessMsg(`Usuario ${u.email} ${!u.activo ? 'activado' : 'desactivado'}.`);
+      }
       fetchUsers();
     } catch (err) {
       alert(err?.response?.data?.detail || 'Error al cambiar estado del usuario.');
@@ -142,6 +128,7 @@ export function UsersPage() {
   const operariosCount = users.filter((u) => u.rol_nombre === 'OPERARIO' || u.rol_id === 2).length;
   const activosCount = users.filter((u) => u.activo).length;
 
+  // Filtrado en vivo
   const filteredUsers = users.filter((u) => {
     const matchesSearch =
       u.nombre_completo.toLowerCase().includes(search.toLowerCase()) ||
@@ -155,6 +142,7 @@ export function UsersPage() {
 
   return (
     <div style={{ color: '#f8fafc' }}>
+      {/* Notificación Toast de Éxito */}
       {successMsg && (
         <div style={{
           backgroundColor: '#064e3b',
@@ -178,13 +166,14 @@ export function UsersPage() {
         </div>
       )}
 
+      {/* Header Principal */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.75rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '1.6rem', fontWeight: '800', color: '#f8fafc' }}>
             👥 Gestión de Cuentas de Usuario
           </h1>
           <p style={{ margin: '0.25rem 0 0', color: '#64748b', fontSize: '0.88rem' }}>
-            Administración de credenciales, roles y acceso al sistema CASETECH ERP
+            Administración de credenciales, roles y acceso al sistema CASETECH ERP (HU02)
           </p>
         </div>
         <button
@@ -210,6 +199,7 @@ export function UsersPage() {
         </button>
       </div>
 
+      {/* Tarjetas KPI */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
         <div style={{ backgroundColor: '#111827', border: '1px solid #1f2937', borderRadius: '12px', padding: '1rem 1.25rem' }}>
           <div style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '600' }}>Total Cuentas</div>
@@ -229,6 +219,7 @@ export function UsersPage() {
         </div>
       </div>
 
+      {/* Barra de Filtros y Buscador */}
       <div style={{
         backgroundColor: '#111827',
         border: '1px solid #1f2937',
@@ -242,6 +233,7 @@ export function UsersPage() {
       }}>
         <div style={{ flex: 1, minWidth: '240px' }}>
           <input
+            id="search-usuarios"
             type="text"
             placeholder="🔍 Buscar por nombre o correo electrónico..."
             value={search}
@@ -290,7 +282,7 @@ export function UsersPage() {
       }}>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '60px 1.5fr 1.5fr 120px 100px 130px 150px',
+          gridTemplateColumns: '60px 1.5fr 1.5fr 120px 100px 130px 160px',
           padding: '0.85rem 1.25rem',
           backgroundColor: '#0b0f19',
           borderBottom: '1px solid #1f2937',
@@ -336,7 +328,7 @@ export function UsersPage() {
                 key={u.id}
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '60px 1.5fr 1.5fr 120px 100px 130px 150px',
+                  gridTemplateColumns: '60px 1.5fr 1.5fr 120px 100px 130px 160px',
                   padding: '0.85rem 1.25rem',
                   borderBottom: '1px solid #1a2332',
                   backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
@@ -400,7 +392,7 @@ export function UsersPage() {
                   </button>
 
                   <button
-                    onClick={() => handleToggleActive(u)}
+                    onClick={() => handleToggleStatus(u)}
                     title={u.activo ? 'Desactivar cuenta' : 'Activar cuenta'}
                     style={{
                       padding: '0.3rem 0.6rem',
@@ -422,222 +414,15 @@ export function UsersPage() {
         )}
       </div>
 
-      {modalOpen && (
-        <div
-          onClick={(e) => { if (e.target === e.currentTarget && !submitting) setModalOpen(false); }}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            backdropFilter: 'blur(4px)',
-            zIndex: 300,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '1.5rem',
-          }}
-        >
-          <div style={{
-            backgroundColor: '#111827',
-            border: '1px solid #1f2937',
-            borderRadius: '16px',
-            width: '100%',
-            maxWidth: '520px',
-            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.7)',
-            overflow: 'hidden',
-          }}>
-            <div style={{
-              padding: '1.25rem 1.5rem',
-              borderBottom: '1px solid #1f2937',
-              backgroundColor: '#0f172a',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}>
-              <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: '#f8fafc' }}>
-                {editingUser ? `Editar Usuario: ${editingUser.email}` : 'Registrar Nuevo Usuario'}
-              </h2>
-              <button
-                onClick={() => setModalOpen(false)}
-                disabled={submitting}
-                style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '1.4rem', cursor: 'pointer' }}
-              >
-                ×
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
-              {modalError && (
-                <div style={{
-                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  borderRadius: '8px',
-                  padding: '0.75rem 1rem',
-                  color: '#fca5a5',
-                  fontSize: '0.82rem',
-                }}>
-                  ⚠️ {modalError}
-                </div>
-              )}
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', marginBottom: '0.35rem' }}>
-                  Nombre Completo *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.nombre_completo}
-                  onChange={(e) => setFormData({ ...formData, nombre_completo: e.target.value })}
-                  style={{
-                    width: '100%',
-                    backgroundColor: '#0b0f19',
-                    border: '1px solid #334155',
-                    borderRadius: '8px',
-                    padding: '0.6rem 0.85rem',
-                    color: '#f8fafc',
-                    fontSize: '0.85rem',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', marginBottom: '0.35rem' }}>
-                  Correo Electrónico *
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  style={{
-                    width: '100%',
-                    backgroundColor: '#0b0f19',
-                    border: '1px solid #334155',
-                    borderRadius: '8px',
-                    padding: '0.6rem 0.85rem',
-                    color: '#f8fafc',
-                    fontSize: '0.85rem',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', marginBottom: '0.35rem' }}>
-                  {editingUser ? 'Nueva Contraseña (dejar en blanco para no cambiar)' : 'Contraseña * (mín 8 chars, 1 mayúscula, 1 número)'}
-                </label>
-                <input
-                  type="password"
-                  required={!editingUser}
-                  placeholder={editingUser ? '••••••••' : 'Contraseña segura'}
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  style={{
-                    width: '100%',
-                    backgroundColor: '#0b0f19',
-                    border: '1px solid #334155',
-                    borderRadius: '8px',
-                    padding: '0.6rem 0.85rem',
-                    color: '#f8fafc',
-                    fontSize: '0.85rem',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', marginBottom: '0.35rem' }}>
-                    Rol del Usuario *
-                  </label>
-                  <select
-                    value={formData.rol_id}
-                    onChange={(e) => setFormData({ ...formData, rol_id: Number(e.target.value) })}
-                    style={{
-                      width: '100%',
-                      backgroundColor: '#0b0f19',
-                      border: '1px solid #334155',
-                      borderRadius: '8px',
-                      padding: '0.6rem 0.85rem',
-                      color: '#f8fafc',
-                      fontSize: '0.85rem',
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                    }}
-                  >
-                    <option value={1}>ADMINISTRADOR</option>
-                    <option value={2}>OPERARIO</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', marginBottom: '0.35rem' }}>
-                    Estado de la Cuenta
-                  </label>
-                  <select
-                    value={formData.activo ? 'true' : 'false'}
-                    onChange={(e) => setFormData({ ...formData, activo: e.target.value === 'true' })}
-                    style={{
-                      width: '100%',
-                      backgroundColor: '#0b0f19',
-                      border: '1px solid #334155',
-                      borderRadius: '8px',
-                      padding: '0.6rem 0.85rem',
-                      color: '#f8fafc',
-                      fontSize: '0.85rem',
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                    }}
-                  >
-                    <option value="true">Activo</option>
-                    <option value="false">Inactivo</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  disabled={submitting}
-                  style={{
-                    padding: '0.6rem 1.25rem',
-                    backgroundColor: 'transparent',
-                    border: '1px solid #334155',
-                    borderRadius: '8px',
-                    color: '#94a3b8',
-                    fontSize: '0.85rem',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  style={{
-                    padding: '0.6rem 1.5rem',
-                    backgroundColor: '#0284c7',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '0.85rem',
-                    fontWeight: '700',
-                    cursor: submitting ? 'wait' : 'pointer',
-                  }}
-                >
-                  {submitting ? 'Guardando...' : editingUser ? 'Guardar Cambios' : 'Registrar Usuario'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Modal Reutilizable de Usuario */}
+      <UserModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        user={editingUser}
+        onSave={handleSaveUser}
+        isSubmitting={isSubmitting}
+        errorMessage={modalError}
+      />
     </div>
   );
 }

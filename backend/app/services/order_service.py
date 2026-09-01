@@ -370,14 +370,28 @@ async def get_product_types(db: AsyncSession) -> ProductTypeListResponse:
 
 
 # ---------------------------------------------------------------------------
-# get_order_recipe_preview — HU11: Explosión y Previsualización de Consumo BOM
+# preview_order_recipe — HU11: Explosión y Previsualización de Consumo BOM
 # ---------------------------------------------------------------------------
 
 
-async def get_order_recipe_preview(
+async def preview_order_recipe(
     db: AsyncSession,
     order_id: int,
 ) -> OrderRecipePreviewResponse:
+    """
+    Calcula la explosión de materiales requeridos para un pedido específico
+    y los contrasta con el stock disponible en bodega para determinar viabilidad y déficits.
+
+    Args:
+        db:       Sesión async de SQLAlchemy.
+        order_id: ID del pedido a consultar.
+
+    Raises:
+        HTTPException 404: Si el pedido o el tipo de casetón no existen.
+
+    Returns:
+        OrderRecipePreviewResponse con el detalle por material, viabilidad y resumen de déficits.
+    """
     order = await _get_order_orm(db, order_id)
 
     tipo_res = await db.execute(
@@ -398,9 +412,11 @@ async def get_order_recipe_preview(
     resumen_deficits: list[str] = []
     es_viable = True
 
+    cantidad_casetones = int(order.cantidad)
+
     for recipe_row, material_row in rows:
         cant_por_unidad = float(recipe_row.cantidad_por_unidad)
-        total_req = round(cant_por_unidad * order.cantidad, 4)
+        total_req = round(cant_por_unidad * cantidad_casetones, 4)
         stock_act = float(material_row.stock_actual)
 
         suficiente = stock_act >= total_req
@@ -426,6 +442,8 @@ async def get_order_recipe_preview(
                 stock_actual=stock_act,
                 deficit=deficit,
                 suficiente=suficiente,
+                cantidad_requerida=total_req,
+                stock_disponible=stock_act,
             )
         )
 
@@ -435,8 +453,17 @@ async def get_order_recipe_preview(
         cliente=order.cliente,
         tipo_caseton_id=order.tipo_caseton_id,
         tipo_caseton_nombre=tipo_nombre,
-        cantidad=order.cantidad,
+        cantidad=cantidad_casetones,
         es_viable=es_viable,
         materiales=items,
         resumen_deficits=resumen_deficits,
+        pedido_id=order.id,
+        tipo_caseton=tipo_nombre,
+        cantidad_casetones=cantidad_casetones,
+        es_factible=es_viable,
+        items=items,
     )
+
+
+# Alias para retrocompatibilidad
+get_order_recipe_preview = preview_order_recipe

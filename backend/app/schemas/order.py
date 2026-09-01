@@ -178,6 +178,14 @@ class RecipePreviewItem(BaseModel):
         ..., description="Indica si hay suficiente stock para cubrir el pedido."
     )
 
+    # Campos opcionales para compatibilidad con develop
+    cantidad_requerida: float | None = None
+    stock_disponible: float | None = None
+
+
+# Alias para retrocompatibilidad
+RecipeItemPreview = RecipePreviewItem
+
 
 class OrderRecipePreviewResponse(BaseModel):
     """Respuesta completa de la explosión y viabilidad de la receta BOM para un pedido."""
@@ -206,3 +214,10 @@ class OrderRecipePreviewResponse(BaseModel):
         default_factory=list,
         description="Lista textual de mensajes descriptivos de déficit.",
     )
+
+    # Campos alias para compatibilidad con develop
+    pedido_id: int | None = None
+    tipo_caseton: str | None = None
+    cantidad_casetones: int | None = None
+    es_factible: bool | None = None
+    items: list[RecipePreviewItem] | None = None
