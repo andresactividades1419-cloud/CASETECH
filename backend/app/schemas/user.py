@@ -2,13 +2,15 @@
 schemas/user.py — Esquemas Pydantic v2 para el modelo Usuario de CASETECH ERP.
 
 Cubre:
-- UserBase      → campos compartidos (email, nombre_completo, activo).
-- UserCreate    → payload de registro con contraseña y rol_id.
-- UserRead      → respuesta pública ORM-serializable con auditoría.
+- UserBase        → campos compartidos (email, nombre_completo, activo).
+- UserCreate      → payload de registro con contraseña y rol_id.
+- UserRead        → respuesta pública ORM-serializable con auditoría.
+- UserUpdateAdmin → payload de actualización para panel de administración.
+- UserAdminRead   → respuesta enriquecida con nombre de rol para panel admin.
+- UserListResponse→ listado de usuarios para administración.
 """
 
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
@@ -16,9 +18,6 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 class UserBase(BaseModel):
     """
     Campos comunes que todos los esquemas de usuario comparten.
-
-    El email se valida con ``EmailStr`` (requiere ``pydantic[email]``
-    o el paquete ``email-validator``).
     """
 
     email: EmailStr = Field(
@@ -42,9 +41,6 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     """
     Payload para registrar un nuevo usuario (HU14 — solo ADMINISTRADOR).
-
-    Añade la contraseña en texto plano (que se hasheará antes de persistir)
-    y el identificador del rol que se le asignará.
     """
 
     password: str = Field(
@@ -64,36 +60,114 @@ class UserCreate(UserBase):
     @field_validator("password")
     @classmethod
     def password_strength(cls, v: str) -> str:
-        """
-        Verifica que la contraseña cumpla requisitos mínimos de complejidad:
-        - Al menos 8 caracteres (ya garantizado por ``min_length``).
-        - Al menos una letra mayúscula.
-        - Al menos un dígito numérico.
-        """
+        """Verifica complejidad de contraseña."""
         if not any(c.isupper() for c in v):
             raise ValueError(
                 "La contraseña debe contener al menos una letra mayúscula."
             )
         if not any(c.isdigit() for c in v):
-            raise ValueError(
-                "La contraseña debe contener al menos un dígito numérico."
-            )
+            raise ValueError("La contraseña debe contener al menos un dígito numérico.")
         return v
 
 
 class UserRead(UserBase):
     """
     Representación pública del usuario devuelta por la API.
-
-    Configurado con ``from_attributes = True`` para deserializar
-    directamente desde instancias ORM de SQLAlchemy.
     """
 
     id: int = Field(..., description="PK del usuario.", examples=[1])
     rol_id: int = Field(..., description="FK del rol asignado.", examples=[1])
     created_at: datetime = Field(..., description="Timestamp de creación UTC.")
-    updated_at: Optional[datetime] = Field(
+    updated_at: datetime | None = Field(
         default=None, description="Timestamp de última modificación UTC."
     )
 
     model_config = {"from_attributes": True}
+
+
+class UserUpdateAdmin(BaseModel):
+    """Payload para actualizar usuarios por parte del Administrador."""
+
+    nombre_completo: str | None = Field(
+        default=None,
+        min_length=2,
+        max_length=255,
+        description="Nombre completo del usuario.",
+    )
+    email: EmailStr | None = Field(
+        default=None,
+        description="Nuevo correo electrónico del usuario.",
+    )
+    rol_id: int | None = Field(
+        default=None,
+        gt=0,
+        description="Nuevo ID de rol asignado (1: ADMINISTRADOR, 2: OPERARIO).",
+    )
+    activo: bool | None = Field(
+        default=None,
+        description="Estado activo o inactivo de la cuenta.",
+    )
+    password: str | None = Field(
+        default=None,
+        min_length=8,
+        max_length=128,
+        description="Nueva contraseña (opcional). Si se envía, se rehashea con bcrypt.",
+    )
+
+    @field_validator("password")
+    @classmethod
+    def validate_new_password(cls, v: str | None) -> str | None:
+        if v is None or not v.strip():
+            return None
+        v = v.strip()
+        if len(v) < 8:
+            raise ValueError("La contraseña debe tener al menos 8 caracteres.")
+        if not any(c.isupper() for c in v):
+            raise ValueError(
+                "La contraseña debe contener al menos una letra mayúscula."
+            )
+        if not any(c.isdigit() for c in v):
+            raise ValueError("La contraseña debe contener al menos un dígito numérico.")
+        return v
+
+
+# Alias para compatibilidad
+UserUpdate = UserUpdateAdmin
+
+
+class UserStatusToggle(BaseModel):
+    """Respuesta o payload del cambio de estado activo/inactivo."""
+
+    id: int = Field(..., description="ID del usuario.")
+    email: str = Field(..., description="Email del usuario.")
+    activo: bool = Field(..., description="Nuevo estado de la cuenta.")
+    message: str = Field(..., description="Mensaje descriptivo del resultado.")
+
+
+class UserAdminRead(BaseModel):
+    """Representación enriquecida del usuario para la vista de administración."""
+
+    id: int
+    nombre_completo: str
+    email: str
+    rol_id: int
+    rol_nombre: str
+    activo: bool
+    created_at: datetime
+    updated_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+# Alias de respuesta
+UserAdminResponse = UserAdminRead
+UserResponse = UserAdminRead
+
+
+class UserListResponse(BaseModel):
+    """Listado de usuarios para el panel de administración."""
+
+    total: int
+    skip: int = 0
+    limit: int = 50
+    items: list[UserAdminRead]

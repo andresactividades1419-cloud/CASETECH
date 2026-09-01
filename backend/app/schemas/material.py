@@ -4,9 +4,8 @@ schemas/material.py — Esquemas Pydantic v2 para el módulo de Materiales e Ins
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
-from pydantic import BaseModel, Field, field_validator
 
+from pydantic import BaseModel, Field, field_validator
 
 # Unidades de medida estándar en la fabricación de casetones
 VALID_UNITS = ("m", "m2", "m3", "kg", "und", "pulgada", "mm")
@@ -20,7 +19,11 @@ class MaterialBase(BaseModel):
         min_length=3,
         max_length=255,
         description="Nombre único del insumo o materia prima.",
-        examples=["Icopor EPS Densidad 10", "Lona Impermeable 600D", "Guadua Angustifolia"],
+        examples=[
+            "Icopor EPS Densidad 10",
+            "Lona Impermeable 600D",
+            "Guadua Angustifolia",
+        ],
     )
     unidad_medida: str = Field(
         ...,
@@ -68,24 +71,24 @@ class MaterialCreate(MaterialBase):
 class MaterialUpdate(BaseModel):
     """Payload para actualización parcial de un material."""
 
-    nombre: Optional[str] = Field(
+    nombre: str | None = Field(
         default=None,
         min_length=3,
         max_length=255,
         description="Nuevo nombre del material.",
     )
-    unidad_medida: Optional[str] = Field(
+    unidad_medida: str | None = Field(
         default=None,
         min_length=1,
         max_length=30,
         description="Nueva unidad de medida.",
     )
-    stock_minimo: Optional[Decimal] = Field(
+    stock_minimo: Decimal | None = Field(
         default=None,
         ge=0,
         description="Nuevo umbral de alerta de stock mínimo.",
     )
-    stock_actual: Optional[Decimal] = Field(
+    stock_actual: Decimal | None = Field(
         default=None,
         ge=0,
         description="Ajuste directo de stock actual (si aplica).",
@@ -105,7 +108,9 @@ class MaterialResponse(MaterialBase):
     stock_actual: Decimal = Field(..., description="Stock físico actual disponible.")
     activo: bool = Field(..., description="Indica si el insumo está activo.")
     created_at: datetime = Field(..., description="Fecha y hora de creación UTC.")
-    updated_at: Optional[datetime] = Field(default=None, description="Fecha y hora de última modificación UTC.")
+    updated_at: datetime | None = Field(
+        default=None, description="Fecha y hora de última modificación UTC."
+    )
 
     # Campo auxiliar para determinar si está en alerta crítica de stock
     @property

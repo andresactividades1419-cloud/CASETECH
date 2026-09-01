@@ -13,16 +13,14 @@ Alineados con la tabla ``proveedores`` del modelo ORM Provider:
 
 import re
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
-
 
 # ---------------------------------------------------------------------------
 # Validador de NIT reutilizable
 # ---------------------------------------------------------------------------
 
-_NIT_PATTERN = re.compile(r"^[\w\-]+$")   # letras, dígitos, guión y guión bajo
+_NIT_PATTERN = re.compile(r"^[\w\-]+$")  # letras, dígitos, guión y guión bajo
 
 
 def _validate_nit(v: str) -> str:
@@ -38,6 +36,7 @@ def _validate_nit(v: str) -> str:
 # ---------------------------------------------------------------------------
 # ProviderBase — campos comunes
 # ---------------------------------------------------------------------------
+
 
 class ProviderBase(BaseModel):
     """
@@ -59,24 +58,24 @@ class ProviderBase(BaseModel):
         description="Razón social o nombre comercial del proveedor.",
         examples=["Materiales del Valle S.A.S."],
     )
-    contacto_nombre: Optional[str] = Field(
+    contacto_nombre: str | None = Field(
         default=None,
         max_length=255,
         description="Nombre del contacto principal en la empresa proveedora.",
         examples=["Carlos Martínez"],
     )
-    contacto_telefono: Optional[str] = Field(
+    contacto_telefono: str | None = Field(
         default=None,
         max_length=20,
         description="Teléfono del contacto (incluye indicativo si aplica).",
         examples=["+57 321 456 7890"],
     )
-    contacto_email: Optional[EmailStr] = Field(
+    contacto_email: EmailStr | None = Field(
         default=None,
         description="Correo electrónico del contacto principal.",
         examples=["carlos@materiales.com"],
     )
-    direccion: Optional[str] = Field(
+    direccion: str | None = Field(
         default=None,
         max_length=1000,
         description="Dirección física de la sede del proveedor.",
@@ -93,11 +92,13 @@ class ProviderBase(BaseModel):
 # ProviderCreate — payload de registro (solo ADMINISTRADOR)
 # ---------------------------------------------------------------------------
 
+
 class ProviderCreate(ProviderBase):
     """
     Payload para registrar un nuevo proveedor mediante ``sp_crear_proveedor``.
     ``nit`` y ``nombre_empresa`` son obligatorios; heredados de ProviderBase.
     """
+
     pass
 
 
@@ -105,33 +106,34 @@ class ProviderCreate(ProviderBase):
 # ProviderUpdate — actualización parcial (PATCH semántico sobre PUT)
 # ---------------------------------------------------------------------------
 
+
 class ProviderUpdate(BaseModel):
     """
     Campos editables de un proveedor. Todos son opcionales para permitir
     actualizaciones parciales. El ``nit`` es inmutable y no se incluye.
     """
 
-    nombre_empresa: Optional[str] = Field(
+    nombre_empresa: str | None = Field(
         default=None,
         min_length=2,
         max_length=255,
         description="Nueva razón social del proveedor.",
     )
-    contacto_nombre: Optional[str] = Field(
+    contacto_nombre: str | None = Field(
         default=None,
         max_length=255,
         description="Nuevo nombre del contacto principal.",
     )
-    contacto_telefono: Optional[str] = Field(
+    contacto_telefono: str | None = Field(
         default=None,
         max_length=20,
         description="Nuevo teléfono de contacto.",
     )
-    contacto_email: Optional[EmailStr] = Field(
+    contacto_email: EmailStr | None = Field(
         default=None,
         description="Nuevo correo electrónico del contacto.",
     )
-    direccion: Optional[str] = Field(
+    direccion: str | None = Field(
         default=None,
         max_length=1000,
         description="Nueva dirección del proveedor.",
@@ -142,6 +144,7 @@ class ProviderUpdate(BaseModel):
 # ProviderRead — representación pública / respuesta de la API
 # ---------------------------------------------------------------------------
 
+
 class ProviderRead(ProviderBase):
     """
     Respuesta pública completa de un proveedor, incluyendo campos generados
@@ -150,9 +153,11 @@ class ProviderRead(ProviderBase):
     """
 
     id: int = Field(..., description="Identificador único del proveedor.", examples=[1])
-    activo: bool = Field(..., description="Indica si el proveedor está activo en el sistema.")
+    activo: bool = Field(
+        ..., description="Indica si el proveedor está activo en el sistema."
+    )
     created_at: datetime = Field(..., description="Timestamp de creación en UTC.")
-    updated_at: Optional[datetime] = Field(
+    updated_at: datetime | None = Field(
         default=None,
         description="Timestamp de la última modificación en UTC.",
     )
@@ -163,6 +168,7 @@ class ProviderRead(ProviderBase):
 # ---------------------------------------------------------------------------
 # ProviderListResponse — wrapper de paginación
 # ---------------------------------------------------------------------------
+
 
 class ProviderListResponse(BaseModel):
     """Respuesta paginada para el listado de proveedores."""

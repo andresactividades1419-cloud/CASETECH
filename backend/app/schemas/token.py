@@ -2,7 +2,6 @@
 schemas/token.py — Esquemas Pydantic v2 para tokens JWT de CASETECH ERP.
 """
 
-from typing import Optional
 from pydantic import BaseModel
 
 
@@ -28,5 +27,5 @@ class TokenPayload(BaseModel):
         rol: Nombre del rol asignado, usado para verificación RBAC.
     """
 
-    sub: Optional[str] = None
-    rol: Optional[str] = None
+    sub: str | None = None
+    rol: str | None = None

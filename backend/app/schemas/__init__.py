@@ -2,32 +2,6 @@
 schemas/ — Esquemas Pydantic v2 de validación y serialización para CASETECH ERP.
 """
 
-from app.schemas.role import RoleBase, RoleCreate, RoleRead
-from app.schemas.user import UserBase, UserCreate, UserRead
-from app.schemas.token import Token, TokenPayload
-from app.schemas.provider import (
-    ProviderBase,
-    ProviderCreate,
-    ProviderUpdate,
-    ProviderRead,
-    ProviderListResponse,
-)
-from app.schemas.material import (
-    MaterialBase,
-    MaterialCreate,
-    MaterialUpdate,
-    MaterialStatusUpdate,
-    MaterialResponse,
-    MaterialListResponse,
-)
-from app.schemas.order import (
-    OrderBase,
-    OrderCreate,
-    OrderStatusUpdate,
-    OrderResponse,
-    OrderListResponse,
-    OrderStatus,
-)
 from app.schemas.dashboard import (
     AuditLogItem,
     AuditLogListResponse,
@@ -37,7 +11,33 @@ from app.schemas.dashboard import (
     StockMovementAuditItem,
     StockMovementListResponse,
 )
-from app.schemas.product_type import ProductTypeResponse, ProductTypeListResponse
+from app.schemas.material import (
+    MaterialBase,
+    MaterialCreate,
+    MaterialListResponse,
+    MaterialResponse,
+    MaterialStatusUpdate,
+    MaterialUpdate,
+)
+from app.schemas.order import (
+    OrderBase,
+    OrderCreate,
+    OrderListResponse,
+    OrderRecipePreviewResponse,
+    OrderResponse,
+    OrderStatus,
+    OrderStatusUpdate,
+    RecipeItemPreview,
+    RecipePreviewItem,
+)
+from app.schemas.product_type import ProductTypeListResponse, ProductTypeResponse
+from app.schemas.provider import (
+    ProviderBase,
+    ProviderCreate,
+    ProviderListResponse,
+    ProviderRead,
+    ProviderUpdate,
+)
 from app.schemas.purchase import (
     PurchaseCreate,
     PurchaseItemCreate,
@@ -45,6 +45,7 @@ from app.schemas.purchase import (
     PurchaseListResponse,
     PurchaseResponse,
 )
+from app.schemas.role import RoleBase, RoleCreate, RoleRead
 from app.schemas.stock_adjustment import (
     AdjustmentStatus,
     AdjustmentType,
@@ -53,6 +54,19 @@ from app.schemas.stock_adjustment import (
     StockAdjustmentListResponse,
     StockAdjustmentResponse,
     StockAdjustmentReview,
+)
+from app.schemas.token import Token, TokenPayload
+from app.schemas.user import (
+    UserAdminRead,
+    UserAdminResponse,
+    UserBase,
+    UserCreate,
+    UserListResponse,
+    UserRead,
+    UserResponse,
+    UserStatusToggle,
+    UserUpdate,
+    UserUpdateAdmin,
 )
 
 __all__ = [
@@ -64,6 +78,13 @@ __all__ = [
     "UserBase",
     "UserCreate",
     "UserRead",
+    "UserUpdate",
+    "UserUpdateAdmin",
+    "UserAdminRead",
+    "UserAdminResponse",
+    "UserResponse",
+    "UserStatusToggle",
+    "UserListResponse",
     # Token
     "Token",
     "TokenPayload",
@@ -87,6 +108,9 @@ __all__ = [
     "OrderResponse",
     "OrderListResponse",
     "OrderStatus",
+    "OrderRecipePreviewResponse",
+    "RecipePreviewItem",
+    "RecipeItemPreview",
     # ProductType
     "ProductTypeResponse",
     "ProductTypeListResponse",
@@ -113,6 +137,3 @@ __all__ = [
     "StockMovementAuditItem",
     "StockMovementListResponse",
 ]
-
-
-

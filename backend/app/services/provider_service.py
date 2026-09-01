@@ -8,8 +8,6 @@ Convenciones:
 - Las funciones son ``async`` para mantener compatibilidad con asyncpg.
 """
 
-from typing import Optional
-
 from fastapi import HTTPException, status
 from sqlalchemy import func, or_, select, text, update
 from sqlalchemy.exc import DBAPIError, IntegrityError
@@ -23,10 +21,10 @@ from app.schemas.provider import (
     ProviderUpdate,
 )
 
-
 # ---------------------------------------------------------------------------
 # create_provider — HU02: Registro vía SP con validación de duplicidad
 # ---------------------------------------------------------------------------
+
 
 async def create_provider(
     db: AsyncSession,
@@ -68,10 +66,18 @@ async def create_provider(
             {
                 "nit": str(provider_in.nit).strip(),
                 "nombre_empresa": str(provider_in.nombre_empresa).strip(),
-                "contacto_nombre": str(provider_in.contacto_nombre).strip() if provider_in.contacto_nombre else "",
-                "contacto_telefono": str(provider_in.contacto_telefono).strip() if provider_in.contacto_telefono else "",
-                "contacto_email": str(provider_in.contacto_email).strip() if provider_in.contacto_email else "",
-                "direccion": str(provider_in.direccion).strip() if provider_in.direccion else "",
+                "contacto_nombre": str(provider_in.contacto_nombre).strip()
+                if provider_in.contacto_nombre
+                else "",
+                "contacto_telefono": str(provider_in.contacto_telefono).strip()
+                if provider_in.contacto_telefono
+                else "",
+                "contacto_email": str(provider_in.contacto_email).strip()
+                if provider_in.contacto_email
+                else "",
+                "direccion": str(provider_in.direccion).strip()
+                if provider_in.direccion
+                else "",
                 "usuario_id": user_id,
             },
         )
@@ -96,7 +102,11 @@ async def create_provider(
         orig_msg = str(exc.orig) if exc.orig else str(exc)
 
         # Capturar excepción de unicidad lanzada explícitamente por el SP (ERRCODE 23505)
-        if "23505" in orig_msg or "unique" in orig_msg.lower() or "ya existe" in orig_msg.lower():
+        if (
+            "23505" in orig_msg
+            or "unique" in orig_msg.lower()
+            or "ya existe" in orig_msg.lower()
+        ):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"Ya existe un proveedor registrado con el NIT '{provider_in.nit}'. El NIT es un identificador único e inmutable.",
@@ -117,7 +127,9 @@ async def create_provider(
 
     # Recuperar el proveedor recién creado para retornarlo serializado
     result = await db.execute(
-        select(Provider).where(func.upper(Provider.nit) == provider_in.nit.strip().upper())
+        select(Provider).where(
+            func.upper(Provider.nit) == provider_in.nit.strip().upper()
+        )
     )
     provider = result.scalar_one_or_none()
 
@@ -134,12 +146,13 @@ async def create_provider(
 # get_providers — Listado paginado con búsqueda y filtro de estado
 # ---------------------------------------------------------------------------
 
+
 async def get_providers(
     db: AsyncSession,
     skip: int = 0,
     limit: int = 50,
     include_inactive: bool = False,
-    search: Optional[str] = None,
+    search: str | None = None,
 ) -> ProviderListResponse:
     """
     Retorna proveedores paginados con soporte de búsqueda por nombre o NIT.
@@ -179,9 +192,7 @@ async def get_providers(
 
     # Consulta paginada ordenada por nombre
     paginated_query = (
-        base_query.order_by(Provider.nombre_empresa.asc())
-        .offset(skip)
-        .limit(limit)
+        base_query.order_by(Provider.nombre_empresa.asc()).offset(skip).limit(limit)
     )
     rows = await db.execute(paginated_query)
     providers = rows.scalars().all()
@@ -198,6 +209,7 @@ async def get_providers(
 # get_provider_by_id — Detalle por ID o HTTP 404
 # ---------------------------------------------------------------------------
 
+
 async def get_provider_by_id(db: AsyncSession, provider_id: int) -> ProviderRead:
     """
     Recupera un proveedor por su PK. Lanza HTTP 404 si no existe.
@@ -212,9 +224,7 @@ async def get_provider_by_id(db: AsyncSession, provider_id: int) -> ProviderRead
     Returns:
         ProviderRead: Datos del proveedor encontrado.
     """
-    result = await db.execute(
-        select(Provider).where(Provider.id == provider_id)
-    )
+    result = await db.execute(select(Provider).where(Provider.id == provider_id))
     provider: Provider | None = result.scalar_one_or_none()
 
     if provider is None:
@@ -229,6 +239,7 @@ async def get_provider_by_id(db: AsyncSession, provider_id: int) -> ProviderRead
 # ---------------------------------------------------------------------------
 # update_provider — Actualización de campos editables (NIT inmutable)
 # ---------------------------------------------------------------------------
+
 
 async def update_provider(
     db: AsyncSession,
@@ -253,9 +264,7 @@ async def update_provider(
         ProviderRead: Datos actualizados del proveedor.
     """
     # Verificar existencia
-    result = await db.execute(
-        select(Provider).where(Provider.id == provider_id)
-    )
+    result = await db.execute(select(Provider).where(Provider.id == provider_id))
     provider: Provider | None = result.scalar_one_or_none()
 
     if provider is None:
@@ -276,9 +285,7 @@ async def update_provider(
         update_data["contacto_email"] = str(update_data["contacto_email"])
 
     await db.execute(
-        update(Provider)
-        .where(Provider.id == provider_id)
-        .values(**update_data)
+        update(Provider).where(Provider.id == provider_id).values(**update_data)
     )
     await db.commit()
 
@@ -290,6 +297,7 @@ async def update_provider(
 # ---------------------------------------------------------------------------
 # toggle_provider_status — Borrado lógico (activo ↔ inactivo)
 # ---------------------------------------------------------------------------
+
 
 async def toggle_provider_status(
     db: AsyncSession,
@@ -313,9 +321,7 @@ async def toggle_provider_status(
     Returns:
         ProviderRead: Proveedor con su nuevo estado reflejado.
     """
-    result = await db.execute(
-        select(Provider).where(Provider.id == provider_id)
-    )
+    result = await db.execute(select(Provider).where(Provider.id == provider_id))
     provider: Provider | None = result.scalar_one_or_none()
 
     if provider is None:
@@ -327,9 +333,7 @@ async def toggle_provider_status(
     # Alternar estado
     new_status = not provider.activo
     await db.execute(
-        update(Provider)
-        .where(Provider.id == provider_id)
-        .values(activo=new_status)
+        update(Provider).where(Provider.id == provider_id).values(activo=new_status)
     )
     await db.commit()
     await db.refresh(provider)

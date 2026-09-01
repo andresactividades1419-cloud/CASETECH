@@ -2,7 +2,6 @@
 schemas/role.py — Esquemas Pydantic v2 para el catálogo de Roles (RBAC).
 """
 
-from typing import Optional
 from pydantic import BaseModel, Field
 
 
@@ -16,7 +15,7 @@ class RoleBase(BaseModel):
         description="Nombre único del rol (e.g. 'ADMINISTRADOR', 'OPERARIO').",
         examples=["ADMINISTRADOR"],
     )
-    descripcion: Optional[str] = Field(
+    descripcion: str | None = Field(
         default=None,
         max_length=500,
         description="Descripción opcional del rol y sus permisos.",
@@ -30,6 +29,7 @@ class RoleCreate(RoleBase):
     Hereda todos los campos de RoleBase sin añadir campos extra;
     se mantiene como clase separada para flexibilidad futura.
     """
+
     pass
 
 

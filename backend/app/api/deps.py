@@ -8,6 +8,7 @@ Provee:
 - ``require_admin``   → guarda de autorización RBAC para rol ADMINISTRADOR.
 """
 
+from collections.abc import AsyncGenerator
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
@@ -26,7 +27,8 @@ from app.schemas.token import TokenPayload
 # Dependencia: sesión de base de datos
 # ---------------------------------------------------------------------------
 
-async def get_db() -> AsyncSession:  # type: ignore[return]
+
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     Dependencia de FastAPI que provee una sesión async de SQLAlchemy.
 
@@ -61,6 +63,7 @@ BearerToken = Annotated[str, Depends(oauth2_scheme)]
 # Dependencia: usuario autenticado actual
 # ---------------------------------------------------------------------------
 
+
 async def get_current_user(
     token: BearerToken,
     db: DBSession,
@@ -69,7 +72,7 @@ async def get_current_user(
     Decodifica y valida el JWT del header ``Authorization: Bearer <token>``.
 
     Pasos realizados:
-    1. Decodifica el token con SECRET_KEY y ALGORITHM.
+    1. Decodifica el token con JWT_SECRET y JWT_ALGORITHM.
     2. Extrae el claim ``sub`` (email del usuario).
     3. Busca el usuario en PostgreSQL por email.
     4. Verifica que la cuenta esté activa (``activo == True``).
@@ -90,8 +93,8 @@ async def get_current_user(
     try:
         payload = jwt.decode(
             token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM],
+            settings.JWT_SECRET.get_secret_value(),
+            algorithms=[settings.JWT_ALGORITHM],
         )
         token_data = TokenPayload(**payload)
 
@@ -99,12 +102,10 @@ async def get_current_user(
             raise credentials_exception
 
     except JWTError:
-        raise credentials_exception
+        raise credentials_exception from None
 
     # Buscar usuario en BD por email (claim 'sub')
-    result = await db.execute(
-        select(User).where(User.email == token_data.sub)
-    )
+    result = await db.execute(select(User).where(User.email == token_data.sub))
     user: User | None = result.scalar_one_or_none()
 
     if user is None:
@@ -123,6 +124,7 @@ async def get_current_user(
 # ---------------------------------------------------------------------------
 # Dependencia RBAC: solo ADMINISTRADOR
 # ---------------------------------------------------------------------------
+
 
 async def require_admin(
     current_user: Annotated[User, Depends(get_current_user)],
@@ -145,9 +147,7 @@ async def require_admin(
         User: El mismo usuario si la verificación es exitosa.
     """
     # Cargar el rol asociado al usuario si no está en memoria
-    result = await db.execute(
-        select(Role).where(Role.id == current_user.rol_id)
-    )
+    result = await db.execute(select(Role).where(Role.id == current_user.rol_id))
     role: Role | None = result.scalar_one_or_none()
 
     if role is None or role.nombre.upper() != "ADMINISTRADOR":

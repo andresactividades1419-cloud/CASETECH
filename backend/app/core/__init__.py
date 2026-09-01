@@ -1,6 +1,7 @@
 from app.core.config import settings
-from app.core.database import Base, AsyncSessionLocal, engine, get_db
-from app.core.security import verify_password, get_password_hash, create_access_token
+from app.core.database import AsyncSessionLocal, Base, engine, get_db
+from app.core.limiter import limiter
+from app.core.security import create_access_token, get_password_hash, verify_password
 
 __all__ = [
     "settings",
@@ -8,6 +9,7 @@ __all__ = [
     "AsyncSessionLocal",
     "engine",
     "get_db",
+    "limiter",
     "verify_password",
     "get_password_hash",
     "create_access_token",

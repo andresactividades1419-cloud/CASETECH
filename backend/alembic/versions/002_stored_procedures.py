@@ -9,28 +9,38 @@ Creación de Stored Procedures transaccionales PL/pgSQL:
 - sp_descontar_receta
 - sp_ajuste_inventario
 """
+
 import os
-from typing import Sequence, Union
+from collections.abc import Sequence
+
+import sqlalchemy as sa
 
 from alembic import op
-import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "002_stored_procedures"
-down_revision: Union[str, None] = "001_initial_schema"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "001_initial_schema"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
     sql_file_path = os.path.join(os.path.dirname(__file__), "002_stored_procedures.sql")
-    with open(sql_file_path, "r", encoding="utf-8") as f:
+    with open(sql_file_path, encoding="utf-8") as f:
         sql_content = f.read()
-    
+
     op.execute(sa.text(sql_content))
 
 
 def downgrade() -> None:
-    op.execute(sa.text("DROP PROCEDURE IF EXISTS sp_ajuste_inventario(BIGINT, BIGINT, BOOLEAN);"))
+    op.execute(
+        sa.text(
+            "DROP PROCEDURE IF EXISTS sp_ajuste_inventario(BIGINT, BIGINT, BOOLEAN);"
+        )
+    )
     op.execute(sa.text("DROP PROCEDURE IF EXISTS sp_descontar_receta(BIGINT, BIGINT);"))
-    op.execute(sa.text("DROP PROCEDURE IF EXISTS sp_crear_proveedor(VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, TEXT, BIGINT, OUT BIGINT);"))
+    op.execute(
+        sa.text(
+            "DROP PROCEDURE IF EXISTS sp_crear_proveedor(VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, TEXT, BIGINT, OUT BIGINT);"
+        )
+    )

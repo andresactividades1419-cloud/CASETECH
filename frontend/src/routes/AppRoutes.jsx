@@ -13,6 +13,7 @@ import MaterialsPage from '../pages/MaterialsPage';
 import OrdersPage from '../pages/OrdersPage';
 import AdjustmentsPage from '../pages/AdjustmentsPage';
 import PurchasesPage from '../pages/PurchasesPage';
+import UsersPage from '../pages/UsersPage';
 
 import ErrorBoundary from '../components/common/ErrorBoundary';
 
@@ -26,6 +27,7 @@ export function AppRoutes() {
         {/* Rutas Privadas / Protegidas */}
         <Route element={<ProtectedRoute />}>
           <Route element={<MainLayout />}>
+            {/* Rutas para cualquier rol autenticado */}
             <Route path="/" element={<DashboardPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/providers" element={<ProvidersPage />} />
@@ -33,8 +35,14 @@ export function AppRoutes() {
             <Route path="/materials" element={<MaterialsPage />} />
             <Route path="/orders" element={<OrdersPage />} />
             <Route path="/adjustments" element={<AdjustmentsPage />} />
+
+            {/* Rutas exclusivas para ADMINISTRADOR */}
+            <Route element={<ProtectedRoute allowedRoles={['ADMINISTRADOR']} />}>
+              <Route path="/users" element={<UsersPage />} />
+            </Route>
           </Route>
         </Route>
+
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

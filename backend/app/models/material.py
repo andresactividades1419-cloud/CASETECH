@@ -1,6 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING
+
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -15,10 +16,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 
 if TYPE_CHECKING:
-    from app.models.recipe import Recipe
     from app.models.purchase_detail import PurchaseDetail
-    from app.models.stock_movement import StockMovement
+    from app.models.recipe import Recipe
     from app.models.stock_adjustment import StockAdjustment
+    from app.models.stock_movement import StockMovement
 
 
 class Material(Base):
@@ -26,21 +27,22 @@ class Material(Base):
     Inventario maestro de materias primas. Fuente de verdad del stock.
     Tabla: materiales
     """
+
     __tablename__ = "materiales"
     __table_args__ = (
-        CheckConstraint("stock_actual >= 0", name="ck_materiales_stock_actual_non_negative"),
-        CheckConstraint("stock_minimo >= 0", name="ck_materiales_stock_minimo_non_negative"),
+        CheckConstraint(
+            "stock_actual >= 0", name="ck_materiales_stock_actual_non_negative"
+        ),
+        CheckConstraint(
+            "stock_minimo >= 0", name="ck_materiales_stock_minimo_non_negative"
+        ),
     )
 
-    id: Mapped[int] = mapped_column(
-        BigInteger, primary_key=True, autoincrement=True
-    )
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     nombre: Mapped[str] = mapped_column(
         String(255), nullable=False, unique=True, index=True
     )
-    unidad_medida: Mapped[str] = mapped_column(
-        String(30), nullable=False
-    )
+    unidad_medida: Mapped[str] = mapped_column(String(30), nullable=False)
     stock_actual: Mapped[Decimal] = mapped_column(
         Numeric(12, 3), nullable=False, default=Decimal("0.000"), server_default="0"
     )
@@ -53,21 +55,21 @@ class Material(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
-    updated_at: Mapped[Optional[datetime]] = mapped_column(
+    updated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True, onupdate=func.now()
     )
 
     # Relaciones
-    recetas: Mapped[List["Recipe"]] = relationship(
+    recetas: Mapped[list["Recipe"]] = relationship(
         "Recipe", back_populates="material", passive_deletes=True
     )
-    detalle_compras: Mapped[List["PurchaseDetail"]] = relationship(
+    detalle_compras: Mapped[list["PurchaseDetail"]] = relationship(
         "PurchaseDetail", back_populates="material", passive_deletes=True
     )
-    movimientos: Mapped[List["StockMovement"]] = relationship(
+    movimientos: Mapped[list["StockMovement"]] = relationship(
         "StockMovement", back_populates="material", passive_deletes=True
     )
-    ajustes: Mapped[List["StockAdjustment"]] = relationship(
+    ajustes: Mapped[list["StockAdjustment"]] = relationship(
         "StockAdjustment", back_populates="material", passive_deletes=True
     )
 

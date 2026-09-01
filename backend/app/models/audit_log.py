@@ -1,10 +1,13 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional
-from sqlalchemy import BigInteger, DateTime, ForeignKey, String, func
+from typing import TYPE_CHECKING, Any, Optional
+
+from sqlalchemy import JSON, BigInteger, DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+JSON_TYPE = JSONB().with_variant(JSON(), "sqlite")
 
 if TYPE_CHECKING:
     from app.models.user import User
@@ -15,32 +18,29 @@ class AuditLog(Base):
     Log de auditoría inmutable de todas las acciones del sistema.
     Tabla: auditoria_acciones
     """
+
     __tablename__ = "auditoria_acciones"
 
-    id: Mapped[int] = mapped_column(
-        BigInteger, primary_key=True, autoincrement=True
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    usuario_id: Mapped[int | None] = mapped_column(
+        BigInteger,
+        ForeignKey("usuarios.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
-    usuario_id: Mapped[Optional[int]] = mapped_column(
-        BigInteger, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True, index=True
-    )
-    accion: Mapped[str] = mapped_column(
-        String(50), nullable=False, index=True
-    )
-    entidad: Mapped[str] = mapped_column(
-        String(50), nullable=False, index=True
-    )
-    entidad_id: Mapped[Optional[int]] = mapped_column(
+    accion: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    entidad: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    entidad_id: Mapped[int | None] = mapped_column(
         BigInteger, nullable=True, index=True
     )
-    payload_antes: Mapped[Optional[Dict[str, Any]]] = mapped_column(
-        JSONB, nullable=True
+    payload_antes: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON_TYPE, nullable=True
     )
-    payload_despues: Mapped[Optional[Dict[str, Any]]] = mapped_column(
-        JSONB, nullable=True
+    payload_despues: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON_TYPE, nullable=True
     )
-    ip_origen: Mapped[Optional[str]] = mapped_column(
-        String(45), nullable=True
-    )
+
+    ip_origen: Mapped[str | None] = mapped_column(String(45), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now(), index=True
     )

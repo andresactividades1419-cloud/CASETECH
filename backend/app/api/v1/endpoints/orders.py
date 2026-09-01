@@ -7,6 +7,7 @@ Rutas expuestas bajo el prefijo ``/api/v1/orders``:
   GET    /                → Listar pedidos con filtros y paginación        [autenticado]
   GET    /{id}            → Detalle completo de un pedido                  [autenticado]
   PATCH  /{id}/status     → Cambiar estado e invocar sp_descontar_receta   [autenticado]
+  GET    /{id}/recipe-preview → Previsualización de consumo BOM            [autenticado]
 
 Ruta auxiliar expuesta bajo ``/api/v1/product-types``:
 
@@ -14,7 +15,6 @@ Ruta auxiliar expuesta bajo ``/api/v1/product-types``:
 """
 
 from datetime import date
-from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,6 +23,7 @@ from app.api.deps import CurrentUser, get_db
 from app.schemas.order import (
     OrderCreate,
     OrderListResponse,
+    OrderRecipePreviewResponse,
     OrderResponse,
     OrderStatusUpdate,
 )
@@ -35,6 +36,7 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 # POST / — Crear pedido de producción
 # ---------------------------------------------------------------------------
+
 
 @router.post(
     "/",
@@ -73,6 +75,7 @@ async def create_order(
 # GET / — Listar pedidos con filtros
 # ---------------------------------------------------------------------------
 
+
 @router.get(
     "/",
     response_model=OrderListResponse,
@@ -89,27 +92,31 @@ async def create_order(
 async def list_orders(
     _user: CurrentUser,
     db: AsyncSession = Depends(get_db),
-    skip: int = Query(default=0, ge=0, description="Registros a omitir (offset de paginación)."),
-    limit: int = Query(default=50, ge=1, le=200, description="Límite de registros por página."),
-    estado: Optional[str] = Query(
+    skip: int = Query(
+        default=0, ge=0, description="Registros a omitir (offset de paginación)."
+    ),
+    limit: int = Query(
+        default=50, ge=1, le=200, description="Límite de registros por página."
+    ),
+    estado: str | None = Query(
         default=None,
         description="Filtrar por estado: PENDIENTE | EN_PRODUCCION | COMPLETADO | CANCELADO.",
     ),
-    cliente: Optional[str] = Query(
+    cliente: str | None = Query(
         default=None,
         max_length=255,
         description="Búsqueda parcial por nombre de cliente (case-insensitive).",
     ),
-    tipo_caseton_id: Optional[int] = Query(
+    tipo_caseton_id: int | None = Query(
         default=None,
         gt=0,
         description="Filtrar por ID de tipo de casetón específico.",
     ),
-    fecha_inicio: Optional[date] = Query(
+    fecha_inicio: date | None = Query(
         default=None,
         description="Fecha de inicio del rango (YYYY-MM-DD, basada en created_at).",
     ),
-    fecha_fin: Optional[date] = Query(
+    fecha_fin: date | None = Query(
         default=None,
         description="Fecha de fin del rango (YYYY-MM-DD, basada en created_at).",
     ),
@@ -132,6 +139,7 @@ async def list_orders(
 # ---------------------------------------------------------------------------
 # GET /{order_id} — Detalle de pedido
 # ---------------------------------------------------------------------------
+
 
 @router.get(
     "/{order_id}",
@@ -158,6 +166,7 @@ async def get_order(
 # ---------------------------------------------------------------------------
 # PATCH /{order_id}/status — Actualizar estado e invocar SP BOM
 # ---------------------------------------------------------------------------
+
 
 @router.patch(
     "/{order_id}/status",
@@ -198,6 +207,41 @@ async def update_order_status(
         status_update=status_update,
         user_id=current_user.id,
     )
+
+
+# ---------------------------------------------------------------------------
+# GET /{order_id}/recipe-preview — HU11: Previsualización de Consumo BOM
+# ---------------------------------------------------------------------------
+
+
+@router.get(
+    "/{order_id}/recipe-preview",
+    response_model=OrderRecipePreviewResponse,
+    summary="Previsualización de consumo BOM y balance de stock (HU11)",
+    description=(
+        "Calcula la explosión de materiales requeridos para el pedido según su receta BOM "
+        "y los contrasta con el stock disponible en bodega. Retorna si la producción es viable "
+        "y el detalle descriptivo de cualquier déficit existente."
+    ),
+    responses={
+        200: {"description": "Balance y viabilidad del consumo BOM."},
+        401: {"description": "No autenticado."},
+        404: {"description": "Pedido no encontrado."},
+    },
+)
+async def get_order_recipe_preview(
+    order_id: int,
+    _user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+) -> OrderRecipePreviewResponse:
+    """
+    Retorna la explosión de materiales requeridos vs stock actual para un pedido.
+    """
+    return await order_service.preview_order_recipe(db=db, order_id=order_id)
+
+
+# Alias para retrocompatibilidad
+get_recipe_preview = get_order_recipe_preview
 
 
 # ---------------------------------------------------------------------------

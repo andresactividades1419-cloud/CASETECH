@@ -8,10 +8,12 @@ Provee consultas agregadas optimizadas sobre:
 - Log inmutable de auditoría de acciones del sistema.
 """
 
+import csv
+import io
+import json
 from datetime import date, datetime
 from decimal import Decimal
 from math import ceil
-from typing import Optional
 
 from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -69,10 +71,11 @@ async def get_dashboard_metrics(db: AsyncSession) -> DashboardMetricsResponse:
     # 4. Materiales con alerta de stock crítico (stock_actual <= stock_minimo)
     res_alertas = await db.execute(
         select(func.count(Material.id)).where(
-            Material.activo == True,
+            Material.activo.is_(True),
             Material.stock_actual <= Material.stock_minimo,
         )
     )
+
     materiales_alerta_stock = res_alertas.scalar_one() or 0
 
     # 5. Ajustes pendientes de doble firma
@@ -124,10 +127,10 @@ async def get_dashboard_metrics(db: AsyncSession) -> DashboardMetricsResponse:
 
 async def get_stock_movements_log(
     db: AsyncSession,
-    tipo_movimiento: Optional[str] = None,
-    material_id: Optional[int] = None,
-    fecha_desde: Optional[date] = None,
-    fecha_hasta: Optional[date] = None,
+    tipo_movimiento: str | None = None,
+    material_id: int | None = None,
+    fecha_desde: date | None = None,
+    fecha_hasta: date | None = None,
     page: int = 1,
     limit: int = 25,
 ) -> StockMovementListResponse:
@@ -148,12 +151,21 @@ async def get_stock_movements_log(
     # Filtros
     if tipo_movimiento and tipo_movimiento.strip() and tipo_movimiento != "TODOS":
         tipo_clean = tipo_movimiento.strip().upper()
-        if tipo_clean in ("CONSUMO_PRODUCCION", "PRODUCCION", "DESCUENTO_PRODUCCION", "DESCUENTO_PRODUCCION_DEFINITIVO"):
+        if tipo_clean in (
+            "CONSUMO_PRODUCCION",
+            "PRODUCCION",
+            "DESCUENTO_PRODUCCION",
+            "DESCUENTO_PRODUCCION_DEFINITIVO",
+        ):
             query = query.where(StockMovement.tipo_movimiento.ilike("%PRODUCCION%"))
-            count_query = count_query.where(StockMovement.tipo_movimiento.ilike("%PRODUCCION%"))
+            count_query = count_query.where(
+                StockMovement.tipo_movimiento.ilike("%PRODUCCION%")
+            )
         else:
             query = query.where(StockMovement.tipo_movimiento.ilike(f"%{tipo_clean}%"))
-            count_query = count_query.where(StockMovement.tipo_movimiento.ilike(f"%{tipo_clean}%"))
+            count_query = count_query.where(
+                StockMovement.tipo_movimiento.ilike(f"%{tipo_clean}%")
+            )
 
     if material_id:
         query = query.where(StockMovement.material_id == material_id)
@@ -161,11 +173,15 @@ async def get_stock_movements_log(
 
     if fecha_desde:
         query = query.where(func.date(StockMovement.created_at) >= fecha_desde)
-        count_query = count_query.where(func.date(StockMovement.created_at) >= fecha_desde)
+        count_query = count_query.where(
+            func.date(StockMovement.created_at) >= fecha_desde
+        )
 
     if fecha_hasta:
         query = query.where(func.date(StockMovement.created_at) <= fecha_hasta)
-        count_query = count_query.where(func.date(StockMovement.created_at) <= fecha_hasta)
+        count_query = count_query.where(
+            func.date(StockMovement.created_at) <= fecha_hasta
+        )
 
     total_res = await db.execute(count_query)
     total = total_res.scalar_one() or 0
@@ -178,7 +194,9 @@ async def get_stock_movements_log(
     items = [
         StockMovementAuditItem(
             id=m.id,
-            material_nombre=m.material.nombre if m.material else f"Material #{m.material_id}",
+            material_nombre=m.material.nombre
+            if m.material
+            else f"Material #{m.material_id}",
             tipo_movimiento=m.tipo_movimiento,
             cantidad=m.cantidad,
             stock_antes=m.stock_antes,
@@ -204,8 +222,8 @@ async def get_stock_movements_log(
 
 async def get_system_audit_logs(
     db: AsyncSession,
-    entidad: Optional[str] = None,
-    usuario_id: Optional[int] = None,
+    entidad: str | None = None,
+    usuario_id: int | None = None,
     page: int = 1,
     limit: int = 25,
 ) -> AuditLogListResponse:
@@ -262,3 +280,166 @@ async def get_system_audit_logs(
         limit=limit,
         total_pages=total_pages,
     )
+
+
+async def export_stock_movements_csv(
+    db: AsyncSession,
+    tipo_movimiento: str | None = None,
+    material_id: int | None = None,
+    fecha_desde: date | None = None,
+    fecha_hasta: date | None = None,
+) -> str:
+    """
+    Construye y retorna el contenido CSV del Kardex de inventario (HU06, RF12).
+    """
+    query = (
+        select(StockMovement)
+        .options(
+            selectinload(StockMovement.material),
+            selectinload(StockMovement.ejecutor),
+        )
+        .order_by(StockMovement.created_at.desc(), StockMovement.id.desc())
+    )
+
+    if tipo_movimiento and tipo_movimiento.strip() and tipo_movimiento != "TODOS":
+        tipo_clean = tipo_movimiento.strip().upper()
+        if tipo_clean in (
+            "CONSUMO_PRODUCCION",
+            "PRODUCCION",
+            "DESCUENTO_PRODUCCION",
+            "DESCUENTO_PRODUCCION_DEFINITIVO",
+        ):
+            query = query.where(StockMovement.tipo_movimiento.ilike("%PRODUCCION%"))
+        else:
+            query = query.where(StockMovement.tipo_movimiento.ilike(f"%{tipo_clean}%"))
+
+    if material_id:
+        query = query.where(StockMovement.material_id == material_id)
+
+    if fecha_desde:
+        query = query.where(func.date(StockMovement.created_at) >= fecha_desde)
+
+    if fecha_hasta:
+        query = query.where(func.date(StockMovement.created_at) <= fecha_hasta)
+
+    result = await db.execute(query)
+    movements = result.scalars().all()
+
+    output = io.StringIO()
+    # Escribir BOM UTF-8 para soporte nativo en Excel
+    output.write("\ufeff")
+    writer = csv.writer(output, delimiter=",", quoting=csv.QUOTE_MINIMAL)
+
+    # Encabezados
+    writer.writerow(
+        [
+            "ID",
+            "Fecha y Hora",
+            "Tipo de Movimiento",
+            "Material / Insumo",
+            "Cantidad",
+            "Stock Anterior",
+            "Stock Posterior",
+            "Documento Origen",
+            "Referencia",
+            "Usuario Ejecutor",
+        ]
+    )
+
+    for m in movements:
+        mat_nombre = m.material.nombre if m.material else f"Material #{m.material_id}"
+        fecha_str = m.created_at.strftime("%Y-%m-%d %H:%M:%S") if m.created_at else ""
+        ejecutor = m.ejecutor.nombre_completo if m.ejecutor else "Sistema"
+        writer.writerow(
+            [
+                m.id,
+                fecha_str,
+                m.tipo_movimiento,
+                mat_nombre,
+                f"{float(m.cantidad):.3f}",
+                f"{float(m.stock_antes):.3f}",
+                f"{float(m.stock_despues):.3f}",
+                m.referencia_tipo or "N/A",
+                str(m.referencia_id) if m.referencia_id is not None else "N/A",
+                ejecutor,
+            ]
+        )
+
+    return output.getvalue()
+
+
+async def export_audit_logs_csv(
+    db: AsyncSession,
+    entidad: str | None = None,
+    usuario_id: int | None = None,
+    fecha_desde: date | None = None,
+    fecha_hasta: date | None = None,
+) -> str:
+    """
+    Construye y retorna el contenido CSV de la Bitácora de Auditoría del Sistema.
+    """
+    query = (
+        select(AuditLog)
+        .options(
+            selectinload(AuditLog.usuario),
+        )
+        .order_by(AuditLog.created_at.desc(), AuditLog.id.desc())
+    )
+
+    if entidad and entidad.strip() and entidad != "TODAS":
+        entidad_clean = entidad.strip().lower()
+        query = query.where(func.lower(AuditLog.entidad) == entidad_clean)
+
+    if usuario_id:
+        query = query.where(AuditLog.usuario_id == usuario_id)
+
+    if fecha_desde:
+        query = query.where(func.date(AuditLog.created_at) >= fecha_desde)
+
+    if fecha_hasta:
+        query = query.where(func.date(AuditLog.created_at) <= fecha_hasta)
+
+    result = await db.execute(query)
+    logs = result.scalars().all()
+
+    output = io.StringIO()
+    # Escribir BOM UTF-8 para soporte nativo en Excel
+    output.write("\ufeff")
+    writer = csv.writer(output, delimiter=",", quoting=csv.QUOTE_MINIMAL)
+
+    # Encabezados
+    writer.writerow(
+        [
+            "ID",
+            "Fecha y Hora",
+            "Usuario",
+            "Acción",
+            "Entidad Afectada",
+            "ID Entidad",
+            "Dirección IP",
+            "Detalle / Payload",
+        ]
+    )
+
+    for log in logs:
+        fecha_str = (
+            log.created_at.strftime("%Y-%m-%d %H:%M:%S") if log.created_at else ""
+        )
+        usuario = log.usuario.nombre_completo if log.usuario else "Sistema"
+        payload = log.payload_despues or log.payload_antes or {}
+        payload_str = json.dumps(payload, ensure_ascii=False)
+
+        writer.writerow(
+            [
+                log.id,
+                fecha_str,
+                usuario,
+                log.accion,
+                log.entidad,
+                str(log.entidad_id) if log.entidad_id is not None else "N/A",
+                log.ip_origen or "N/A",
+                payload_str,
+            ]
+        )
+
+    return output.getvalue()

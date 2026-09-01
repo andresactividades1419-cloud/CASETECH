@@ -1,4 +1,5 @@
 from collections.abc import AsyncGenerator
+
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -14,6 +15,7 @@ class Base(DeclarativeBase):
     """
     Clase base declarativa para todos los modelos ORM de SQLAlchemy 2.0.
     """
+
     pass
 
 

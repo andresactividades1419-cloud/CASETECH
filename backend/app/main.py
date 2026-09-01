@@ -9,19 +9,24 @@ Responsabilidades:
 - Health-check accesible sin autenticación.
 """
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.init_db import init_db
+from app.core.limiter import limiter
 
 # ---------------------------------------------------------------------------
 # Ciclo de vida de la aplicación (lifespan handler — FastAPI 0.110+)
 # ---------------------------------------------------------------------------
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
@@ -49,26 +54,36 @@ app = FastAPI(
         "pedidos y compras de casetones de concreto. "
         "Autenticación vía JWT Bearer (OAuth2)."
     ),
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    docs_url=f"{settings.API_V1_STR}/docs",
-    redoc_url=f"{settings.API_V1_STR}/redoc",
+    openapi_url=f"{settings.API_V1_STR}/openapi.json" if settings.DEBUG else None,
+    docs_url=f"{settings.API_V1_STR}/docs" if settings.DEBUG else None,
+    redoc_url=f"{settings.API_V1_STR}/redoc" if settings.DEBUG else None,
     lifespan=lifespan,
 )
 
 # ---------------------------------------------------------------------------
-# Middleware CORS
+# Rate Limiting (SlowAPI)
 # ---------------------------------------------------------------------------
-# En producción, reemplazar ["*"] por los orígenes permitidos explícitamente.
-# Ejemplo: ["https://app.casetech.com", "https://admin.casetech.com"]
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
+app.add_middleware(SlowAPIMiddleware)
+
+# ---------------------------------------------------------------------------
+# Middleware CORS — Issue #48
+# ---------------------------------------------------------------------------
+# Los orígenes permitidos se leen desde settings.CORS_ORIGINS (variable de
+# entorno CORS_ORIGINS). El wildcard ["*"] está explícitamente prohibido junto
+# con allow_credentials=True, ya que viola la spec CORS y es un vector de
+# ataque CSRF. Ver: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
 # ---------------------------------------------------------------------------
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],          # ← Restringir en producción
+    allow_origins=settings.CORS_ORIGINS,  # Lista explícita desde .env
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept"],
 )
+
 
 # ---------------------------------------------------------------------------
 # Registro de routers
@@ -83,6 +98,7 @@ app.include_router(
 # ---------------------------------------------------------------------------
 # Health-check (sin autenticación)
 # ---------------------------------------------------------------------------
+
 
 @app.get(
     "/health",

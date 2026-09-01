@@ -1,53 +1,54 @@
 # ============================================================
-# Frontend Dockerfile — CASETECH
+# Frontend Dockerfile — CASETECH ERP
 # Base: node:20-alpine (LTS) con PNPM via Corepack
+# Multi-stage: development -> builder -> production (Nginx)
 # ============================================================
 
-FROM node:20-alpine AS base
+# --- Stage 1: Desarrollo y dependencias (Dev) ---
+FROM node:20-alpine AS development
 
-# Metadatos de la imagen
-LABEL maintainer="casetech-team"
-LABEL description="Frontend React 18 para CASETECH ERP"
-LABEL node.version="20-lts"
-
-# Instalar dependencias del sistema
-RUN apk add --no-cache \
-        libc6-compat \
-        curl
-
-# Habilitar PNPM via Corepack (incluido en Node 20)
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# Directorio de trabajo
 WORKDIR /app
 
-# ============================================================
-# Etapa de instalación de dependencias
-# ============================================================
-FROM base AS dependencies
+# Instalar dependencias del sistema y habilitar PNPM en versión fija
+RUN apk add --no-cache libc6-compat curl gcompat && \
+    corepack enable && corepack prepare pnpm@9.1.0 --activate
 
-# Copiar archivos de manifiesto de dependencias
+# Copiar manifiestos e instalar dependencias completas
 COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install
 
-# Instalar dependencias en modo desarrollo
-# --no-frozen-lockfile: permite instalar aunque pnpm-lock.yaml no exista o esté desactualizado
-RUN pnpm install --no-frozen-lockfile
-
-# ============================================================
-# Etapa de desarrollo (imagen final para docker-compose dev)
-# ============================================================
-FROM base AS development
-
-WORKDIR /app
-
-# Copiar node_modules instalados desde la etapa anterior
-COPY --from=dependencies /app/node_modules ./node_modules
-
-# Copiar el código fuente
+# Copiar código fuente
 COPY . .
 
-# Puerto del servidor de desarrollo React
 EXPOSE 3000
-
-# Iniciar servidor de desarrollo con hot-reload y escucha en todas las interfaces
 CMD ["pnpm", "run", "dev"]
+
+# --- Stage 2: Compilación de Producción (Builder) ---
+FROM development AS builder
+
+ENV NODE_ENV=production
+RUN pnpm run build
+
+# --- Stage 3: Servidor Web Nginx de Producción (Runner) ---
+FROM nginx:1.27-alpine AS production
+
+LABEL maintainer="CASETECH Team"
+LABEL description="Servidor Nginx de producción para CASETECH ERP Frontend"
+
+# Eliminar configuración y contenido por defecto de Nginx
+RUN rm -rf /etc/nginx/conf.d/default.conf /usr/share/nginx/html/*
+
+# Copiar configuración optimizada de Nginx con SPA fallback y reverse proxy
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copiar artefactos estáticos compilados desde la etapa builder
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+EXPOSE 80
+
+# Healthcheck HTTP interno
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD wget -qO- http://localhost/ || exit 1
+
+# Iniciar servidor Nginx en primer plano
+CMD ["nginx", "-g", "daemon off;"]
