@@ -95,7 +95,7 @@ class Settings(BaseSettings):
     # --------------------------------------------------------------------------
     # CORS
     # --------------------------------------------------------------------------
-    CORS_ORIGINS: list[str] = [
+    CORS_ORIGINS: list[str] | str = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:5173",
@@ -105,11 +105,30 @@ class Settings(BaseSettings):
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
     def parse_cors_origins(cls, v: Any) -> list[str]:
-        """Permite recibir CORS_ORIGINS como lista o como string separado por comas."""
+        """
+        Permite recibir CORS_ORIGINS como:
+        - Lista JSON: '["http://localhost:3000", "http://localhost:5173"]'
+        - String separado por comas: 'http://localhost:3000,http://localhost:5173'
+        - Lista nativa de Python: ["http://localhost:3000", ...]
+        """
         if isinstance(v, str):
-            return [origin.strip() for origin in v.split(",") if origin.strip()]
+            v_str = v.strip()
+            if not v_str:
+                return []
+            if v_str.startswith("[") and v_str.endswith("]"):
+                try:
+                    import json
+
+                    parsed = json.loads(v_str)
+                    if isinstance(parsed, list):
+                        return [
+                            str(item).strip() for item in parsed if str(item).strip()
+                        ]
+                except Exception:
+                    pass
+            return [origin.strip() for origin in v_str.split(",") if origin.strip()]
         if isinstance(v, list):
-            return v
+            return [str(item).strip() for item in v if str(item).strip()]
         return [
             "http://localhost:3000",
             "http://127.0.0.1:3000",
