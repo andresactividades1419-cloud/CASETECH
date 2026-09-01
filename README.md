@@ -1,208 +1,173 @@
-# CASETECH — ERP de Gestión de Casetones
+<div align="center">
 
-> Sistema de planificación de recursos empresariales (ERP) diseñado para la gestión integral de casetones: inventario de materiales, pedidos, facturación y reportes operativos.
+# 🧱 CASETECH ERP
 
----
+**Sistema Integral de Planificación de Recursos Empresariales (ERP) para la Fabricación de Casetones de Concreto**
 
-## Stack Tecnológico
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-18.2-61DAFB.svg?logo=react&logoColor=black)](https://react.dev)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16_Alpine-4169E1.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org)
+[![Astral UV](https://img.shields.io/badge/UV-Fast_Python_Package_Manager-DE5FE9.svg?logo=python&logoColor=white)](https://docs.astral.sh/uv/)
+[![PNPM](https://img.shields.io/badge/PNPM-Fast_Disk_Efficient-F69220.svg?logo=pnpm&logoColor=white)](https://pnpm.io)
+[![Docker Compose](https://img.shields.io/badge/Docker_Compose-v2-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-| Capa | Tecnología | Versión | Justificación |
-|------|-----------|---------|---------------|
-| **Base de datos** | PostgreSQL | 16 (`postgres:16-alpine`) | Última versión LTS con soporte activo, mejoras de rendimiento en consultas complejas y soporte nativo de JSON |
-| **Backend runtime** | Python | 3.11-slim | Versión estable con mejoras significativas en rendimiento (10-60% vs 3.10) y soporte hasta 2027 |
-| **Backend framework** | FastAPI | 0.110.0 | Framework ASGI de alto rendimiento, tipado nativo con Pydantic v2, documentación OpenAPI automática |
-| **ORM** | SQLAlchemy | 2.0.28 | API moderna con soporte async/await, tipado estricto y compatibilidad total con Alembic |
-| **Migraciones** | Alembic | 1.13.1 | Herramienta oficial de migraciones para SQLAlchemy, control de versiones de esquema reproducible |
-| **Driver DB** | psycopg2-binary | 2.9.9 | Driver de producción para PostgreSQL, rendimiento y estabilidad comprobados |
-| **Validación** | Pydantic | 2.6.4 | Validación y serialización de datos con rendimiento 5-50x superior a v1 (core en Rust) |
-| **Gestor deps. Python** | UV | latest | Reemplaza pip+venv: instalación 10-100x más rápida, resolución determinista, lock file integrado |
-| **Frontend framework** | React | 18.2.0 | Biblioteca UI estándar de la industria con Concurrent Mode y Server Components |
-| **Routing frontend** | React Router DOM | 6.22.3 | Enrutamiento declarativo para React, compatible con React 18 |
-| **Cliente HTTP** | Axios | 1.6.7 | Cliente HTTP con interceptores, manejo de errores y soporte a TypeScript |
-| **Frontend runtime** | Node.js | 20 LTS (`node:20-alpine`) | Versión LTS con soporte hasta abril 2026, mejoras de rendimiento V8 y compatibilidad ESM nativa |
-| **Gestor deps. Node** | PNPM | (vía Corepack) | 2x más rápido que npm, ahorro de espacio en disco con almacén de contenido, lockfile estricto |
-| **Orquestación** | Docker Compose | v2 | Orquestación local multi-servicio con red virtual aislada `casetech-network` |
+</div>
 
 ---
 
-## ¿Por qué UV y PNPM?
+## 📖 1. Resumen del Negocio y Motor BOM
 
-### UV (Gestor de dependencias Python)
+**CASETECH** es una solución ERP especializada en la industria de la construcción para la manufactura, ensamblaje y control de inventario de **casetones de concreto**.
 
-**UV** es el reemplazo moderno de `pip` + `venv` + `pip-tools`, desarrollado por Astral (creadores de Ruff):
+El núcleo del sistema es un **Motor BOM (Bill of Materials)** transaccional que procesa dos naturalezas de materias primas:
 
-- ⚡ **10-100x más rápido** que pip gracias a su resolver escrito en Rust.
-- 🔒 **Determinismo total**: `uv.lock` garantiza instalaciones idénticas en todos los entornos.
-- 🛡️ **Auditoría integrada**: `uv pip audit` verifica CVEs sin dependencias adicionales.
-- 📦 **Todo en uno**: gestiona entornos virtuales, dependencias y scripts de proyecto.
-
-### PNPM (Gestor de paquetes Node)
-
-**PNPM** supera a `npm` y `yarn` en equipos de desarrollo:
-
-- 💾 **Almacén global de contenido**: los paquetes no se duplican entre proyectos (ahorro de ~60% de espacio en disco).
-- ⚡ **2-3x más rápido** en instalaciones que npm gracias a la instalación paralela y caché inteligente.
-- 🔒 **`--frozen-lockfile`**: las instalaciones en CI/Docker garantizan reproducibilidad exacta del `pnpm-lock.yaml`.
-- 🚫 **Sin `node_modules` fantasmas**: las dependencias no declaradas no pueden importarse (seguridad por diseño).
+| Naturaleza | Materiales de Ejemplo | Comportamiento en Inventario |
+|---|---|---|
+| **Recuperable** | Lona de alta resistencia, Guadua tratada | Se reutiliza en múltiples ciclos de vaciado; descuento parcial por desgaste o mantenimiento. |
+| **Material Perdido** | Icopor EPS, cemento, acero, malla | Se consume íntegramente en cada orden de producción. |
 
 ---
 
-## Requisitos previos
+## 🛠️ 2. Stack Tecnológico
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) ≥ 26.0 con Docker Compose v2.
-- Git ≥ 2.40.
-
----
-
-## Inicio rápido
-
-### 1. Clonar el repositorio
-
-```bash
-git clone https://github.com/<org>/casetech.git
-cd casetech
+```
+┌─────────────────────────────────────────────────────────────┐
+│                       CASETECH ERP                          │
+├──────────────────────────────┬──────────────────────────────┤
+│       BACKEND (FastAPI)      │       FRONTEND (React 18)    │
+│  • Python 3.11 + UV          │  • React 18 + React Router 6 │
+│  • SQLAlchemy 2.0 (Async)    │  • Axios + Interceptores JWT │
+│  • Alembic 1.13 + Stored Proc│  • PNPM (Corepack) + Vite    │
+│  • Pydantic v2 + Bcrypt/JWT  │  • Vanilla CSS Moderno       │
+├──────────────────────────────┴──────────────────────────────┤
+│                   BASE DE DATOS & INFRAESTRUCTURA           │
+│  • PostgreSQL 16 (12 tablas 3FN, transacciones atómicas)    │
+│  • Docker Compose v2 (Red aislada: casetech-network)        │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### 2. Configurar variables de entorno
+---
 
+## 🚀 3. Inicio Rápido con Docker Compose
+
+El proyecto está completamente contenerizado y listo para desplegarse localmente con un único comando:
+
+### Paso 1: Clonar y configurar variables de entorno
 ```bash
+git clone https://github.com/andres1419/CASETECH.git
+cd CASETECH
+
+# Copiar plantilla de variables de entorno
 cp .env.example .env
-# Edita .env con tus valores locales (contraseñas, secretos JWT, etc.)
 ```
 
-### 3. Levantar el proyecto
-
+### Paso 2: Iniciar todo el stack
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
-Los servicios quedarán disponibles en:
-
-| Servicio | URL |
-|----------|-----|
-| Frontend React | http://localhost:5173 |
-| Backend FastAPI | http://localhost:8000 |
-| Docs API (Swagger) | http://localhost:8000/docs |
-| PostgreSQL | `localhost:5432` |
-
-### 4. Detener los servicios
-
+### Paso 3: Aplicar migraciones iniciales y Stored Procedures
 ```bash
-docker compose down
-# Para eliminar también los volúmenes de datos:
-docker compose down -v
+docker compose exec backend alembic upgrade head
 ```
 
 ---
 
-## Migraciones de base de datos (Alembic)
+## 🌐 4. Puntos de Acceso del Sistema
 
-Las migraciones se ejecutan automáticamente al iniciar el backend.  
-Para gestión manual:
+Una vez iniciado el stack, los servicios estarán disponibles en:
 
-```bash
-# Acceder al contenedor del backend
-docker compose exec backend bash
-
-# Crear una nueva migración
-alembic revision --autogenerate -m "descripcion_del_cambio"
-
-# Aplicar migraciones pendientes
-alembic upgrade head
-
-# Revertir la última migración
-alembic downgrade -1
-
-# Ver historial de migraciones
-alembic history --verbose
-```
+| Servicio | URL Local | Descripción |
+|---|---|---|
+| **Frontend Web** | [http://localhost:3000](http://localhost:3000) | Aplicación React SPA (Login, Dashboard, Pedidos, Inventario, Usuarios) |
+| **Backend REST API** | [http://localhost:8000](http://localhost:8000) | Endpoints FastAPI `/api/v1` |
+| **Documentación OpenAPI** | [http://localhost:8000/api/v1/docs](http://localhost:8000/api/v1/docs) | Swagger UI interactivo |
+| **Base de Datos** | `localhost:5432` | PostgreSQL 16 (`casetech_db`) |
 
 ---
 
-## Auditorías de seguridad CVE
+## 👥 5. Matriz de Roles y Credenciales de Demostración
 
-### Backend (Python)
+El sistema incluye siembra idempotente automática de cuentas base para pruebas y auditoría:
 
+| Rol | Correo Electrónico | Contraseña Inicial | Alcance de Permisos |
+|---|---|---|---|
+| **ADMINISTRADOR** | `admin@casetech.com` | `Admin1234*` | **Acceso total**: Gestión de usuarios (HU02), proveedores, compras, ajustes de inventario, aprobación de auditorías y reportes. |
+| **OPERARIO** | `operario@casetech.com` | `Operario1234*` | **Operativo**: Registro de pedidos, consulta de balance BOM (HU11), solicitudes de ajuste y visualización de stock. |
+
+---
+
+## 🗄️ 6. Stored Procedures Atómicos en Base de Datos
+
+CASETECH delega la lógica crítica de concurrencia y descuento de inventario directamente en el motor PostgreSQL mediante procedimientos almacenados con bloqueo pesimista (`SELECT ... FOR UPDATE`):
+
+1. **`sp_descontar_receta(pedido_id, usuario_id)`**:
+   - Valida existencias en tiempo real de la receta BOM asociada al tipo de casetón.
+   - Aplica descuento diferenciado de materias primas recuperables vs. perdidas.
+   - Si existe déficit de stock, cancela la transacción atómicamente y emite excepción con código `P0001` detallando el insumo faltante.
+2. **`sp_crear_proveedor(...)`**:
+   - Inserta proveedores garantizando unicidad de NIT/RUC.
+3. **`sp_ajuste_inventario(ajuste_id, revisor_id, aprobado)`**:
+   - Aplica ajustes de inventario con doble firma y registro inmutable en el Kardex.
+
+---
+
+## 🧪 7. Pruebas y Auditorías de Seguridad
+
+### Pruebas Unitarias e Integración
 ```bash
-docker compose exec backend uv pip audit
+# Backend (Pytest async)
+docker compose exec backend pytest -v tests/
+
+# Frontend (Vitest)
+docker compose exec frontend pnpm run test -- --run
 ```
 
-### Frontend (Node)
-
+### Auditorías de Vulnerabilidades (CVE)
 ```bash
+# Backend (pip-audit estricto)
+docker compose exec backend uv run pip-audit -r req.txt --strict
+
+# Frontend (PNPM audit)
 docker compose exec frontend pnpm audit --audit-level=moderate
 ```
 
-> ⚠️ **Ambas auditorías deben ejecutarse antes de cada PR y en el pipeline de CI.**  
-> Ver [SECURITY.md](./SECURITY.md) para la política completa.
-
 ---
 
-## Desarrollo sin Docker
-
-### Backend
-
-```bash
-cd backend
-uv venv
-source .venv/bin/activate   # Linux/Mac
-.venv\Scripts\activate      # Windows PowerShell
-uv pip install -e .
-uvicorn app.main:app --reload --port 8000
-```
-
-### Frontend
-
-```bash
-cd frontend
-pnpm install --frozen-lockfile
-pnpm run dev
-```
-
----
-
-## Estructura del repositorio
+## 📁 8. Estructura del Repositorio
 
 ```
-casetech/
-├── .github/
-│   ├── ISSUE_TEMPLATE/
-│   │   ├── feature_request.md
-│   │   └── bug_report.md
-│   └── PULL_REQUEST_TEMPLATE.md
+CASETECH/
 ├── backend/
 │   ├── app/
-│   │   ├── api/
-│   │   ├── models/
-│   │   ├── schemas/
-│   │   ├── services/
-│   │   └── main.py
-│   ├── alembic/
-│   ├── Dockerfile
-│   └── pyproject.toml
+│   │   ├── api/          # Endpoints v1 (auth, users, orders, materials, providers, etc.)
+│   │   ├── core/         # Configuración (SecretStr, fail-fast), seguridad y BD
+│   │   ├── models/       # 12 Modelos ORM SQLAlchemy 2.0 (3FN)
+│   │   ├── schemas/      # Validación y serialización Pydantic v2
+│   │   └── services/     # Lógica de dominio y consumo de Stored Procedures
+│   ├── alembic/          # Migraciones de esquema y scripts SQL de Stored Procedures
+│   └── pyproject.toml    # Gestión de paquetes con Astral UV
 ├── frontend/
 │   ├── src/
-│   ├── public/
-│   ├── Dockerfile
-│   └── package.json
-├── .env.example
-├── .gitignore
-├── CONTRIBUTING.md
-├── SECURITY.md
-├── README.md
-└── docker-compose.yml
+│   │   ├── api/          # Clientes Axios tipados
+│   │   ├── components/   # Modales y componentes modulares (BOM, Usuarios, etc.)
+│   │   ├── context/      # Contexto global de autenticación JWT
+│   │   ├── pages/        # Vistas completas del ERP
+│   │   └── routes/       # Enrutamiento y Guards RBAC (ProtectedRoute)
+│   └── package.json      # Gestión con PNPM
+├── docs/                 # Documentación técnica de arquitectura y negocio
+├── .env.example          # Plantilla pública de variables de entorno
+├── docker-compose.yml    # Orquestación multi-contenedor
+├── LICENSE               # Licencia MIT
+├── SECURITY.md           # Política de seguridad y reporte CVE
+└── README.md             # Documentación principal
 ```
 
 ---
 
-## Contribuir
+## 📄 9. Licencia y Gobernanza
 
-Lee [CONTRIBUTING.md](./CONTRIBUTING.md) para conocer la estrategia Git Flow, Conventional Commits y el proceso de PR.
+Este proyecto se distribuye bajo la licencia **MIT**. Consulta el archivo [LICENSE](./LICENSE) para más detalles.
 
-## Seguridad
-
-Lee [SECURITY.md](./SECURITY.md) para reportar vulnerabilidades y conocer las políticas de seguridad del proyecto.
-
----
-
-> **CASETECH** — Construido con ❤️ por el equipo de desarrollo.
+Para detalles sobre contribución y estándares Git Flow / Conventional Commits, consulta [CONTRIBUTING.md](./CONTRIBUTING.md).
