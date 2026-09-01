@@ -1,83 +1,36 @@
 # ============================================================
-# Frontend Dockerfile — CASETECH
+# Frontend Dockerfile — CASETECH ERP
 # Base: node:20-alpine (LTS) con PNPM via Corepack
-# Multi-stage: development | builder | production (Nginx)
+# Multi-stage: builder -> runner (Nginx Alpine)
 # ============================================================
 
-FROM node:20-alpine AS base
+# --- Stage 1: Compilación (Builder) ---
+FROM node:20-alpine AS builder
 
-# Metadatos de la imagen
-LABEL maintainer="casetech-team"
-LABEL description="Frontend React 18 para CASETECH ERP"
-LABEL node.version="20-lts"
-
-# Instalar dependencias del sistema
-RUN apk add --no-cache \
-        libc6-compat \
-        curl
-
-# Habilitar PNPM via Corepack (incluido en Node 20)
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# Directorio de trabajo
 WORKDIR /app
 
-# ============================================================
-# Etapa de instalación de dependencias
-# ============================================================
-FROM base AS dependencies
+# Instalar dependencias del sistema y habilitar PNPM
+RUN apk add --no-cache libc6-compat curl && \
+    corepack enable && corepack prepare pnpm@latest --activate
 
-# Copiar archivos de manifiesto de dependencias
+# Copiar manifiestos de dependencias e instalar
 COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile || pnpm install
 
-# Instalar dependencias
-RUN pnpm install --no-frozen-lockfile
-
-# ============================================================
-# Etapa de desarrollo (imagen para docker-compose dev)
-# ============================================================
-FROM base AS development
-
-WORKDIR /app
-
-# Copiar node_modules instalados desde la etapa anterior
-COPY --from=dependencies /app/node_modules ./node_modules
-
-# Copiar el código fuente
+# Copiar código fuente de la aplicación
 COPY . .
 
-# Puerto del servidor de desarrollo React (Vite)
-EXPOSE 3000
-
-# Iniciar servidor de desarrollo con hot-reload y escucha en todas las interfaces
-CMD ["pnpm", "run", "dev"]
-
-# ============================================================
-# Etapa de compilación para producción
-# ============================================================
-FROM base AS builder
-
-WORKDIR /app
-
-COPY --from=dependencies /app/node_modules ./node_modules
-COPY . .
-
-# Variables de entorno de compilación
+# Variables de entorno y compilación del bundle para producción
 ENV NODE_ENV=production
-
-# Compilar bundle de producción optimizado
 RUN pnpm run build
 
-# ============================================================
-# Etapa de producción final (Nginx Alpine)
-# ============================================================
+# --- Stage 2: Servidor Web Nginx (Runner) ---
 FROM nginx:1.27-alpine AS production
 
-# Metadatos
-LABEL maintainer="casetech-team"
+LABEL maintainer="CASETECH Team"
 LABEL description="Servidor Nginx de producción para CASETECH ERP Frontend"
 
-# Eliminar configuración por defecto de Nginx
+# Eliminar configuración y contenido por defecto de Nginx
 RUN rm -rf /etc/nginx/conf.d/default.conf /usr/share/nginx/html/*
 
 # Copiar configuración optimizada de Nginx con SPA fallback y reverse proxy
@@ -89,9 +42,9 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Exponer puerto HTTP estándar
 EXPOSE 80
 
-# Healthcheck HTTP
+# Healthcheck HTTP interno
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost/ || exit 1
+    CMD wget -qO- http://localhost/ || exit 1
 
-# Iniciar Nginx en primer plano
+# Iniciar servidor Nginx en primer plano
 CMD ["nginx", "-g", "daemon off;"]
