@@ -16,6 +16,7 @@ class AdjustmentType(StrEnum):
     """
     Tipos de ajuste manual soportados por el motor de inventario.
     """
+
     MERMA = "MERMA"
     SOBRANTE = "SOBRANTE"
     CONTEO_FISICO = "CONTEO_FISICO"
@@ -27,17 +28,20 @@ class AdjustmentStatus(StrEnum):
     """
     Estados posibles de una solicitud de ajuste de inventario.
     """
+
     PENDIENTE = "PENDIENTE"
     PENDIENTE_APROBACION = "PENDIENTE_APROBACION"
     APROBADO = "APROBADO"
     RECHAZADO = "RECHAZADO"
 
 
-
 class StockAdjustmentBase(BaseModel):
     """Esquema base con atributos comunes de un ajuste de inventario."""
+
     material_id: int = Field(..., description="ID de la materia prima a ajustar", gt=0)
-    tipo: AdjustmentType = Field(..., description="Tipo de ajuste (MERMA, SOBRANTE, CONTEO_FISICO, DANO)")
+    tipo: AdjustmentType = Field(
+        ..., description="Tipo de ajuste (MERMA, SOBRANTE, CONTEO_FISICO, DANO)"
+    )
     cantidad: Decimal = Field(
         ...,
         gt=0,
@@ -55,12 +59,16 @@ class StockAdjustmentBase(BaseModel):
 
 class StockAdjustmentCreate(StockAdjustmentBase):
     """Esquema para la creación/solicitud de un ajuste de inventario."""
+
     pass
 
 
 class StockAdjustmentReview(BaseModel):
     """Esquema para que un Administrador apruebe o rechace una solicitud."""
-    aprobado: bool = Field(..., description="True para aprobar y aplicar al stock, False para rechazar")
+
+    aprobado: bool = Field(
+        ..., description="True para aprobar y aplicar al stock, False para rechazar"
+    )
     observaciones: str | None = Field(
         None,
         max_length=500,
@@ -70,6 +78,7 @@ class StockAdjustmentReview(BaseModel):
 
 class StockAdjustmentResponse(BaseModel):
     """Esquema de respuesta detallado con datos enriquecidos para la vista y auditoría."""
+
     id: int
     material_id: int
     tipo: str
@@ -91,6 +100,7 @@ class StockAdjustmentResponse(BaseModel):
 
 class StockAdjustmentListResponse(BaseModel):
     """Respuesta paginada para listados de ajustes de inventario."""
+
     items: list[StockAdjustmentResponse]
     total: int
     page: int

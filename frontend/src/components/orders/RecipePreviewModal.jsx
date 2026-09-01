@@ -102,7 +102,7 @@ export function RecipePreviewModal({ order, isOpen, onClose, onConfirmStart, isS
           </button>
         </div>
 
-        {/* Content Body */}
+        {/* Content */}
         <div style={{ padding: '1.5rem 1.75rem', overflowY: 'auto', flex: 1 }}>
           {loading ? (
             <div style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>

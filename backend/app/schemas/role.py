@@ -2,7 +2,6 @@
 schemas/role.py — Esquemas Pydantic v2 para el catálogo de Roles (RBAC).
 """
 
-
 from pydantic import BaseModel, Field
 
 
@@ -30,6 +29,7 @@ class RoleCreate(RoleBase):
     Hereda todos los campos de RoleBase sin añadir campos extra;
     se mantiene como clase separada para flexibilidad futura.
     """
+
     pass
 
 

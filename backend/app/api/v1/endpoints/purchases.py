@@ -51,10 +51,18 @@ async def create_purchase_endpoint(
 async def get_purchases_endpoint(
     db: DBSession,
     current_user: CurrentUser,
-    proveedor_id: int | None = Query(None, description="Filtrar por ID del proveedor", gt=0),
-    fecha_desde: date | None = Query(None, description="Fecha mínima de compra (YYYY-MM-DD)"),
-    fecha_hasta: date | None = Query(None, description="Fecha máxima de compra (YYYY-MM-DD)"),
-    codigo_compra: str | None = Query(None, description="Buscar por código (ej. CMP-2026)"),
+    proveedor_id: int | None = Query(
+        None, description="Filtrar por ID del proveedor", gt=0
+    ),
+    fecha_desde: date | None = Query(
+        None, description="Fecha mínima de compra (YYYY-MM-DD)"
+    ),
+    fecha_hasta: date | None = Query(
+        None, description="Fecha máxima de compra (YYYY-MM-DD)"
+    ),
+    codigo_compra: str | None = Query(
+        None, description="Buscar por código (ej. CMP-2026)"
+    ),
     page: int = Query(1, ge=1, description="Número de página"),
     limit: int = Query(20, ge=1, le=100, description="Registros por página"),
 ) -> PurchaseListResponse:

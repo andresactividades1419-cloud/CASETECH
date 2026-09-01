@@ -14,27 +14,42 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class DashboardKPIs(BaseModel):
     """Métricas clave consolidadas de alto nivel para el ERP."""
-    total_pedidos: int = Field(..., description="Cantidad total histórica de pedidos de producción")
-    pedidos_en_produccion: int = Field(..., description="Pedidos actualmente en estado EN_PRODUCCION")
-    compras_mes_cop: Decimal = Field(..., description="Gasto total en compras durante el mes en curso (COP)")
-    materiales_alerta_stock: int = Field(..., description="Cantidad de materias primas con stock <= stock mínimo")
-    ajustes_pendientes: int = Field(..., description="Solicitudes de ajuste manual pendientes de doble firma")
+
+    total_pedidos: int = Field(
+        ..., description="Cantidad total histórica de pedidos de producción"
+    )
+    pedidos_en_produccion: int = Field(
+        ..., description="Pedidos actualmente en estado EN_PRODUCCION"
+    )
+    compras_mes_cop: Decimal = Field(
+        ..., description="Gasto total en compras durante el mes en curso (COP)"
+    )
+    materiales_alerta_stock: int = Field(
+        ..., description="Cantidad de materias primas con stock <= stock mínimo"
+    )
+    ajustes_pendientes: int = Field(
+        ..., description="Solicitudes de ajuste manual pendientes de doble firma"
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class ProductionByType(BaseModel):
     """Distribución y agregación de producción por tipo de casetón y naturaleza BOM."""
+
     tipo_caseton: str = Field(..., description="Nombre del tipo de casetón")
     naturaleza: str = Field(..., description="Naturaleza BOM: RECUPERABLE o PERDIDO")
     total_pedidos: int = Field(..., description="Cantidad de órdenes registradas")
-    total_unidades: Decimal = Field(..., description="Total de unidades producidas o solicitadas")
+    total_unidades: Decimal = Field(
+        ..., description="Total de unidades producidas o solicitadas"
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class StockMovementAuditItem(BaseModel):
     """Ítem detallado de trazabilidad de Kardex de movimientos de inventario."""
+
     id: int
     material_nombre: str
     tipo_movimiento: str
@@ -51,6 +66,7 @@ class StockMovementAuditItem(BaseModel):
 
 class StockMovementListResponse(BaseModel):
     """Respuesta paginada para la trazabilidad de movimientos de inventario."""
+
     items: list[StockMovementAuditItem]
     total: int
     page: int
@@ -60,6 +76,7 @@ class StockMovementListResponse(BaseModel):
 
 class AuditLogItem(BaseModel):
     """Ítem de auditoría del sistema sobre acciones realizadas."""
+
     id: int
     accion: str
     entidad: str
@@ -74,6 +91,7 @@ class AuditLogItem(BaseModel):
 
 class AuditLogListResponse(BaseModel):
     """Respuesta paginada para los logs de auditoría administrativa."""
+
     items: list[AuditLogItem]
     total: int
     page: int
@@ -83,6 +101,7 @@ class AuditLogListResponse(BaseModel):
 
 class DashboardMetricsResponse(BaseModel):
     """Respuesta agregada completa para el panel principal del Dashboard."""
+
     kpis: DashboardKPIs
     produccion_por_tipo: list[ProductionByType]
 

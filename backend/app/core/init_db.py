@@ -4,13 +4,10 @@ core/init_db.py — Inicialización y siembra automática (seeding) de datos ese
 Garantiza que cualquier entorno nuevo (ej. clonar el repo en otra máquina)
 tenga creados automáticamente los roles y los usuarios iniciales.
 
-Principios de seguridad aplicados (Issue #48):
+Principios de seguridad aplicados:
 - La siembra SOLO se ejecuta en entornos distintos de "production".
-- Las contraseñas iniciales se leen EXCLUSIVAMENTE desde variables de entorno
-  (settings.ADMIN_INITIAL_PASSWORD / settings.OPERARIO_INITIAL_PASSWORD).
-  Nunca se usan literales fijos.
-- La siembra es estrictamente idempotente: si el usuario ya existe, su
-  contraseña NO se sobreescribe en reinicios.
+- Las contraseñas iniciales se leen desde variables de entorno.
+- La siembra es estrictamente idempotente.
 """
 
 import logging
@@ -32,7 +29,6 @@ async def init_db() -> None:
 
     - Solo se ejecuta cuando ENVIRONMENT != "production".
     - Idempotente: no sobreescribe datos existentes.
-    - Contraseñas leídas desde variables de entorno (SecretStr).
     """
     if settings.ENVIRONMENT == "production":
         logger.info(
@@ -47,7 +43,11 @@ async def init_db() -> None:
             # 1. Asegurar Roles (idempotente por nombre)
             # ------------------------------------------------------------------
             roles_data = [
-                (1, "ADMINISTRADOR", "Acceso completo a todos los módulos y configuraciones"),
+                (
+                    1,
+                    "ADMINISTRADOR",
+                    "Acceso completo a todos los módulos y configuraciones",
+                ),
                 (2, "OPERARIO", "Acceso a operaciones de producción e inventario"),
             ]
             for role_id, nombre, desc in roles_data:
@@ -71,8 +71,11 @@ async def init_db() -> None:
             ).scalar_one_or_none()
 
             if not admin_user:
-                # El usuario no existe: crear con la contraseña del entorno
-                admin_password = settings.ADMIN_INITIAL_PASSWORD.get_secret_value()
+                admin_password = (
+                    settings.ADMIN_INITIAL_PASSWORD.get_secret_value()
+                    if hasattr(settings.ADMIN_INITIAL_PASSWORD, "get_secret_value")
+                    else str(settings.ADMIN_INITIAL_PASSWORD)
+                )
                 admin = User(
                     nombre_completo="Administrador CASETECH",
                     email="admin@casetech.com",
@@ -86,7 +89,6 @@ async def init_db() -> None:
                     "(contraseña desde ADMIN_INITIAL_PASSWORD)"
                 )
             else:
-                # El usuario ya existe: NO sobreescribir contraseña (idempotencia)
                 logger.info(
                     "Usuario Administrador ya existe (admin@casetech.com) — "
                     "contraseña preservada sin cambios."
@@ -102,7 +104,11 @@ async def init_db() -> None:
             ).scalar_one_or_none()
 
             if not operario_user:
-                operario_password = settings.OPERARIO_INITIAL_PASSWORD.get_secret_value()
+                operario_password = (
+                    settings.OPERARIO_INITIAL_PASSWORD.get_secret_value()
+                    if hasattr(settings.OPERARIO_INITIAL_PASSWORD, "get_secret_value")
+                    else str(settings.OPERARIO_INITIAL_PASSWORD)
+                )
                 operario = User(
                     nombre_completo="Operario Producción",
                     email="operario@casetech.com",
@@ -125,7 +131,4 @@ async def init_db() -> None:
             logger.info("Verificación de datos iniciales completada.")
 
     except Exception as exc:
-        logger.warning(
-            "init_db omitido o pendiente de migraciones Alembic: %s", exc
-        )
-
+        logger.warning("init_db omitido o pendiente de migraciones Alembic: %s", exc)

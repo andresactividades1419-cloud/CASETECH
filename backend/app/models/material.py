@@ -27,21 +27,22 @@ class Material(Base):
     Inventario maestro de materias primas. Fuente de verdad del stock.
     Tabla: materiales
     """
+
     __tablename__ = "materiales"
     __table_args__ = (
-        CheckConstraint("stock_actual >= 0", name="ck_materiales_stock_actual_non_negative"),
-        CheckConstraint("stock_minimo >= 0", name="ck_materiales_stock_minimo_non_negative"),
+        CheckConstraint(
+            "stock_actual >= 0", name="ck_materiales_stock_actual_non_negative"
+        ),
+        CheckConstraint(
+            "stock_minimo >= 0", name="ck_materiales_stock_minimo_non_negative"
+        ),
     )
 
-    id: Mapped[int] = mapped_column(
-        BigInteger, primary_key=True, autoincrement=True
-    )
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     nombre: Mapped[str] = mapped_column(
         String(255), nullable=False, unique=True, index=True
     )
-    unidad_medida: Mapped[str] = mapped_column(
-        String(30), nullable=False
-    )
+    unidad_medida: Mapped[str] = mapped_column(String(30), nullable=False)
     stock_actual: Mapped[Decimal] = mapped_column(
         Numeric(12, 3), nullable=False, default=Decimal("0.000"), server_default="0"
     )

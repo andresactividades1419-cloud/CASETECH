@@ -22,6 +22,7 @@ from app.api.v1.endpoints.orders import router as orders_router
 
 api_router = APIRouter()
 
+
 # -----------------------------------------------------------------------
 # Dashboard, Métricas y Auditoría  (HU14, HU15)
 # -----------------------------------------------------------------------
@@ -39,7 +40,6 @@ api_router.include_router(
     prefix="/reports",
     tags=["Reportes"],
 )
-
 
 # -----------------------------------------------------------------------
 # Autenticación  (HU01)
@@ -112,8 +112,3 @@ api_router.include_router(
     prefix="/stock-adjustments",
     tags=["Ajustes de Inventario"],
 )
-
-
-
-
-

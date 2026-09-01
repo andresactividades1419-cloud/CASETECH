@@ -2,9 +2,12 @@
 schemas/user.py — Esquemas Pydantic v2 para el modelo Usuario de CASETECH ERP.
 
 Cubre:
-- UserBase      → campos compartidos (email, nombre_completo, activo).
-- UserCreate    → payload de registro con contraseña y rol_id.
-- UserRead      → respuesta pública ORM-serializable con auditoría.
+- UserBase        → campos compartidos (email, nombre_completo, activo).
+- UserCreate      → payload de registro con contraseña y rol_id.
+- UserRead        → respuesta pública ORM-serializable con auditoría.
+- UserUpdateAdmin → payload de actualización para panel de administración.
+- UserAdminRead   → respuesta enriquecida con nombre de rol para panel admin.
+- UserListResponse→ listado de usuarios para administración.
 """
 
 from datetime import datetime
@@ -15,9 +18,6 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 class UserBase(BaseModel):
     """
     Campos comunes que todos los esquemas de usuario comparten.
-
-    El email se valida con ``EmailStr`` (requiere ``pydantic[email]``
-    o el paquete ``email-validator``).
     """
 
     email: EmailStr = Field(
@@ -41,9 +41,6 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     """
     Payload para registrar un nuevo usuario (HU14 — solo ADMINISTRADOR).
-
-    Añade la contraseña en texto plano (que se hasheará antes de persistir)
-    y el identificador del rol que se le asignará.
     """
 
     password: str = Field(
@@ -63,29 +60,19 @@ class UserCreate(UserBase):
     @field_validator("password")
     @classmethod
     def password_strength(cls, v: str) -> str:
-        """
-        Verifica que la contraseña cumpla requisitos mínimos de complejidad:
-        - Al menos 8 caracteres (ya garantizado por ``min_length``).
-        - Al menos una letra mayúscula.
-        - Al menos un dígito numérico.
-        """
+        """Verifica complejidad de contraseña."""
         if not any(c.isupper() for c in v):
             raise ValueError(
                 "La contraseña debe contener al menos una letra mayúscula."
             )
         if not any(c.isdigit() for c in v):
-            raise ValueError(
-                "La contraseña debe contener al menos un dígito numérico."
-            )
+            raise ValueError("La contraseña debe contener al menos un dígito numérico.")
         return v
 
 
 class UserRead(UserBase):
     """
     Representación pública del usuario devuelta por la API.
-
-    Configurado con ``from_attributes = True`` para deserializar
-    directamente desde instancias ORM de SQLAlchemy.
     """
 
     id: int = Field(..., description="PK del usuario.", examples=[1])
@@ -98,11 +85,7 @@ class UserRead(UserBase):
     model_config = {"from_attributes": True}
 
 
-# ---------------------------------------------------------------------------
-# Schemas para Gestión Administrativa de Usuarios (HU02)
-# ---------------------------------------------------------------------------
-
-class UserUpdate(BaseModel):
+class UserUpdateAdmin(BaseModel):
     """Payload para actualizar usuarios por parte del Administrador."""
 
     nombre_completo: str | None = Field(
@@ -140,14 +123,16 @@ class UserUpdate(BaseModel):
         if len(v) < 8:
             raise ValueError("La contraseña debe tener al menos 8 caracteres.")
         if not any(c.isupper() for c in v):
-            raise ValueError("La contraseña debe contener al menos una letra mayúscula.")
+            raise ValueError(
+                "La contraseña debe contener al menos una letra mayúscula."
+            )
         if not any(c.isdigit() for c in v):
             raise ValueError("La contraseña debe contener al menos un dígito numérico.")
         return v
 
 
 # Alias para compatibilidad
-UserUpdateAdmin = UserUpdate
+UserUpdate = UserUpdateAdmin
 
 
 class UserStatusToggle(BaseModel):
@@ -175,15 +160,14 @@ class UserAdminRead(BaseModel):
 
 
 # Alias de respuesta
+UserAdminResponse = UserAdminRead
 UserResponse = UserAdminRead
 
 
 class UserListResponse(BaseModel):
-    """Listado paginado/completo de usuarios para el panel de administración."""
+    """Listado de usuarios para el panel de administración."""
 
     total: int
     skip: int = 0
     limit: int = 50
     items: list[UserAdminRead]
-
-

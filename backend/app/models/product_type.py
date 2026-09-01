@@ -25,6 +25,7 @@ class ProductType(Base):
     Define la naturaleza (RECUPERABLE o PERDIDO).
     Tabla: tipos_caseton
     """
+
     __tablename__ = "tipos_caseton"
     __table_args__ = (
         CheckConstraint(
@@ -33,18 +34,12 @@ class ProductType(Base):
         ),
     )
 
-    id: Mapped[int] = mapped_column(
-        BigInteger, primary_key=True, autoincrement=True
-    )
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     nombre: Mapped[str] = mapped_column(
         String(255), nullable=False, unique=True, index=True
     )
-    descripcion: Mapped[str | None] = mapped_column(
-        Text, nullable=True
-    )
-    naturaleza: Mapped[str] = mapped_column(
-        String(20), nullable=False
-    )
+    descripcion: Mapped[str | None] = mapped_column(Text, nullable=True)
+    naturaleza: Mapped[str] = mapped_column(String(20), nullable=False)
     activo: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
     )

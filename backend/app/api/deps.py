@@ -26,6 +26,7 @@ from app.schemas.token import TokenPayload
 # Dependencia: sesión de base de datos
 # ---------------------------------------------------------------------------
 
+
 async def get_db() -> AsyncSession:  # type: ignore[return]
     """
     Dependencia de FastAPI que provee una sesión async de SQLAlchemy.
@@ -61,6 +62,7 @@ BearerToken = Annotated[str, Depends(oauth2_scheme)]
 # Dependencia: usuario autenticado actual
 # ---------------------------------------------------------------------------
 
+
 async def get_current_user(
     token: BearerToken,
     db: DBSession,
@@ -95,18 +97,14 @@ async def get_current_user(
         )
         token_data = TokenPayload(**payload)
 
-
         if token_data.sub is None:
             raise credentials_exception
 
     except JWTError:
         raise credentials_exception from None
 
-
     # Buscar usuario en BD por email (claim 'sub')
-    result = await db.execute(
-        select(User).where(User.email == token_data.sub)
-    )
+    result = await db.execute(select(User).where(User.email == token_data.sub))
     user: User | None = result.scalar_one_or_none()
 
     if user is None:
@@ -125,6 +123,7 @@ async def get_current_user(
 # ---------------------------------------------------------------------------
 # Dependencia RBAC: solo ADMINISTRADOR
 # ---------------------------------------------------------------------------
+
 
 async def require_admin(
     current_user: Annotated[User, Depends(get_current_user)],
@@ -147,9 +146,7 @@ async def require_admin(
         User: El mismo usuario si la verificación es exitosa.
     """
     # Cargar el rol asociado al usuario si no está en memoria
-    result = await db.execute(
-        select(Role).where(Role.id == current_user.rol_id)
-    )
+    result = await db.execute(select(Role).where(Role.id == current_user.rol_id))
     role: Role | None = result.scalar_one_or_none()
 
     if role is None or role.nombre.upper() != "ADMINISTRADOR":

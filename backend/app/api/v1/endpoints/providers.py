@@ -10,7 +10,6 @@ Rutas expuestas bajo el prefijo ``/api/v1/providers``:
   PATCH  /{id}/status → Borrado lógico (toggle activo)           [ADMINISTRADOR]
 """
 
-
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,6 +28,7 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 # POST / — Registro de proveedor (HU02 — solo ADMINISTRADOR)
 # ---------------------------------------------------------------------------
+
 
 @router.post(
     "/",
@@ -69,6 +69,7 @@ async def create_provider(
 # GET / — Listado paginado con búsqueda (HU03 — autenticado)
 # ---------------------------------------------------------------------------
 
+
 @router.get(
     "/",
     response_model=ProviderListResponse,
@@ -87,7 +88,9 @@ async def list_providers(
     current_user: CurrentUser,
     db: AsyncSession = Depends(get_db),
     skip: int = Query(default=0, ge=0, description="Número de registros a omitir."),
-    limit: int = Query(default=50, ge=1, le=200, description="Máximo de registros a retornar."),
+    limit: int = Query(
+        default=50, ge=1, le=200, description="Máximo de registros a retornar."
+    ),
     search: str | None = Query(
         default=None,
         max_length=100,
@@ -117,6 +120,7 @@ async def list_providers(
 # GET /{provider_id} — Detalle por ID (autenticado)
 # ---------------------------------------------------------------------------
 
+
 @router.get(
     "/{provider_id}",
     response_model=ProviderRead,
@@ -143,6 +147,7 @@ async def get_provider(
 # ---------------------------------------------------------------------------
 # PUT /{provider_id} — Actualización de datos editables (ADMINISTRADOR)
 # ---------------------------------------------------------------------------
+
 
 @router.put(
     "/{provider_id}",
@@ -184,6 +189,7 @@ async def update_provider(
 # ---------------------------------------------------------------------------
 # PATCH /{provider_id}/status — Borrado lógico (ADMINISTRADOR)
 # ---------------------------------------------------------------------------
+
 
 @router.patch(
     "/{provider_id}/status",

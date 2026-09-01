@@ -18,6 +18,7 @@ from app.core.config import settings
 # Funciones de contraseña (bcrypt nativo)
 # ---------------------------------------------------------------------------
 
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Compara una contraseña en texto plano contra su hash bcrypt almacenado.
@@ -54,10 +55,10 @@ def get_password_hash(password: str) -> str:
     ).decode("utf-8")
 
 
-
 # ---------------------------------------------------------------------------
 # Función de generación de JWT
 # ---------------------------------------------------------------------------
+
 
 def create_access_token(
     data: dict[str, Any],
@@ -96,4 +97,3 @@ def create_access_token(
         algorithm=settings.JWT_ALGORITHM,
     )
     return encoded_jwt
-

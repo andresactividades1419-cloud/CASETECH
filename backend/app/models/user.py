@@ -28,6 +28,7 @@ class User(Base):
     Usuarios del sistema con roles y autenticación JWT (bcrypt).
     Tabla: usuarios
     """
+
     __tablename__ = "usuarios"
     __table_args__ = (
         CheckConstraint(
@@ -36,21 +37,17 @@ class User(Base):
         ),
     )
 
-
-    id: Mapped[int] = mapped_column(
-        BigInteger, primary_key=True, autoincrement=True
-    )
-    nombre_completo: Mapped[str] = mapped_column(
-        String(255), nullable=False
-    )
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    nombre_completo: Mapped[str] = mapped_column(String(255), nullable=False)
     email: Mapped[str] = mapped_column(
         String(255), nullable=False, unique=True, index=True
     )
-    password_hash: Mapped[str] = mapped_column(
-        String(255), nullable=False
-    )
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     rol_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("roles.id", ondelete="RESTRICT"), nullable=False, index=True
+        BigInteger,
+        ForeignKey("roles.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
     )
     activo: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
@@ -71,13 +68,19 @@ class User(Base):
         "Purchase", back_populates="registrador", foreign_keys="Purchase.registrado_por"
     )
     ajustes_solicitados: Mapped[list["StockAdjustment"]] = relationship(
-        "StockAdjustment", back_populates="solicitante", foreign_keys="StockAdjustment.solicitado_por"
+        "StockAdjustment",
+        back_populates="solicitante",
+        foreign_keys="StockAdjustment.solicitado_por",
     )
     ajustes_aprobados: Mapped[list["StockAdjustment"]] = relationship(
-        "StockAdjustment", back_populates="aprobador", foreign_keys="StockAdjustment.aprobado_por"
+        "StockAdjustment",
+        back_populates="aprobador",
+        foreign_keys="StockAdjustment.aprobado_por",
     )
     movimientos_ejecutados: Mapped[list["StockMovement"]] = relationship(
-        "StockMovement", back_populates="ejecutor", foreign_keys="StockMovement.ejecutado_por"
+        "StockMovement",
+        back_populates="ejecutor",
+        foreign_keys="StockMovement.ejecutado_por",
     )
     auditorias: Mapped[list["AuditLog"]] = relationship(
         "AuditLog", back_populates="usuario", foreign_keys="AuditLog.usuario_id"

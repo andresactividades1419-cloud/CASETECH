@@ -22,7 +22,9 @@ class ProductTypeResponse(BaseModel):
         ...,
         description="Naturaleza del material: 'RECUPERABLE' (Lona, Guadua) o 'PERDIDO' (Icopor, cemento).",
     )
-    activo: bool = Field(..., description="Indica si el tipo de casetón está disponible para producción.")
+    activo: bool = Field(
+        ..., description="Indica si el tipo de casetón está disponible para producción."
+    )
     created_at: datetime = Field(..., description="Fecha de registro en el catálogo.")
 
     model_config = {"from_attributes": True}
@@ -32,4 +34,6 @@ class ProductTypeListResponse(BaseModel):
     """Respuesta paginada para el catálogo de tipos de casetón."""
 
     total: int = Field(..., description="Total de tipos de casetón activos.")
-    items: list[ProductTypeResponse] = Field(..., description="Lista de tipos de casetón disponibles.")
+    items: list[ProductTypeResponse] = Field(
+        ..., description="Lista de tipos de casetón disponibles."
+    )

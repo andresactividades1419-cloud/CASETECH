@@ -1,13 +1,13 @@
 /**
- * pages/UsersPage.jsx — Gestión Integral de Cuentas de Usuario (HU02, HU14).
+ * pages/UsersPage.jsx — Gestión de Cuentas de Usuario (HU02, HU14).
  *
- * Vista exclusiva para administradores.
- * Permite listar, filtrar, registrar, editar datos/contraseña y alternar el estado activo (borrado lógico).
+ * Exclusivo para el rol ADMINISTRADOR.
+ * Permite listar, registrar, editar roles, activar/desactivar y actualizar contraseñas.
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
 import usersApi from '../api/usersApi';
-import UserModal from '../components/users/UserModal';
+import { UserModal } from '../components/users/UserModal';
 import { useAuth } from '../context/AuthContext';
 
 export function UsersPage() {
@@ -19,9 +19,9 @@ export function UsersPage() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
 
-  // Estados de modal
+  // Modal states
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
+  const [editingUser, setEditingUser] = useState(null); // null = nuevo usuario, objeto = editar
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalError, setModalError] = useState('');
 
@@ -110,15 +110,19 @@ export function UsersPage() {
     }
 
     try {
-      const res = await usersApi.toggleUserStatus(u.id);
-      setSuccessMsg(res.message || `Estado de ${u.email} modificado correctamente.`);
+      if (usersApi.toggleUserStatus) {
+        const res = await usersApi.toggleUserStatus(u.id);
+        setSuccessMsg(res.message || `Estado de ${u.email} modificado correctamente.`);
+      } else {
+        await usersApi.updateUser(u.id, { activo: !u.activo });
+        setSuccessMsg(`Usuario ${u.email} ${!u.activo ? 'activado' : 'desactivado'}.`);
+      }
       fetchUsers();
     } catch (err) {
       alert(err?.response?.data?.detail || 'Error al cambiar estado del usuario.');
     }
   };
 
-  // Métricas
   const total = users.length;
   const adminsCount = users.filter((u) => u.rol_nombre === 'ADMINISTRADOR' || u.rol_id === 1).length;
   const operariosCount = users.filter((u) => u.rol_nombre === 'OPERARIO' || u.rol_id === 2).length;
@@ -138,7 +142,7 @@ export function UsersPage() {
 
   return (
     <div style={{ color: '#f8fafc' }}>
-      {/* Toast de éxito */}
+      {/* Notificación Toast de Éxito */}
       {successMsg && (
         <div style={{
           backgroundColor: '#064e3b',
@@ -162,14 +166,14 @@ export function UsersPage() {
         </div>
       )}
 
-      {/* Header */}
+      {/* Header Principal */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.75rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '1.6rem', fontWeight: '800', color: '#f8fafc' }}>
             👥 Gestión de Cuentas de Usuario
           </h1>
           <p style={{ margin: '0.25rem 0 0', color: '#64748b', fontSize: '0.88rem' }}>
-            Control de acceso, roles y credenciales del ERP CASETECH (HU02)
+            Administración de credenciales, roles y acceso al sistema CASETECH ERP (HU02)
           </p>
         </div>
         <button
@@ -195,7 +199,7 @@ export function UsersPage() {
         </button>
       </div>
 
-      {/* Tarjetas de Métricas */}
+      {/* Tarjetas KPI */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
         <div style={{ backgroundColor: '#111827', border: '1px solid #1f2937', borderRadius: '12px', padding: '1rem 1.25rem' }}>
           <div style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '600' }}>Total Cuentas</div>
@@ -270,7 +274,6 @@ export function UsersPage() {
         </div>
       </div>
 
-      {/* Tabla de Usuarios */}
       <div style={{
         backgroundColor: '#111827',
         border: '1px solid #1f2937',
@@ -338,7 +341,6 @@ export function UsersPage() {
                 <span style={{ fontWeight: '600', color: '#f8fafc' }}>{u.nombre_completo}</span>
                 <span style={{ color: '#cbd5e1' }}>{u.email}</span>
 
-                {/* Rol Badge */}
                 <div>
                   <span style={{
                     padding: '0.2rem 0.55rem',
@@ -353,7 +355,6 @@ export function UsersPage() {
                   </span>
                 </div>
 
-                {/* Estado */}
                 <div>
                   <span style={{
                     padding: '0.2rem 0.5rem',
@@ -368,12 +369,10 @@ export function UsersPage() {
                   </span>
                 </div>
 
-                {/* Fecha */}
                 <span style={{ color: '#64748b', fontSize: '0.8rem' }}>
                   {new Date(u.created_at).toLocaleDateString('es-CO')}
                 </span>
 
-                {/* Acciones */}
                 <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
                   <button
                     onClick={() => handleOpenEdit(u)}
