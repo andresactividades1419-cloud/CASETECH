@@ -352,7 +352,7 @@ async def review_adjustment(
             return await get_adjustment_by_id(db, adjustment_id)
 
     try:
-        query = text("""
+        sp_query = text("""
             CALL sp_ajuste_inventario(
                 CAST(:ajuste_id AS BIGINT),
                 CAST(:aprobador_id AS BIGINT),
@@ -361,7 +361,7 @@ async def review_adjustment(
         """)
 
         await db.execute(
-            query,
+            sp_query,
             {
                 "ajuste_id": int(adjustment_id),
                 "aprobador_id": int(admin_user.id),

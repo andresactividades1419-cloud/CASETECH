@@ -278,7 +278,8 @@ async def update_user(
     await db.refresh(user)
 
     role_res = await db.execute(select(Role.nombre).where(Role.id == user.rol_id))
-    rol_nombre = role_res.scalar_one_or_none() or "OPERARIO"
+    role_val = role_res.scalar_one_or_none()
+    rol_nombre: str = str(role_val) if role_val else "OPERARIO"
 
     return UserAdminRead(
         id=user.id,

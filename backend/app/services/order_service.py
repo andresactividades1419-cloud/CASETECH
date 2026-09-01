@@ -65,21 +65,20 @@ async def _enrich_order(db: AsyncSession, order: Order) -> OrderResponse:
         select(ProductType.nombre).where(ProductType.id == order.tipo_caseton_id)
     )
     tipo_nombre = tipo_res.scalar_one_or_none() or "Casetón"
-    order_dict = {
-        "id": order.id,
-        "codigo_pedido": order.codigo_pedido,
-        "cliente": order.cliente,
-        "tipo_caseton_id": order.tipo_caseton_id,
-        "tipo_caseton_nombre": tipo_nombre,
-        "cantidad": order.cantidad,
-        "fecha_entrega_estimada": order.fecha_entrega_estimada,
-        "observaciones": order.observaciones,
-        "estado": order.estado,
-        "creado_por": order.creado_por,
-        "created_at": order.created_at,
-        "updated_at": order.updated_at,
-    }
-    return OrderResponse(**order_dict)
+    return OrderResponse(
+        id=order.id,
+        codigo_pedido=order.codigo_pedido,
+        cliente=order.cliente,
+        tipo_caseton_id=order.tipo_caseton_id,
+        tipo_caseton_nombre=tipo_nombre,
+        cantidad=order.cantidad,
+        fecha_entrega_estimada=order.fecha_entrega_estimada,
+        observaciones=order.observaciones,
+        estado=order.estado,
+        creado_por=order.creado_por,
+        created_at=order.created_at,
+        updated_at=order.updated_at,
+    )
 
 
 # ---------------------------------------------------------------------------

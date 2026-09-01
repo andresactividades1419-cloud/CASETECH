@@ -8,6 +8,7 @@ Provee:
 - ``require_admin``   → guarda de autorización RBAC para rol ADMINISTRADOR.
 """
 
+from collections.abc import AsyncGenerator
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
@@ -27,7 +28,7 @@ from app.schemas.token import TokenPayload
 # ---------------------------------------------------------------------------
 
 
-async def get_db() -> AsyncSession:  # type: ignore[return]
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     Dependencia de FastAPI que provee una sesión async de SQLAlchemy.
 
