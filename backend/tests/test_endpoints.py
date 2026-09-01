@@ -128,3 +128,50 @@ async def test_user_management_crud_admin_only(
     items = user_after_del.json()["items"]
     deactivated = next(u for u in items if u["id"] == new_user_id)
     assert deactivated["activo"] is False
+
+
+@pytest.mark.asyncio
+async def test_dashboard_movements_export_csv(
+    client: AsyncClient,
+    operario_headers: dict[str, str],
+):
+    """
+    HU06 / RF12: Valida que GET /api/v1/dashboard/movements/export-csv sea accesible
+    para usuarios autenticados (CurrentUser) y retorne un archivo CSV con las columnas correctas.
+    """
+    res = await client.get(
+        "/api/v1/dashboard/movements/export-csv", headers=operario_headers
+    )
+    assert res.status_code == 200
+    assert "text/csv" in res.headers.get("content-type", "")
+    assert "kardex_movimientos_" in res.headers.get("content-disposition", "")
+    assert "ID" in res.text
+    assert "Tipo de Movimiento" in res.text
+    assert "Material / Insumo" in res.text
+
+
+@pytest.mark.asyncio
+async def test_dashboard_audit_logs_export_csv(
+    client: AsyncClient,
+    admin_headers: dict[str, str],
+    operario_headers: dict[str, str],
+):
+    """
+    HU06 / RF12: Valida que GET /api/v1/dashboard/audit-logs/export-csv requiera rol ADMINISTRADOR
+    y retorne la bitácora en CSV con encabezados estándar.
+    """
+    # Operario debe recibir 403 Forbidden
+    op_res = await client.get(
+        "/api/v1/dashboard/audit-logs/export-csv", headers=operario_headers
+    )
+    assert op_res.status_code == 403
+
+    # Administrador debe recibir 200 OK con text/csv
+    admin_res = await client.get(
+        "/api/v1/dashboard/audit-logs/export-csv", headers=admin_headers
+    )
+    assert admin_res.status_code == 200
+    assert "text/csv" in admin_res.headers.get("content-type", "")
+    assert "bitacora_auditoria_" in admin_res.headers.get("content-disposition", "")
+    assert "Acción" in admin_res.text
+    assert "Entidad Afectada" in admin_res.text

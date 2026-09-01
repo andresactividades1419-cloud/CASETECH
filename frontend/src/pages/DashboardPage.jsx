@@ -47,7 +47,9 @@ export function DashboardPage() {
   const [movementsPage, setMovementsPage] = useState(1);
   const [movementTypeFilter, setMovementTypeFilter] = useState('TODOS');
   const [loadingMovements, setLoadingMovements] = useState(false);
-  const [exportingCsv, setExportingCsv] = useState(false);
+  const [exportingKardexCsv, setExportingKardexCsv] = useState(false);
+  const [exportingAuditCsv, setExportingAuditCsv] = useState(false);
+  const [toast, setToast] = useState(null);
 
   // Audit logs state
   const [auditLogs, setAuditLogs] = useState([]);
@@ -57,18 +59,39 @@ export function DashboardPage() {
   const [loadingAudit, setLoadingAudit] = useState(false);
   const [selectedJsonPayload, setSelectedJsonPayload] = useState(null);
 
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+  };
+
   // Exportar Kardex a CSV (HU06, RF12)
-  const handleExportCsv = async () => {
-    setExportingCsv(true);
+  const handleExportKardexCsv = async () => {
+    setExportingKardexCsv(true);
     try {
-      await dashboardApi.exportKardexCsv({
+      await dashboardApi.exportStockMovementsCSV({
         tipo_movimiento: movementTypeFilter !== 'TODOS' ? movementTypeFilter : undefined,
       });
+      showToast('Reporte de Kardex descargado exitosamente en formato CSV.', 'success');
     } catch (err) {
       console.error('Error al exportar CSV de Kardex:', err);
-      alert('Error al descargar el reporte CSV de Kardex. Verifique permisos de administrador.');
+      showToast('Error al descargar el reporte CSV de Kardex.', 'error');
     } finally {
-      setExportingCsv(false);
+      setExportingKardexCsv(false);
+    }
+  };
+
+  // Exportar Bitácora de Auditoría a CSV (HU06, RF12)
+  const handleExportAuditCsv = async () => {
+    setExportingAuditCsv(true);
+    try {
+      await dashboardApi.exportAuditLogsCSV({
+        entidad: entityFilter !== 'TODAS' ? entityFilter : undefined,
+      });
+      showToast('Bitácora de auditoría descargada exitosamente en formato CSV.', 'success');
+    } catch (err) {
+      console.error('Error al exportar CSV de auditoría:', err);
+      showToast('Error al descargar la bitácora de auditoría.', 'error');
+    } finally {
+      setExportingAuditCsv(false);
     }
   };
 
@@ -147,6 +170,45 @@ export function DashboardPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+      {/* Toast Notification */}
+      {toast && (
+        <div style={{
+          position: 'fixed',
+          bottom: '1.5rem',
+          right: '1.5rem',
+          zIndex: 999,
+          maxWidth: '460px',
+          backgroundColor: toast.type === 'success' ? '#064e3b' : '#7f1d1d',
+          border: `1px solid ${toast.type === 'success' ? '#059669' : '#dc2626'}`,
+          borderRadius: '12px',
+          padding: '0.85rem 1.25rem',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          color: '#ffffff',
+          animation: 'slideUp 0.25s ease-out',
+        }}>
+          <span style={{ fontSize: '1.25rem' }}>{toast.type === 'success' ? '✅' : '⚠️'}</span>
+          <div style={{ flex: 1, fontSize: '0.875rem', lineHeight: '1.4' }}>{toast.message}</div>
+          <button
+            onClick={() => setToast(null)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#ffffff',
+              cursor: 'pointer',
+              fontSize: '1rem',
+              padding: '0.2rem',
+              lineHeight: 1,
+              opacity: 0.7,
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Banner de Bienvenida */}
       <div style={{
         backgroundColor: '#111827',
@@ -552,54 +614,78 @@ export function DashboardPage() {
                 <option value="DEVOLUCION_CANCELACION">Devoluciones</option>
               </select>
 
-              {isAdmin && (
-                <button
-                  id="btn-export-kardex-csv"
-                  onClick={handleExportCsv}
-                  disabled={exportingCsv}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.35rem',
-                    padding: '0.4rem 0.85rem',
-                    backgroundColor: '#0369a1',
-                    color: '#f0f9ff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    fontSize: '0.8rem',
-                    fontWeight: '600',
-                    cursor: exportingCsv ? 'wait' : 'pointer',
-                    transition: 'background-color 0.15s ease',
-                  }}
-                  onMouseEnter={(e) => { if (!exportingCsv) e.currentTarget.style.backgroundColor = '#075985'; }}
-                  onMouseLeave={(e) => { if (!exportingCsv) e.currentTarget.style.backgroundColor = '#0369a1'; }}
-                >
-                  <span>📥</span>
-                  <span>{exportingCsv ? 'Exportando...' : 'Exportar CSV'}</span>
-                </button>
-              )}
+              <button
+                id="btn-export-kardex-csv"
+                onClick={handleExportKardexCsv}
+                disabled={exportingKardexCsv}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  padding: '0.4rem 0.85rem',
+                  backgroundColor: '#0284c7',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '0.8rem',
+                  fontWeight: '600',
+                  cursor: exportingKardexCsv ? 'wait' : 'pointer',
+                  transition: 'background-color 0.15s ease',
+                }}
+                onMouseEnter={(e) => { if (!exportingKardexCsv) e.currentTarget.style.backgroundColor = '#0369a1'; }}
+                onMouseLeave={(e) => { if (!exportingKardexCsv) e.currentTarget.style.backgroundColor = '#0284c7'; }}
+              >
+                <span>📥</span>
+                <span>{exportingKardexCsv ? 'Descargando...' : 'Exportar Kardex CSV'}</span>
+              </button>
             </div>
           ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+              <select
+                value={entityFilter}
+                onChange={(e) => { setEntityFilter(e.target.value); setAuditPage(1); }}
+                style={{
+                  padding: '0.4rem 0.75rem',
+                  backgroundColor: '#0f172a',
+                  border: '1px solid #334155',
+                  borderRadius: '6px',
+                  color: '#cbd5e1',
+                  fontSize: '0.8rem',
+                  outline: 'none',
+                }}
+              >
+                <option value="TODAS">Todas las entidades</option>
+                <option value="pedidos">Pedidos</option>
+                <option value="compras">Compras</option>
+                <option value="ajustes_inventario">Ajustes Inventario</option>
+                <option value="proveedores">Proveedores</option>
+              </select>
 
-            <select
-              value={entityFilter}
-              onChange={(e) => { setEntityFilter(e.target.value); setAuditPage(1); }}
-              style={{
-                padding: '0.4rem 0.75rem',
-                backgroundColor: '#0f172a',
-                border: '1px solid #334155',
-                borderRadius: '6px',
-                color: '#cbd5e1',
-                fontSize: '0.8rem',
-                outline: 'none',
-              }}
-            >
-              <option value="TODAS">Todas las entidades</option>
-              <option value="pedidos">Pedidos</option>
-              <option value="compras">Compras</option>
-              <option value="ajustes_inventario">Ajustes Inventario</option>
-              <option value="proveedores">Proveedores</option>
-            </select>
+              <button
+                id="btn-export-audit-csv"
+                onClick={handleExportAuditCsv}
+                disabled={exportingAuditCsv}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  padding: '0.4rem 0.85rem',
+                  backgroundColor: '#7c3aed',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '0.8rem',
+                  fontWeight: '600',
+                  cursor: exportingAuditCsv ? 'wait' : 'pointer',
+                  transition: 'background-color 0.15s ease',
+                }}
+                onMouseEnter={(e) => { if (!exportingAuditCsv) e.currentTarget.style.backgroundColor = '#6d28d9'; }}
+                onMouseLeave={(e) => { if (!exportingAuditCsv) e.currentTarget.style.backgroundColor = '#7c3aed'; }}
+              >
+                <span>📥</span>
+                <span>{exportingAuditCsv ? 'Descargando...' : 'Exportar Bitácora CSV'}</span>
+              </button>
+            </div>
           )}
         </div>
 
