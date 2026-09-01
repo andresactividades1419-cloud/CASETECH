@@ -308,7 +308,9 @@ async def get_orders(
     fecha_inicio: date | None = None,
     fecha_fin: date | None = None,
 ) -> OrderListResponse:
-    base_query = select(Order)
+    base_query = select(
+        Order, ProductType.nombre.label("tipo_caseton_nombre")
+    ).outerjoin(ProductType, Order.tipo_caseton_id == ProductType.id)
 
     if estado:
         base_query = base_query.where(Order.estado == estado.upper())
@@ -330,11 +332,26 @@ async def get_orders(
 
     paginated = base_query.order_by(Order.created_at.desc()).offset(skip).limit(limit)
     rows = await db.execute(paginated)
-    orders = rows.scalars().all()
+    results = rows.all()
 
     items: list[OrderResponse] = []
-    for order in orders:
-        items.append(await _enrich_order(db, order))
+    for order_obj, tipo_nombre in results:
+        items.append(
+            OrderResponse(
+                id=order_obj.id,
+                codigo_pedido=order_obj.codigo_pedido,
+                cliente=order_obj.cliente,
+                tipo_caseton_id=order_obj.tipo_caseton_id,
+                tipo_caseton_nombre=tipo_nombre or "Casetón",
+                cantidad=order_obj.cantidad,
+                fecha_entrega_estimada=order_obj.fecha_entrega_estimada,
+                observaciones=order_obj.observaciones,
+                estado=order_obj.estado,
+                creado_por=order_obj.creado_por,
+                created_at=order_obj.created_at,
+                updated_at=order_obj.updated_at,
+            )
+        )
 
     return OrderListResponse(total=total, skip=skip, limit=limit, items=items)
 
@@ -345,8 +362,32 @@ async def get_orders(
 
 
 async def get_order_by_id(db: AsyncSession, order_id: int) -> OrderResponse:
-    order = await _get_order_orm(db, order_id)
-    return await _enrich_order(db, order)
+    query = (
+        select(Order, ProductType.nombre.label("tipo_caseton_nombre"))
+        .outerjoin(ProductType, Order.tipo_caseton_id == ProductType.id)
+        .where(Order.id == order_id)
+    )
+    result = (await db.execute(query)).first()
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Pedido con ID {order_id} no encontrado.",
+        )
+    order_obj, tipo_nombre = result
+    return OrderResponse(
+        id=order_obj.id,
+        codigo_pedido=order_obj.codigo_pedido,
+        cliente=order_obj.cliente,
+        tipo_caseton_id=order_obj.tipo_caseton_id,
+        tipo_caseton_nombre=tipo_nombre or "Casetón",
+        cantidad=order_obj.cantidad,
+        fecha_entrega_estimada=order_obj.fecha_entrega_estimada,
+        observaciones=order_obj.observaciones,
+        estado=order_obj.estado,
+        creado_por=order_obj.creado_por,
+        created_at=order_obj.created_at,
+        updated_at=order_obj.updated_at,
+    )
 
 
 # ---------------------------------------------------------------------------

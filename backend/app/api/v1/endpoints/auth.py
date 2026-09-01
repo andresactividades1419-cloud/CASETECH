@@ -12,12 +12,13 @@ HU14 / HU02 — Gestión de usuarios (solo ADMINISTRADOR):
     DELETE /api/v1/auth/users/{id} → Desactivar lógicamente un usuario.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import AdminUser, CurrentUser, get_db
+from app.core.limiter import limiter
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.models.role import Role
 from app.models.user import User
@@ -49,9 +50,14 @@ router = APIRouter()
     responses={
         200: {"description": "Autenticación exitosa. Token JWT emitido."},
         401: {"description": "Credenciales incorrectas o cuenta inactiva."},
+        429: {
+            "description": "Límite de intentos excedido (máximo 10 por minuto por IP)."
+        },
     },
 )
+@limiter.limit("10/minute")
 async def login(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db),
 ) -> Token:

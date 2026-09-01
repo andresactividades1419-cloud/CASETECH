@@ -41,6 +41,8 @@ dependencies = [
     "python-jose[cryptography]>=3.4.0",
     # Soporte a formularios multipart (requerido por FastAPI)
     "python-multipart>=0.0.31",
+    # Limitación de tasa de solicitudes (Rate Limiting) para prevenir ataques de fuerza bruta
+    "slowapi>=0.1.9",
 ]
 
 # ============================================================
