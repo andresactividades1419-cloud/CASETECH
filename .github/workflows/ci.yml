@@ -44,6 +44,9 @@ jobs:
       DATABASE_URL: postgresql+asyncpg://casetech:testpassword123@localhost:5432/casetech_test_db
       JWT_SECRET: super-secret-test-key-minimum-32-bytes-long-for-testing-ci-12345
       JWT_ALGORITHM: HS256
+      POSTGRES_PASSWORD: testpassword123
+      ADMIN_INITIAL_PASSWORD: Admin1234Test
+      OPERARIO_INITIAL_PASSWORD: Operario1234Test
       ENVIRONMENT: test
       DEBUG: "False"
 
