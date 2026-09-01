@@ -42,19 +42,23 @@ jobs:
 
     env:
       DATABASE_URL: postgresql+asyncpg://casetech:testpassword123@localhost:5432/casetech_test_db
+      POSTGRES_PASSWORD: testpassword123
       JWT_SECRET: super-secret-test-key-minimum-32-bytes-long-for-testing-ci-12345
       JWT_ALGORITHM: HS256
       ENVIRONMENT: test
-      DEBUG: "False"
+      # ADMIN_INITIAL_PASSWORD y OPERARIO_INITIAL_PASSWORD requeridas por Pydantic
+      # SecretStr sin default (Issue #48 — fail-fast en startup)
+      ADMIN_INITIAL_PASSWORD: ${{ secrets.ADMIN_INITIAL_PASSWORD || 'AdminCI1234*' }}
+      OPERARIO_INITIAL_PASSWORD: ${{ secrets.OPERARIO_INITIAL_PASSWORD || 'OperarioCI1234*' }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install Astral UV
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v4
         with:
-          version: "0.4.18"
+          version: "0.4.29"   # Último de la línea 0.4.x — compatible con --dev y [dependency-groups]
           enable-cache: true
           cache-dependency-glob: "backend/pyproject.toml"
 
@@ -62,7 +66,9 @@ jobs:
         run: uv python pin 3.11
 
       - name: Install dependencies with UV
-        run: uv sync --all-groups
+        # --all-groups fue introducido en UV 0.5.0; para UV 0.4.x con [dependency-groups]
+        # el flag correcto es --dev (instala el grupo 'dev' definido en pyproject.toml)
+        run: uv sync --dev
 
       - name: Run Ruff Linter & Formatter Check
         run: uv run ruff check .
