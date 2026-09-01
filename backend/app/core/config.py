@@ -1,6 +1,4 @@
-import os
-from typing import Any, Optional
-from pydantic import computed_field, PostgresDsn
+from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -36,8 +34,8 @@ class Settings(BaseSettings):
     POSTGRES_DB: str = "casetech_db"
 
     # Permite inyectar DATABASE_URL directamente si existe
-    DATABASE_URL: Optional[str] = None
-    ASYNC_DATABASE_URL: Optional[str] = None
+    DATABASE_URL: str | None = None
+    ASYNC_DATABASE_URL: str | None = None
 
     @computed_field  # type: ignore[misc]
     @property

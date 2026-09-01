@@ -6,7 +6,9 @@ tenga creados automáticamente los roles y los usuarios iniciales (Admin y Opera
 """
 
 import logging
+
 from sqlalchemy import select
+
 from app.core.database import AsyncSessionLocal
 from app.core.security import get_password_hash
 from app.models.role import Role

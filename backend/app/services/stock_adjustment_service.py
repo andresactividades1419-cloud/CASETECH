@@ -10,10 +10,9 @@ Gestiona el ciclo de vida de los ajustes de stock:
 
 from decimal import Decimal
 from math import ceil
-from typing import Optional
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, select, text, update
+from sqlalchemy import func, select, text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -22,7 +21,6 @@ from app.models.material import Material
 from app.models.stock_adjustment import StockAdjustment
 from app.models.user import User
 from app.schemas.stock_adjustment import (
-    AdjustmentStatus,
     AdjustmentType,
     StockAdjustmentCreate,
     StockAdjustmentListResponse,
@@ -153,9 +151,9 @@ async def create_adjustment(
 
 async def get_adjustments(
     db: AsyncSession,
-    estado: Optional[str] = None,
-    tipo: Optional[str] = None,
-    material_id: Optional[int] = None,
+    estado: str | None = None,
+    tipo: str | None = None,
+    material_id: int | None = None,
     page: int = 1,
     limit: int = 20,
 ) -> StockAdjustmentListResponse:
@@ -290,16 +288,13 @@ async def review_adjustment(
             detail=f"El ajuste #{adjustment_id} ya fue procesado con estado '{adj.estado}' y no puede modificarse.",
         )
 
-    # 2. Doble firma: Si el administrador fue el mismo solicitante en pruebas,
-    # reasignamos el solicitante para permitir la ejecución exitosa del Stored Procedure
+
+    # 2. Doble firma: El usuario que aprueba o rechaza no puede ser el mismo que solicitó
     if adj.solicitado_por == admin_user.id:
-        dummy_solicitante = 2 if admin_user.id == 1 else 1
-        await db.execute(
-            update(StockAdjustment)
-            .where(StockAdjustment.id == adjustment_id)
-            .values(solicitado_por=dummy_solicitante)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Un usuario no puede aprobar su propia solicitud de ajuste de inventario (regla de doble firma).",
         )
-        await db.flush()
 
     # 3. Invocar el Stored Procedure atómico
     try:
@@ -310,6 +305,7 @@ async def review_adjustment(
                 CAST(:aprobar AS BOOLEAN)
             )
         """)
+
         await db.execute(
             query,
             {

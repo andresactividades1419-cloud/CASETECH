@@ -19,9 +19,16 @@ from app.core.security import create_access_token, get_password_hash, verify_pas
 from app.models.role import Role
 from app.models.user import User
 from app.schemas.token import Token
-from app.schemas.user import UserCreate, UserRead
+from app.schemas.user import (
+    UserAdminResponse,
+    UserCreate,
+    UserListResponse,
+    UserRead,
+    UserUpdate,
+)
 
 router = APIRouter()
+
 
 
 # ---------------------------------------------------------------------------
@@ -189,3 +196,126 @@ async def me(current_user: CurrentUser) -> User:
     directamente del JWT mediante la dependencia ``get_current_user``.
     """
     return current_user
+
+
+# ---------------------------------------------------------------------------
+# HU02 / HU14 — Gestión de Usuarios (Exclusivo ADMINISTRADOR)
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/users",
+    response_model=UserListResponse,
+    summary="Listar usuarios del sistema (Admin)",
+    description="Retorna la lista de usuarios registrados con su respectivo rol. **Exclusivo ADMINISTRADOR.**",
+)
+async def list_users(
+    _admin: AdminUser,
+    db: AsyncSession = Depends(get_db),
+) -> UserListResponse:
+    query = (
+        select(User, Role.nombre.label("rol_nombre"))
+        .join(Role, Role.id == User.rol_id)
+        .order_by(User.id.asc())
+    )
+    result = await db.execute(query)
+    rows = result.all()
+
+    items = []
+    for user_obj, rol_nombre in rows:
+        user_dict = {
+            "id": user_obj.id,
+            "nombre_completo": user_obj.nombre_completo,
+            "email": user_obj.email,
+            "rol_id": user_obj.rol_id,
+            "rol_nombre": rol_nombre,
+            "activo": user_obj.activo,
+            "created_at": user_obj.created_at,
+            "updated_at": user_obj.updated_at,
+        }
+        items.append(UserAdminResponse(**user_dict))
+
+    return UserListResponse(total=len(items), items=items)
+
+
+@router.patch(
+    "/users/{user_id}",
+    response_model=UserAdminResponse,
+    summary="Actualizar usuario (Admin)",
+    description="Permite modificar rol, datos o activar/desactivar a un usuario. **Exclusivo ADMINISTRADOR.**",
+)
+async def update_user(
+    user_id: int,
+    user_in: UserUpdate,
+    _admin: AdminUser,
+    db: AsyncSession = Depends(get_db),
+) -> UserAdminResponse:
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Usuario con ID {user_id} no encontrado.",
+        )
+
+    if user_in.email is not None and user_in.email != user.email:
+        existing = await db.execute(select(User).where(User.email == user_in.email))
+        if existing.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"El email '{user_in.email}' ya está registrado.",
+            )
+        user.email = user_in.email
+
+    if user_in.rol_id is not None:
+        role = await db.get(Role, user_in.rol_id)
+        if not role:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"El rol {user_in.rol_id} no existe.",
+            )
+        user.rol_id = user_in.rol_id
+
+    if user_in.nombre_completo is not None:
+        user.nombre_completo = user_in.nombre_completo
+
+    if user_in.activo is not None:
+        user.activo = user_in.activo
+
+    if user_in.password:
+        user.password_hash = get_password_hash(user_in.password)
+
+    await db.commit()
+    await db.refresh(user)
+
+    role_nombre = await db.scalar(select(Role.nombre).where(Role.id == user.rol_id))
+    return UserAdminResponse(
+        id=user.id,
+        nombre_completo=user.nombre_completo,
+        email=user.email,
+        rol_id=user.rol_id,
+        rol_nombre=role_nombre or "OPERARIO",
+        activo=user.activo,
+        created_at=user.created_at,
+        updated_at=user.updated_at,
+    )
+
+
+@router.delete(
+    "/users/{user_id}",
+    summary="Desactivar usuario (Admin)",
+    description="Desactiva lógicamente una cuenta de usuario. **Exclusivo ADMINISTRADOR.**",
+)
+async def delete_user(
+    user_id: int,
+    _admin: AdminUser,
+    db: AsyncSession = Depends(get_db),
+):
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Usuario con ID {user_id} no encontrado.",
+        )
+    user.activo = False
+    await db.commit()
+    return {"message": f"Usuario {user.email} desactivado exitosamente.", "id": user_id, "activo": False}
+

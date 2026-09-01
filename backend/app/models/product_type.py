@@ -1,13 +1,22 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, String, Text, func
+from typing import TYPE_CHECKING
+
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
 if TYPE_CHECKING:
-    from app.models.recipe import Recipe
     from app.models.order import Order
+    from app.models.recipe import Recipe
 
 
 class ProductType(Base):
@@ -30,7 +39,7 @@ class ProductType(Base):
     nombre: Mapped[str] = mapped_column(
         String(255), nullable=False, unique=True, index=True
     )
-    descripcion: Mapped[Optional[str]] = mapped_column(
+    descripcion: Mapped[str | None] = mapped_column(
         Text, nullable=True
     )
     naturaleza: Mapped[str] = mapped_column(
@@ -44,10 +53,10 @@ class ProductType(Base):
     )
 
     # Relaciones
-    recetas: Mapped[List["Recipe"]] = relationship(
+    recetas: Mapped[list["Recipe"]] = relationship(
         "Recipe", back_populates="tipo_caseton", passive_deletes=True
     )
-    pedidos: Mapped[List["Order"]] = relationship(
+    pedidos: Mapped[list["Order"]] = relationship(
         "Order", back_populates="tipo_caseton", passive_deletes=True
     )
 

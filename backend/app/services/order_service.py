@@ -9,24 +9,26 @@ Convenciones:
 """
 
 from datetime import date, datetime
-from typing import Optional
 
 from fastapi import HTTPException, status
-from sqlalchemy import and_, func, or_, select, text, update
+from sqlalchemy import and_, func, select, text, update
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.material import Material
 from app.models.order import Order
 from app.models.product_type import ProductType
+from app.models.recipe import Recipe
 from app.schemas.order import (
     OrderCreate,
     OrderListResponse,
+    OrderRecipePreviewResponse,
     OrderResponse,
     OrderStatus,
     OrderStatusUpdate,
+    RecipePreviewItem,
 )
 from app.schemas.product_type import ProductTypeListResponse, ProductTypeResponse
-
 
 # ---------------------------------------------------------------------------
 # Helpers internos
@@ -95,7 +97,7 @@ async def _enrich_order(db: AsyncSession, order: Order) -> OrderResponse:
     result = await db.execute(
         select(ProductType.nombre).where(ProductType.id == order.tipo_caseton_id)
     )
-    tipo_nombre: Optional[str] = result.scalar_one_or_none()
+    tipo_nombre: str | None = result.scalar_one_or_none()
 
     response = OrderResponse.model_validate(order)
     response.tipo_caseton_nombre = tipo_nombre
@@ -253,6 +255,58 @@ async def update_order_status(
     # Ejecuta el SP de descuento BOM de forma transaccional
     # ─────────────────────────────────────────────────────────────
     if current_status == "PENDIENTE" and new_status == "EN_PRODUCCION":
+        bind = db.get_bind()
+        is_sqlite = bind and bind.dialect.name == "sqlite"
+
+        if is_sqlite:
+            from app.models.stock_movement import StockMovement
+
+            rec_query = (
+                select(Recipe, Material)
+                .join(Material, Material.id == Recipe.material_id)
+                .where(Recipe.tipo_caseton_id == order.tipo_caseton_id)
+                .order_by(Recipe.material_id)
+            )
+            rec_rows = (await db.execute(rec_query)).all()
+
+            for recipe_item, material_item in rec_rows:
+                consumo_total = float(recipe_item.cantidad_por_unidad) * float(order.cantidad)
+                stock_act = float(material_item.stock_actual)
+                if stock_act < consumo_total:
+                    deficit = consumo_total - stock_act
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail=(
+                            f"No se puede iniciar la producción del pedido '{order.codigo_pedido}'. "
+                            f"Stock insuficiente en inventario: Para '{material_item.nombre}' se requieren "
+                            f"{consumo_total:.3f} {material_item.unidad_medida}, disponible {stock_act:.3f} "
+                            f"{material_item.unidad_medida} (déficit: {deficit:.3f} {material_item.unidad_medida})."
+                        ),
+                    )
+
+            for recipe_item, material_item in rec_rows:
+                consumo_total = float(recipe_item.cantidad_por_unidad) * float(order.cantidad)
+                stock_antes = float(material_item.stock_actual)
+                stock_despues = stock_antes - consumo_total
+                material_item.stock_actual = stock_despues
+
+                mov = StockMovement(
+                    material_id=material_item.id,
+                    tipo_movimiento="DESCUENTO_PRODUCCION",
+                    cantidad=consumo_total,
+                    stock_antes=stock_antes,
+                    stock_despues=stock_despues,
+                    referencia_id=order.id,
+                    referencia_tipo="PEDIDO",
+                    ejecutado_por=user_id,
+                )
+                db.add(mov)
+
+            order.estado = "EN_PRODUCCION"
+            await db.commit()
+            await db.refresh(order)
+            return await _enrich_order(db, order)
+
         try:
             # El SP internamente hace FOR UPDATE en pedidos y materiales,
             # actualiza el estado a EN_PRODUCCION y registra movimientos.
@@ -308,6 +362,7 @@ async def update_order_status(
         await db.refresh(order)
         return await _enrich_order(db, order)
 
+
     # ─────────────────────────────────────────────────────────────
     # Otras transiciones: actualización directa
     # ─────────────────────────────────────────────────────────────
@@ -329,11 +384,11 @@ async def get_orders(
     db: AsyncSession,
     skip: int = 0,
     limit: int = 50,
-    estado: Optional[str] = None,
-    cliente: Optional[str] = None,
-    tipo_caseton_id: Optional[int] = None,
-    fecha_inicio: Optional[date] = None,
-    fecha_fin: Optional[date] = None,
+    estado: str | None = None,
+    cliente: str | None = None,
+    tipo_caseton_id: int | None = None,
+    fecha_inicio: date | None = None,
+    fecha_fin: date | None = None,
 ) -> OrderListResponse:
     """
     Retorna pedidos paginados con soporte de filtros múltiples.
@@ -440,3 +495,73 @@ async def get_product_types(db: AsyncSession) -> ProductTypeListResponse:
         total=len(types),
         items=[ProductTypeResponse.model_validate(t) for t in types],
     )
+
+
+# ---------------------------------------------------------------------------
+# get_order_recipe_preview — HU11: Previsualización de Consumo BOM
+# ---------------------------------------------------------------------------
+
+async def get_order_recipe_preview(
+    db: AsyncSession, order_id: int
+) -> OrderRecipePreviewResponse:
+    """
+    Calcula la explosión de materiales requerida para el pedido y determina
+    si el stock en inventario es suficiente para iniciar producción.
+    """
+    order = await _get_order_orm(db, order_id)
+    tipo_nombre = (
+        await db.scalar(
+            select(ProductType.nombre).where(ProductType.id == order.tipo_caseton_id)
+        )
+        or "Casetón"
+    )
+
+    query = (
+        select(Recipe, Material)
+        .join(Material, Material.id == Recipe.material_id)
+        .where(Recipe.tipo_caseton_id == order.tipo_caseton_id)
+        .order_by(Recipe.material_id)
+    )
+    rows = (await db.execute(query)).all()
+
+    items: list[RecipePreviewItem] = []
+    es_viable = True
+    deficits: list[str] = []
+
+    for recipe_item, material_item in rows:
+        cant_por_unidad = float(recipe_item.cantidad_por_unidad)
+        total_req = cant_por_unidad * float(order.cantidad)
+        stock_actual = float(material_item.stock_actual)
+        suficiente = stock_actual >= total_req
+        deficit = max(0.0, total_req - stock_actual)
+
+        if not suficiente:
+            es_viable = False
+            deficits.append(
+                f"{material_item.nombre}: Requiere {total_req:.3f} {material_item.unidad_medida}, "
+                f"disponible {stock_actual:.3f} {material_item.unidad_medida} (Déficit: {deficit:.3f} {material_item.unidad_medida})"
+            )
+
+        items.append(
+            RecipePreviewItem(
+                material_id=material_item.id,
+                material_nombre=material_item.nombre,
+                unidad_medida=material_item.unidad_medida,
+                cantidad_por_unidad=cant_por_unidad,
+                cantidad_total_requerida=total_req,
+                stock_actual=stock_actual,
+                suficiente=suficiente,
+                deficit=deficit,
+            )
+        )
+
+    return OrderRecipePreviewResponse(
+        order_id=order.id,
+        codigo_pedido=order.codigo_pedido,
+        tipo_caseton_nombre=tipo_nombre,
+        cantidad=order.cantidad,
+        es_viable=es_viable,
+        materiales=items,
+        resumen_deficits=deficits,
+    )
+

@@ -6,11 +6,11 @@ Responsabilidades:
 - Emisión de tokens JWT firmados con HS256 (python-jose).
 """
 
-from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from jose import jwt
 import bcrypt
+from jose import jwt
 
 from app.core.config import settings
 
@@ -61,7 +61,7 @@ def get_password_hash(password: str) -> str:
 
 def create_access_token(
     data: dict[str, Any],
-    expires_delta: Optional[timedelta] = None,
+    expires_delta: timedelta | None = None,
 ) -> str:
     """
     Crea un token JWT de acceso firmado con HS256.
@@ -82,9 +82,9 @@ def create_access_token(
     to_encode = data.copy()
 
     if expires_delta is not None:
-        expire = datetime.now(tz=timezone.utc) + expires_delta
+        expire = datetime.now(tz=UTC) + expires_delta
     else:
-        expire = datetime.now(tz=timezone.utc) + timedelta(
+        expire = datetime.now(tz=UTC) + timedelta(
             minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
         )
 

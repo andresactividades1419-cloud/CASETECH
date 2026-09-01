@@ -14,31 +14,31 @@ authors = [
 # ============================================================
 dependencies = [
     # Framework web ASGI de alto rendimiento
-    "fastapi==0.110.0",
+    "fastapi>=0.110.0",
     # Servidor ASGI para FastAPI
-    "uvicorn==0.28.0",
+    "uvicorn>=0.28.0",
     # ORM con soporte async/await
-    "sqlalchemy==2.0.28",
+    "sqlalchemy>=2.0.28",
     # Driver async de PostgreSQL para SQLAlchemy (asyncpg)
-    "asyncpg==0.29.0",
+    "asyncpg>=0.29.0",
     # Migraciones de base de datos
-    "alembic==1.13.1",
+    "alembic>=1.13.1",
     # Driver PostgreSQL síncrono para Alembic y psycopg2
-    "psycopg2-binary==2.9.9",
+    "psycopg2-binary>=2.9.9",
     # Validación y serialización de datos (core en Rust)
-    "pydantic==2.6.4",
+    "pydantic>=2.7.0",
     # Configuración via variables de entorno con Pydantic
-    "pydantic-settings==2.2.1",
+    "pydantic-settings>=2.2.1",
     # Validación de emails para EmailStr (requerido por Pydantic v2)
-    "email-validator==2.1.1",
+    "email-validator>=2.1.1",
     # Hashing de contraseñas
-    "passlib==1.7.4",
+    "passlib>=1.7.4",
     # Implementación bcrypt para passlib
-    "bcrypt==4.1.2",
+    "bcrypt>=4.1.2",
     # Manejo de tokens JWT
-    "python-jose==3.3.0",
+    "python-jose>=3.3.0",
     # Soporte a formularios multipart (requerido por FastAPI)
-    "python-multipart==0.0.9",
+    "python-multipart>=0.0.9",
 ]
 
 # ============================================================
@@ -47,21 +47,21 @@ dependencies = [
 [dependency-groups]
 dev = [
     # Framework de testing
-    "pytest==8.1.1",
-    "pytest-asyncio==0.23.6",
-    "httpx==0.27.0",
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.23.6",
+    "httpx>=0.27.0",
+    "aiosqlite>=0.20.0",
+    "pip-audit>=2.7.3",
     # Linting y formateo
-    "ruff==0.3.4",
+    "ruff>=0.5.0",
     # Type checking
-    "mypy==1.9.0",
+    "mypy>=1.10.0",
 ]
+
 
 # ============================================================
 # Configuración de herramientas
 # ============================================================
-[tool.uv]
-dev-dependencies = []
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -78,7 +78,9 @@ line-length = 88
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "C4", "UP"]
-ignore = ["E501"]
+ignore = ["E501", "B008", "B904", "UP042", "E712", "W291", "W293"]
+
+
 
 [tool.ruff.format]
 quote-style = "double"

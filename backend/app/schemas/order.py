@@ -10,10 +10,8 @@ Modelo de datos real:
 
 from datetime import date, datetime
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
-
 
 # ---------------------------------------------------------------------------
 # Enum de estados válidos según constraint de BD
@@ -58,7 +56,7 @@ class OrderBase(BaseModel):
         description="Fecha estimada de entrega al cliente (formato YYYY-MM-DD).",
         examples=["2026-09-15"],
     )
-    observaciones: Optional[str] = Field(
+    observaciones: str | None = Field(
         default=None,
         max_length=1000,
         description="Notas adicionales o instrucciones especiales para producción.",
@@ -121,13 +119,13 @@ class OrderResponse(OrderBase):
     )
     estado: str = Field(..., description="Estado actual del pedido en la máquina de estados.")
     creado_por: int = Field(..., description="ID del usuario que registró el pedido.")
-    tipo_caseton_nombre: Optional[str] = Field(
+    tipo_caseton_nombre: str | None = Field(
         default=None,
         description="Nombre del tipo de casetón (JOIN con tipos_caseton).",
         examples=["Casetón Lona 60x60"],
     )
     created_at: datetime = Field(..., description="Fecha y hora de creación (UTC).")
-    updated_at: Optional[datetime] = Field(
+    updated_at: datetime | None = Field(
         default=None, description="Fecha y hora de la última modificación (UTC)."
     )
 
@@ -135,9 +133,39 @@ class OrderResponse(OrderBase):
 
 
 class OrderListResponse(BaseModel):
+
     """Respuesta paginada para el listado de pedidos."""
 
     total: int = Field(..., description="Total de registros encontrados con los filtros aplicados.")
     skip: int = Field(..., description="Offset aplicado en la paginación.")
     limit: int = Field(..., description="Límite de registros por página.")
     items: list[OrderResponse] = Field(..., description="Lista de pedidos de producción.")
+
+
+
+# ---------------------------------------------------------------------------
+# Schemas HU11 — Previsualización de Consumo BOM
+# ---------------------------------------------------------------------------
+
+class RecipePreviewItem(BaseModel):
+    """Detalle de consumo proyectado por cada material de la receta BOM."""
+    material_id: int
+    material_nombre: str
+    unidad_medida: str
+    cantidad_por_unidad: float
+    cantidad_total_requerida: float
+    stock_actual: float
+    suficiente: bool
+    deficit: float = 0.0
+
+
+class OrderRecipePreviewResponse(BaseModel):
+    """Respuesta de la previsualización de explosión de materiales BOM."""
+    order_id: int
+    codigo_pedido: str
+    tipo_caseton_nombre: str
+    cantidad: int
+    es_viable: bool
+    materiales: list[RecipePreviewItem]
+    resumen_deficits: list[str] = Field(default_factory=list)
+

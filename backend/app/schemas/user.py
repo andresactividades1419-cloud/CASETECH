@@ -8,7 +8,6 @@ Cubre:
 """
 
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
@@ -92,8 +91,30 @@ class UserRead(UserBase):
     id: int = Field(..., description="PK del usuario.", examples=[1])
     rol_id: int = Field(..., description="FK del rol asignado.", examples=[1])
     created_at: datetime = Field(..., description="Timestamp de creación UTC.")
-    updated_at: Optional[datetime] = Field(
+    updated_at: datetime | None = Field(
         default=None, description="Timestamp de última modificación UTC."
     )
 
     model_config = {"from_attributes": True}
+
+
+
+class UserUpdate(BaseModel):
+    """Payload para actualizar datos de un usuario (Admin)."""
+    nombre_completo: str | None = Field(None, min_length=2, max_length=255)
+    email: EmailStr | None = None
+    rol_id: int | None = Field(None, gt=0)
+    activo: bool | None = None
+    password: str | None = Field(None, min_length=8, max_length=128)
+
+
+class UserAdminResponse(UserRead):
+    """Representación enriquecida de usuario con nombre de rol para panel admin."""
+    rol_nombre: str | None = Field(default=None, description="Nombre del rol asignado.")
+
+
+class UserListResponse(BaseModel):
+    """Lista de usuarios para administración."""
+    total: int
+    items: list[UserAdminResponse]
+

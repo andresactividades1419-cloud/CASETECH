@@ -11,7 +11,6 @@ Provee consultas agregadas optimizadas sobre:
 from datetime import date, datetime
 from decimal import Decimal
 from math import ceil
-from typing import Optional
 
 from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -124,10 +123,10 @@ async def get_dashboard_metrics(db: AsyncSession) -> DashboardMetricsResponse:
 
 async def get_stock_movements_log(
     db: AsyncSession,
-    tipo_movimiento: Optional[str] = None,
-    material_id: Optional[int] = None,
-    fecha_desde: Optional[date] = None,
-    fecha_hasta: Optional[date] = None,
+    tipo_movimiento: str | None = None,
+    material_id: int | None = None,
+    fecha_desde: date | None = None,
+    fecha_hasta: date | None = None,
     page: int = 1,
     limit: int = 25,
 ) -> StockMovementListResponse:
@@ -204,8 +203,8 @@ async def get_stock_movements_log(
 
 async def get_system_audit_logs(
     db: AsyncSession,
-    entidad: Optional[str] = None,
-    usuario_id: Optional[int] = None,
+    entidad: str | None = None,
+    usuario_id: int | None = None,
     page: int = 1,
     limit: int = 25,
 ) -> AuditLogListResponse:

@@ -8,7 +8,6 @@ Provee:
 """
 
 from datetime import date
-from typing import Optional
 
 from fastapi import APIRouter, Query
 
@@ -46,10 +45,10 @@ async def get_dashboard_metrics_endpoint(
 async def get_stock_movements_endpoint(
     db: DBSession,
     current_user: CurrentUser,
-    tipo_movimiento: Optional[str] = Query(None, description="Filtrar por tipo (INGRESO_COMPRA, DESCUENTO_PRODUCCION, AJUSTE_APROBADO)"),
-    material_id: Optional[int] = Query(None, description="Filtrar por ID de la materia prima", gt=0),
-    fecha_desde: Optional[date] = Query(None, description="Fecha mínima del movimiento (YYYY-MM-DD)"),
-    fecha_hasta: Optional[date] = Query(None, description="Fecha máxima del movimiento (YYYY-MM-DD)"),
+    tipo_movimiento: str | None = Query(None, description="Filtrar por tipo (INGRESO_COMPRA, DESCUENTO_PRODUCCION, AJUSTE_APROBADO)"),
+    material_id: int | None = Query(None, description="Filtrar por ID de la materia prima", gt=0),
+    fecha_desde: date | None = Query(None, description="Fecha mínima del movimiento (YYYY-MM-DD)"),
+    fecha_hasta: date | None = Query(None, description="Fecha máxima del movimiento (YYYY-MM-DD)"),
     page: int = Query(1, ge=1, description="Número de página"),
     limit: int = Query(25, ge=1, le=100, description="Cantidad de registros por página"),
 ) -> StockMovementListResponse:
@@ -74,8 +73,8 @@ async def get_stock_movements_endpoint(
 async def get_audit_logs_endpoint(
     db: DBSession,
     admin_user: AdminUser,
-    entidad: Optional[str] = Query(None, description="Filtrar por entidad (pedidos, compras, ajustes_inventario, proveedores)"),
-    usuario_id: Optional[int] = Query(None, description="Filtrar por ID de usuario ejecutor", gt=0),
+    entidad: str | None = Query(None, description="Filtrar por entidad (pedidos, compras, ajustes_inventario, proveedores)"),
+    usuario_id: int | None = Query(None, description="Filtrar por ID de usuario ejecutor", gt=0),
     page: int = Query(1, ge=1, description="Número de página"),
     limit: int = Query(25, ge=1, le=100, description="Cantidad de registros por página"),
 ) -> AuditLogListResponse:

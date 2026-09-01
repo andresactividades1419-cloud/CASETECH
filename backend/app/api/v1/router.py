@@ -13,11 +13,14 @@ from app.api.v1.endpoints import (
     materials,
     providers,
     purchases,
+    reports,
     stock_adjustments,
 )
-from app.api.v1.endpoints.orders import product_types_router, router as orders_router
+from app.api.v1.endpoints.orders import product_types_router
+from app.api.v1.endpoints.orders import router as orders_router
 
 api_router = APIRouter()
+
 
 # -----------------------------------------------------------------------
 # Dashboard, Métricas y Auditoría  (HU14, HU15)
@@ -91,6 +94,12 @@ api_router.include_router(
     tags=["Ajustes de Inventario"],
 )
 
-
-
+# -----------------------------------------------------------------------
+# Reportes y Exportación  (HU06, RF12)
+# -----------------------------------------------------------------------
+api_router.include_router(
+    reports.router,
+    prefix="/reports",
+    tags=["Reportes"],
+)
 

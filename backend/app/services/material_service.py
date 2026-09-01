@@ -2,9 +2,9 @@
 services/material_service.py — Lógica de negocio y persistencia para Materiales e Insumos (HU10 y HU12).
 """
 
-from typing import Optional
+
 from fastapi import HTTPException, status
-from sqlalchemy import func, or_, select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -74,9 +74,9 @@ async def get_materials(
     db: AsyncSession,
     skip: int = 0,
     limit: int = 50,
-    nombre: Optional[str] = None,
-    activo: Optional[bool] = None,
-    alerta_stock: Optional[bool] = None,
+    nombre: str | None = None,
+    activo: bool | None = None,
+    alerta_stock: bool | None = None,
 ) -> MaterialListResponse:
     """
     Lista insumos con soporte de búsqueda por nombre, filtro de estado y alerta de stock mínimo (HU12).

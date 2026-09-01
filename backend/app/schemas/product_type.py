@@ -6,7 +6,6 @@ de un módulo CRUD completo en esta fase.
 """
 
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -16,7 +15,7 @@ class ProductTypeResponse(BaseModel):
 
     id: int = Field(..., description="Identificador único del tipo de casetón.")
     nombre: str = Field(..., description="Nombre descriptivo del tipo de casetón.")
-    descripcion: Optional[str] = Field(
+    descripcion: str | None = Field(
         default=None, description="Descripción técnica del casetón."
     )
     naturaleza: str = Field(
