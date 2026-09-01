@@ -126,111 +126,129 @@ export function RecipePreviewModal({ order, isOpen, onClose, onConfirmStart, isS
               ⚠️ {error}
             </div>
           ) : preview ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              {/* Banner de Viabilidad */}
-              <div style={{
-                padding: '1rem 1.25rem',
-                borderRadius: '12px',
-                backgroundColor: preview.es_viable ? 'rgba(52, 211, 153, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                border: `1px solid ${preview.es_viable ? 'rgba(52, 211, 153, 0.35)' : 'rgba(239, 68, 68, 0.35)'}`,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.85rem',
-              }}>
-                <span style={{ fontSize: '1.6rem' }}>{preview.es_viable ? '✅' : '⚠️'}</span>
-                <div>
+            (() => {
+              const isFeasible = preview.es_factible ?? preview.es_viable ?? false;
+              const itemsList = preview.items || preview.materiales || [];
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {/* Banner de Viabilidad */}
                   <div style={{
-                    fontSize: '0.95rem',
-                    fontWeight: '700',
-                    color: preview.es_viable ? '#34d399' : '#f87171',
+                    padding: '1rem 1.25rem',
+                    borderRadius: '12px',
+                    backgroundColor: isFeasible ? 'rgba(52, 211, 153, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                    border: `1px solid ${isFeasible ? 'rgba(52, 211, 153, 0.35)' : 'rgba(239, 68, 68, 0.35)'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.85rem',
                   }}>
-                    {preview.es_viable ? 'Producción Viable — Stock Completo' : 'Déficit de Inventario Detectado'}
+                    <span style={{ fontSize: '1.6rem' }}>{isFeasible ? '✅' : '⚠️'}</span>
+                    <div>
+                      <div style={{
+                        fontSize: '0.95rem',
+                        fontWeight: '700',
+                        color: isFeasible ? '#34d399' : '#f87171',
+                      }}>
+                        {isFeasible ? 'Stock Suficiente — Producción Factible' : 'Déficit de Materiales Detectado'}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: isFeasible ? '#6ee7b7' : '#fca5a5', marginTop: '0.15rem' }}>
+                        {isFeasible
+                          ? 'Todas las materias primas cuentan con existencias suficientes en bodega para fabricar las unidades solicitadas.'
+                          : 'El inventario no cuenta con suficiente stock de una o más materias primas para completar la orden.'}
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: preview.es_viable ? '#6ee7b7' : '#fca5a5', marginTop: '0.15rem' }}>
-                    {preview.es_viable
-                      ? 'Todas las materias primas cuentan con existencias suficientes en bodega para fabricar las unidades solicitadas.'
-                      : 'El inventario no cuenta con suficiente stock de una o más materias primas para completar la orden.'}
+
+                  {/* Resumen de Déficits si no es factible */}
+                  {!isFeasible && preview.resumen_deficits?.length > 0 && (
+                    <div style={{
+                      backgroundColor: '#1f1315',
+                      border: '1px solid #451a1a',
+                      borderRadius: '10px',
+                      padding: '0.9rem 1.1rem',
+                      fontSize: '0.82rem',
+                      color: '#fca5a5',
+                    }}>
+                      <div style={{ fontWeight: '700', color: '#f87171', marginBottom: '0.4rem' }}>
+                        Materias primas faltantes:
+                      </div>
+                      <ul style={{ margin: 0, paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        {preview.resumen_deficits.map((d, i) => (
+                          <li key={i}>{d}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Tabla de Explosión de Materiales */}
+                  <div style={{
+                    backgroundColor: '#0b0f19',
+                    border: '1px solid #1f2937',
+                    borderRadius: '10px',
+                    overflow: 'hidden',
+                  }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: '#111827', borderBottom: '1px solid #1f2937', color: '#94a3b8', fontSize: '0.72rem', textTransform: 'uppercase' }}>
+                          <th style={{ padding: '0.75rem 1rem' }}>Materia Prima</th>
+                          <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Requerido Total</th>
+                          <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Stock Disponible</th>
+                          <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Déficit</th>
+                          <th style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {itemsList.map((m) => {
+                          const cantReq = Number(m.cantidad_requerida ?? m.cantidad_total_requerida ?? 0);
+                          const stockDisp = Number(m.stock_disponible ?? m.stock_actual ?? 0);
+                          const def = Number(m.deficit ?? 0);
+
+                          return (
+                            <tr key={m.material_id} style={{ borderBottom: '1px solid #1a2332' }}>
+                              <td style={{ padding: '0.75rem 1rem', fontWeight: '600', color: '#f8fafc' }}>
+                                {m.material_nombre}
+                              </td>
+                              <td style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: '700', color: '#e2e8f0' }}>
+                                {cantReq.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {m.unidad_medida}
+                              </td>
+                              <td style={{
+                                padding: '0.75rem 1rem',
+                                textAlign: 'right',
+                                fontWeight: '700',
+                                color: m.suficiente ? '#34d399' : '#f87171',
+                              }}>
+                                {stockDisp.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {m.unidad_medida}
+                              </td>
+                              <td style={{
+                                padding: '0.75rem 1rem',
+                                textAlign: 'right',
+                                fontWeight: '600',
+                                color: def > 0 ? '#f87171' : '#64748b',
+                              }}>
+                                {def > 0 ? `${def.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${m.unidad_medida}` : '0.00'}
+                              </td>
+                              <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
+                                <span style={{
+                                  padding: '0.2rem 0.55rem',
+                                  borderRadius: '9999px',
+                                  fontSize: '0.72rem',
+                                  fontWeight: '700',
+                                  backgroundColor: m.suficiente ? 'rgba(52, 211, 153, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                                  color: m.suficiente ? '#34d399' : '#f87171',
+                                  border: `1px solid ${m.suficiente ? 'rgba(52, 211, 153, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                                }}>
+                                  {m.suficiente ? '✓ Suficiente' : '✗ Déficit'}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
-              </div>
-
-              {/* Resumen de Déficits si no es viable */}
-              {!preview.es_viable && preview.resumen_deficits?.length > 0 && (
-                <div style={{
-                  backgroundColor: '#1f1315',
-                  border: '1px solid #451a1a',
-                  borderRadius: '10px',
-                  padding: '0.9rem 1.1rem',
-                  fontSize: '0.82rem',
-                  color: '#fca5a5',
-                }}>
-                  <div style={{ fontWeight: '700', color: '#f87171', marginBottom: '0.4rem' }}>
-                    Materias primas faltantes:
-                  </div>
-                  <ul style={{ margin: 0, paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                    {preview.resumen_deficits.map((d, i) => (
-                      <li key={i}>{d}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Tabla de Explosión de Materiales */}
-              <div style={{
-                backgroundColor: '#0b0f19',
-                border: '1px solid #1f2937',
-                borderRadius: '10px',
-                overflow: 'hidden',
-              }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
-                  <thead>
-                    <tr style={{ backgroundColor: '#111827', borderBottom: '1px solid #1f2937', color: '#94a3b8', fontSize: '0.72rem', textTransform: 'uppercase' }}>
-                      <th style={{ padding: '0.75rem 1rem' }}>Materia Prima</th>
-                      <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Por Unidad</th>
-                      <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Requerido Total</th>
-                      <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Stock Actual</th>
-                      <th style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {preview.materiales.map((m) => (
-                      <tr key={m.material_id} style={{ borderBottom: '1px solid #1a2332' }}>
-                        <td style={{ padding: '0.75rem 1rem', fontWeight: '600', color: '#f8fafc' }}>
-                          {m.material_nombre}
-                        </td>
-                        <td style={{ padding: '0.75rem 1rem', textAlign: 'right', color: '#94a3b8', fontSize: '0.82rem' }}>
-                          {m.cantidad_por_unidad} {m.unidad_medida}
-                        </td>
-                        <td style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: '700', color: '#e2e8f0' }}>
-                          {m.cantidad_total_requerida.toLocaleString()} {m.unidad_medida}
-                        </td>
-                        <td style={{
-                          padding: '0.75rem 1rem',
-                          textAlign: 'right',
-                          fontWeight: '700',
-                          color: m.suficiente ? '#34d399' : '#f87171',
-                        }}>
-                          {m.stock_actual.toLocaleString()} {m.unidad_medida}
-                        </td>
-                        <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
-                          <span style={{
-                            padding: '0.2rem 0.55rem',
-                            borderRadius: '9999px',
-                            fontSize: '0.72rem',
-                            fontWeight: '700',
-                            backgroundColor: m.suficiente ? 'rgba(52, 211, 153, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                            color: m.suficiente ? '#34d399' : '#f87171',
-                            border: `1px solid ${m.suficiente ? 'rgba(52, 211, 153, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
-                          }}>
-                            {m.suficiente ? '✓ Suficiente' : `✗ Déficit (${m.deficit} ${m.unidad_medida})`}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+              );
+            })()
           ) : null}
         </div>
 
@@ -263,20 +281,20 @@ export function RecipePreviewModal({ order, isOpen, onClose, onConfirmStart, isS
           <button
             type="button"
             onClick={() => onConfirmStart(order)}
-            disabled={isStarting || loading || !preview?.es_viable}
+            disabled={isStarting || loading || !(preview?.es_factible ?? preview?.es_viable)}
             style={{
               padding: '0.6rem 1.5rem',
-              backgroundColor: !preview?.es_viable ? '#334155' : isStarting ? '#075985' : '#0284c7',
-              color: !preview?.es_viable ? '#64748b' : '#ffffff',
+              backgroundColor: !(preview?.es_factible ?? preview?.es_viable) ? '#334155' : isStarting ? '#075985' : '#0284c7',
+              color: !(preview?.es_factible ?? preview?.es_viable) ? '#64748b' : '#ffffff',
               border: 'none',
               borderRadius: '8px',
               fontSize: '0.88rem',
               fontWeight: '700',
-              cursor: !preview?.es_viable || isStarting ? 'not-allowed' : 'pointer',
+              cursor: !(preview?.es_factible ?? preview?.es_viable) || isStarting ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
-              boxShadow: preview?.es_viable ? '0 4px 14px rgba(2, 132, 199, 0.35)' : 'none',
+              boxShadow: (preview?.es_factible ?? preview?.es_viable) ? '0 4px 14px rgba(2, 132, 199, 0.35)' : 'none',
             }}
           >
             {isStarting ? (

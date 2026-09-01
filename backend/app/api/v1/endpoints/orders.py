@@ -228,7 +228,7 @@ async def get_order_recipe_preview(
     """
     Retorna la explosión de materiales requeridos vs stock actual para un pedido.
     """
-    return await order_service.get_order_recipe_preview(db=db, order_id=order_id)
+    return await order_service.preview_order_recipe(db=db, order_id=order_id)
 
 
 # ---------------------------------------------------------------------------

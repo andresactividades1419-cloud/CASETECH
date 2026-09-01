@@ -15,6 +15,7 @@ from app.api.v1.endpoints import (
     purchases,
     reports,
     stock_adjustments,
+    users,
 )
 from app.api.v1.endpoints.orders import product_types_router
 from app.api.v1.endpoints.orders import router as orders_router
@@ -41,12 +42,21 @@ api_router.include_router(
 
 
 # -----------------------------------------------------------------------
-# Autenticación y gestión de usuarios  (HU01, HU14)
+# Autenticación  (HU01)
 # -----------------------------------------------------------------------
 api_router.include_router(
     auth.router,
     prefix="/auth",
     tags=["Autenticación"],
+)
+
+# -----------------------------------------------------------------------
+# Administración de Usuarios  (HU02, HU14)
+# -----------------------------------------------------------------------
+api_router.include_router(
+    users.router,
+    prefix="/users",
+    tags=["Usuarios"],
 )
 
 # -----------------------------------------------------------------------
@@ -102,6 +112,7 @@ api_router.include_router(
     prefix="/stock-adjustments",
     tags=["Ajustes de Inventario"],
 )
+
 
 
 

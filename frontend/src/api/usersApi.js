@@ -1,17 +1,27 @@
 /**
- * api/usersApi.js — Servicio API para la gestión de usuarios del sistema (HU02, HU14).
+ * api/usersApi.js — Servicio API para la gestión integral de cuentas de usuario (HU02, HU14).
  *
- * Conecta con los endpoints bajo /api/v1/auth/users y /api/v1/auth/register.
+ * Conecta con los endpoints bajo /api/v1/users.
  */
 
 import apiClient from './client';
 
 export const usersApi = {
   /**
-   * Obtiene la lista completa de usuarios registrados.
+   * Obtiene la lista paginada y filtrada de usuarios.
+   * @param {Object} params - { skip, limit, search, rol_id }
    */
-  async getUsers() {
-    const response = await apiClient.get('/auth/users');
+  async getUsers(params = {}) {
+    const response = await apiClient.get('/users', { params });
+    return response.data;
+  },
+
+  /**
+   * Obtiene el detalle de un usuario por su ID.
+   * @param {number|string} id
+   */
+  async getUserById(id) {
+    const response = await apiClient.get(`/users/${id}`);
     return response.data;
   },
 
@@ -20,7 +30,7 @@ export const usersApi = {
    * @param {Object} data - { email, nombre_completo, password, rol_id, activo }
    */
   async createUser(data) {
-    const response = await apiClient.post('/auth/register', data);
+    const response = await apiClient.post('/users', data);
     return response.data;
   },
 
@@ -30,18 +40,19 @@ export const usersApi = {
    * @param {Object} data - { nombre_completo?, email?, rol_id?, activo?, password? }
    */
   async updateUser(id, data) {
-    const response = await apiClient.patch(`/auth/users/${id}`, data);
+    const response = await apiClient.put(`/users/${id}`, data);
     return response.data;
   },
 
   /**
-   * Desactiva lógicamente una cuenta de usuario.
+   * Activa o desactiva lógicamente una cuenta de usuario (toggle).
    * @param {number|string} id
    */
-  async deactivateUser(id) {
-    const response = await apiClient.delete(`/auth/users/${id}`);
+  async toggleUserStatus(id) {
+    const response = await apiClient.patch(`/users/${id}/status`);
     return response.data;
   },
 };
 
 export default usersApi;
+

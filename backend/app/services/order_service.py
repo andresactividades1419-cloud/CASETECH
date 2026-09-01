@@ -26,7 +26,7 @@ from app.schemas.order import (
     OrderResponse,
     OrderStatus,
     OrderStatusUpdate,
-    RecipePreviewItem,
+    RecipeItemPreview,
 )
 from app.schemas.product_type import ProductTypeListResponse, ProductTypeResponse
 
@@ -495,16 +495,20 @@ async def get_product_types(db: AsyncSession) -> ProductTypeListResponse:
 
 
 # ---------------------------------------------------------------------------
-# get_order_recipe_preview — HU11: Explosión y Previsualización de Consumo BOM
+# preview_order_recipe — HU11: Explosión y Previsualización de Consumo BOM
 # ---------------------------------------------------------------------------
 
-async def get_order_recipe_preview(
+from decimal import Decimal
+
+
+async def preview_order_recipe(
     db: AsyncSession,
     order_id: int,
 ) -> OrderRecipePreviewResponse:
     """
     Calcula la explosión de materiales requeridos para un pedido específico
-    y los contrasta con el inventario actual para determinar viabilidad y déficits.
+    utilizando precisión decimal y los contrasta con el stock disponible en bodega
+    para determinar viabilidad (es_factible) y déficits.
 
     Args:
         db:       Sesión async de SQLAlchemy.
@@ -534,50 +538,65 @@ async def get_order_recipe_preview(
     )
     rows = (await db.execute(query)).all()
 
-    items: list[RecipePreviewItem] = []
+    items: list[RecipeItemPreview] = []
     resumen_deficits: list[str] = []
-    es_viable = True
+    es_factible = True
+
+    cantidad_casetones = int(order.cantidad)
 
     for recipe_row, material_row in rows:
-        cantidad_por_unidad = float(recipe_row.cantidad_por_unidad)
-        cantidad_total = round(cantidad_por_unidad * order.cantidad, 4)
-        stock_actual = float(material_row.stock_actual)
+        cant_unit_dec = Decimal(str(recipe_row.cantidad_por_unidad))
+        cant_req_dec = (cant_unit_dec * Decimal(cantidad_casetones)).quantize(Decimal("0.0001"))
+        stock_disp_dec = Decimal(str(material_row.stock_actual)).quantize(Decimal("0.0001"))
 
-        suficiente = stock_actual >= cantidad_total
-        deficit = 0.0
+        suficiente = stock_disp_dec >= cant_req_dec
+        deficit = Decimal("0.0")
 
         if not suficiente:
-            es_viable = False
-            deficit = round(cantidad_total - stock_actual, 4)
+            es_factible = False
+            deficit = (cant_req_dec - stock_disp_dec).quantize(Decimal("0.0001"))
             resumen_deficits.append(
-                f"Stock insuficiente para \"{material_row.nombre}\". "
-                f"Disponible: {stock_actual:,.2f} {material_row.unidad_medida} — "
-                f"Requerido: {cantidad_total:,.2f} {material_row.unidad_medida} — "
+                f'Stock insuficiente para "{material_row.nombre}". '
+                f"Disponible: {stock_disp_dec:,.2f} {material_row.unidad_medida} — "
+                f"Requerido: {cant_req_dec:,.2f} {material_row.unidad_medida} — "
                 f"Déficit: {deficit:,.2f} {material_row.unidad_medida}."
             )
 
         items.append(
-            RecipePreviewItem(
+            RecipeItemPreview(
                 material_id=material_row.id,
                 material_nombre=material_row.nombre,
                 unidad_medida=material_row.unidad_medida,
-                cantidad_por_unidad=cantidad_por_unidad,
-                cantidad_total_requerida=cantidad_total,
-                stock_actual=stock_actual,
+                cantidad_requerida=cant_req_dec,
+                stock_disponible=stock_disp_dec,
                 deficit=deficit,
                 suficiente=suficiente,
+                cantidad_por_unidad=cant_unit_dec,
+                cantidad_total_requerida=cant_req_dec,
+                stock_actual=stock_disp_dec,
             )
         )
 
     return OrderRecipePreviewResponse(
-        order_id=order.id,
+        pedido_id=order.id,
         codigo_pedido=order.codigo_pedido,
+        tipo_caseton=tipo_nombre,
+        cantidad_casetones=cantidad_casetones,
+        es_factible=es_factible,
+        items=items,
+        # Compatibilidad adicional
+        order_id=order.id,
         cliente=order.cliente,
         tipo_caseton_id=order.tipo_caseton_id,
         tipo_caseton_nombre=tipo_nombre,
-        cantidad=order.cantidad,
-        es_viable=es_viable,
+        cantidad=cantidad_casetones,
+        es_viable=es_factible,
         materiales=items,
         resumen_deficits=resumen_deficits,
     )
+
+
+# Alias para retrocompatibilidad
+get_order_recipe_preview = preview_order_recipe
+
 
