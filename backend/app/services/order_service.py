@@ -9,7 +9,6 @@ Convenciones:
 """
 
 from datetime import date, datetime
-from decimal import Decimal
 
 from fastapi import HTTPException, status
 from sqlalchemy import and_, func, select, text, update
