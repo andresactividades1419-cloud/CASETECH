@@ -34,9 +34,13 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-casetech}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-casetech_db}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
       JWT_SECRET: ${JWT_SECRET:-super-secret-change-in-production}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
       ENVIRONMENT: ${ENVIRONMENT:-development}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:3000","http://127.0.0.1:3000"]}
+      ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD}
+      OPERARIO_INITIAL_PASSWORD: ${OPERARIO_INITIAL_PASSWORD}
     volumes:
       - ./backend:/app
       # Excluir .venv del volumen para preservar las dependencias del contenedor

@@ -7,6 +7,7 @@ Rutas expuestas bajo el prefijo ``/api/v1/orders``:
   GET    /                → Listar pedidos con filtros y paginación        [autenticado]
   GET    /{id}            → Detalle completo de un pedido                  [autenticado]
   PATCH  /{id}/status     → Cambiar estado e invocar sp_descontar_receta   [autenticado]
+  GET    /{id}/recipe-preview → Previsualización de consumo BOM            [autenticado]
 
 Ruta auxiliar expuesta bajo ``/api/v1/product-types``:
 
@@ -35,6 +36,7 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 # POST / — Crear pedido de producción
 # ---------------------------------------------------------------------------
+
 
 @router.post(
     "/",
@@ -73,6 +75,7 @@ async def create_order(
 # GET / — Listar pedidos con filtros
 # ---------------------------------------------------------------------------
 
+
 @router.get(
     "/",
     response_model=OrderListResponse,
@@ -89,8 +92,12 @@ async def create_order(
 async def list_orders(
     _user: CurrentUser,
     db: AsyncSession = Depends(get_db),
-    skip: int = Query(default=0, ge=0, description="Registros a omitir (offset de paginación)."),
-    limit: int = Query(default=50, ge=1, le=200, description="Límite de registros por página."),
+    skip: int = Query(
+        default=0, ge=0, description="Registros a omitir (offset de paginación)."
+    ),
+    limit: int = Query(
+        default=50, ge=1, le=200, description="Límite de registros por página."
+    ),
     estado: str | None = Query(
         default=None,
         description="Filtrar por estado: PENDIENTE | EN_PRODUCCION | COMPLETADO | CANCELADO.",
@@ -133,6 +140,7 @@ async def list_orders(
 # GET /{order_id} — Detalle de pedido
 # ---------------------------------------------------------------------------
 
+
 @router.get(
     "/{order_id}",
     response_model=OrderResponse,
@@ -158,6 +166,7 @@ async def get_order(
 # ---------------------------------------------------------------------------
 # PATCH /{order_id}/status — Actualizar estado e invocar SP BOM
 # ---------------------------------------------------------------------------
+
 
 @router.patch(
     "/{order_id}/status",
@@ -201,38 +210,43 @@ async def update_order_status(
 
 
 # ---------------------------------------------------------------------------
-# HU11 — Previsualización de Consumo BOM
+# GET /{order_id}/recipe-preview — HU11: Previsualización de Consumo BOM
 # ---------------------------------------------------------------------------
+
 
 @router.get(
     "/{order_id}/recipe-preview",
     response_model=OrderRecipePreviewResponse,
-    summary="Previsualización de consumo BOM y viabilidad de stock (HU11)",
+    summary="Previsualización de consumo BOM y balance de stock (HU11)",
     description=(
-        "Calcula la explosión de materiales requeridos para el pedido y evalúa "
-        "si el inventario actual es suficiente para iniciar producción."
+        "Calcula la explosión de materiales requeridos para el pedido según su receta BOM "
+        "y los contrasta con el stock disponible en bodega. Retorna si la producción es viable "
+        "y el detalle descriptivo de cualquier déficit existente."
     ),
     responses={
-        200: {"description": "Cálculo de explosión BOM y viabilidad."},
+        200: {"description": "Balance y viabilidad del consumo BOM."},
         401: {"description": "No autenticado."},
         404: {"description": "Pedido no encontrado."},
     },
 )
-async def get_recipe_preview(
+async def get_order_recipe_preview(
     order_id: int,
     _user: CurrentUser,
     db: AsyncSession = Depends(get_db),
 ) -> OrderRecipePreviewResponse:
     """
-    Retorna el balance de materias primas proyectado antes de iniciar producción.
+    Retorna la explosión de materiales requeridos vs stock actual para un pedido.
     """
     return await order_service.get_order_recipe_preview(db=db, order_id=order_id)
+
+
+# Alias para retrocompatibilidad
+get_recipe_preview = get_order_recipe_preview
 
 
 # ---------------------------------------------------------------------------
 # Router auxiliar: tipos de casetón (selector frontend)
 # ---------------------------------------------------------------------------
-
 
 product_types_router = APIRouter()
 

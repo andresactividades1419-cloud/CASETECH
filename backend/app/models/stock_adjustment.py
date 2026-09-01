@@ -26,6 +26,7 @@ class StockAdjustment(Base):
     Solicitudes de ajuste manual de inventario con doble firma (solicitante y aprobador).
     Tabla: ajustes_inventario
     """
+
     __tablename__ = "ajustes_inventario"
     __table_args__ = (
         CheckConstraint(
@@ -42,27 +43,18 @@ class StockAdjustment(Base):
         ),
     )
 
-    id: Mapped[int] = mapped_column(
-        BigInteger, primary_key=True, autoincrement=True
-    )
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     material_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("materiales.id", ondelete="RESTRICT"), nullable=False, index=True
+        BigInteger,
+        ForeignKey("materiales.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
     )
-    tipo_ajuste: Mapped[str] = mapped_column(
-        String(20), nullable=False, index=True
-    )
-    cantidad: Mapped[Decimal] = mapped_column(
-        Numeric(12, 3), nullable=False
-    )
-    stock_antes: Mapped[Decimal] = mapped_column(
-        Numeric(12, 3), nullable=False
-    )
-    stock_despues: Mapped[Decimal | None] = mapped_column(
-        Numeric(12, 3), nullable=True
-    )
-    justificacion: Mapped[str] = mapped_column(
-        Text, nullable=False
-    )
+    tipo_ajuste: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    cantidad: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
+    stock_antes: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
+    stock_despues: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
+    justificacion: Mapped[str] = mapped_column(Text, nullable=False)
     estado: Mapped[str] = mapped_column(
         String(25),
         nullable=False,
@@ -71,10 +63,16 @@ class StockAdjustment(Base):
         index=True,
     )
     solicitado_por: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=False, index=True
+        BigInteger,
+        ForeignKey("usuarios.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
     )
     aprobado_por: Mapped[int | None] = mapped_column(
-        BigInteger, ForeignKey("usuarios.id", ondelete="RESTRICT"), nullable=True, index=True
+        BigInteger,
+        ForeignKey("usuarios.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
     )
     fecha_solicitud: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()

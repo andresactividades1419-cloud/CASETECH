@@ -13,7 +13,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class PurchaseItemCreate(BaseModel):
     """Esquema de creación para una línea de detalle de compra."""
-    material_id: int = Field(..., gt=0, description="ID de la materia prima a abastecer")
+
+    material_id: int = Field(
+        ..., gt=0, description="ID de la materia prima a abastecer"
+    )
     cantidad: Decimal = Field(
         ...,
         gt=0,
@@ -32,8 +35,11 @@ class PurchaseItemCreate(BaseModel):
 
 class PurchaseCreate(BaseModel):
     """Esquema de creación para la cabecera y líneas de una orden de compra."""
+
     proveedor_id: int = Field(..., gt=0, description="ID del proveedor activo")
-    fecha_compra: date = Field(..., description="Fecha de emisión o entrega de la compra")
+    fecha_compra: date = Field(
+        ..., description="Fecha de emisión o entrega de la compra"
+    )
     items: list[PurchaseItemCreate] = Field(
         ...,
         min_length=1,
@@ -48,6 +54,7 @@ class PurchaseCreate(BaseModel):
 
 class PurchaseItemResponse(BaseModel):
     """Respuesta para una línea de detalle de compra enriquecida."""
+
     id: int
     compra_id: int
     material_id: int
@@ -62,6 +69,7 @@ class PurchaseItemResponse(BaseModel):
 
 class PurchaseResponse(BaseModel):
     """Respuesta completa de una orden de compra con sus líneas y relaciones cargadas."""
+
     id: int
     codigo_compra: str
     proveedor_id: int
@@ -79,6 +87,7 @@ class PurchaseResponse(BaseModel):
 
 class PurchaseListResponse(BaseModel):
     """Respuesta paginada para listados de compras."""
+
     items: list[PurchaseResponse]
     total: int
     page: int

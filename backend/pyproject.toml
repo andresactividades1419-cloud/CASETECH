@@ -10,13 +10,15 @@ authors = [
 ]
 
 # ============================================================
-# Dependencias de producción — versiones fijas sin comodines
+# Dependencias de producción — versiones seguras y actualizadas
 # ============================================================
 dependencies = [
     # Framework web ASGI de alto rendimiento
-    "fastapi>=0.110.0",
+    "fastapi>=0.115.0",
     # Servidor ASGI para FastAPI
-    "uvicorn>=0.28.0",
+    "uvicorn[standard]>=0.30.6",
+    # Componente ASGI base
+    "starlette>=0.40.0",
     # ORM con soporte async/await
     "sqlalchemy>=2.0.28",
     # Driver async de PostgreSQL para SQLAlchemy (asyncpg)
@@ -35,10 +37,10 @@ dependencies = [
     "passlib>=1.7.4",
     # Implementación bcrypt para passlib
     "bcrypt>=4.1.2",
-    # Manejo de tokens JWT
-    "python-jose>=3.3.0",
+    # Manejo de tokens JWT con backend de criptografía seguro
+    "python-jose[cryptography]>=3.4.0",
     # Soporte a formularios multipart (requerido por FastAPI)
-    "python-multipart>=0.0.9",
+    "python-multipart>=0.0.31",
 ]
 
 # ============================================================
@@ -51,13 +53,13 @@ dev = [
     "pytest-asyncio>=0.23.6",
     "httpx>=0.27.0",
     "aiosqlite>=0.20.0",
+    # Auditoría de seguridad de paquetes
     "pip-audit>=2.7.3",
     # Linting y formateo
     "ruff>=0.5.0",
     # Type checking
     "mypy>=1.10.0",
 ]
-
 
 # ============================================================
 # Configuración de herramientas
@@ -79,8 +81,6 @@ line-length = 88
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "C4", "UP"]
 ignore = ["E501", "B008", "B904", "UP042", "E712", "W291", "W293"]
-
-
 
 [tool.ruff.format]
 quote-style = "double"

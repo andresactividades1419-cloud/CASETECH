@@ -20,7 +20,7 @@ export function UsersPage() {
 
   // Modal states
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
+  const [editingUser, setEditingUser] = useState(null); // null = nuevo usuario, objeto = editar
   const [submitting, setSubmitting] = useState(false);
   const [modalError, setModalError] = useState('');
 
@@ -50,6 +50,7 @@ export function UsersPage() {
     fetchUsers();
   }, [fetchUsers]);
 
+  // Abrir modal de creación
   const handleOpenCreate = () => {
     setEditingUser(null);
     setFormData({
@@ -63,6 +64,7 @@ export function UsersPage() {
     setModalOpen(true);
   };
 
+  // Abrir modal de edición
   const handleOpenEdit = (u) => {
     setEditingUser(u);
     setFormData({

@@ -1,7 +1,7 @@
 """
 schemas/order.py — Esquemas Pydantic v2 para el módulo de Pedidos de Producción (HU07, HU08, HU11).
 
-Modelo de datos real:
+Modelo de datos:
   - Un pedido está vinculado a un tipo de casetón (tipo_caseton_id).
   - El motor BOM (sp_descontar_receta) aplica el descuento de materiales
     de forma automática basándose en la tabla `recetas`.
@@ -9,7 +9,7 @@ Modelo de datos real:
 """
 
 from datetime import date, datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -17,8 +17,10 @@ from pydantic import BaseModel, Field, field_validator
 # Enum de estados válidos según constraint de BD
 # ---------------------------------------------------------------------------
 
-class OrderStatus(str, Enum):
+
+class OrderStatus(StrEnum):
     """Estados válidos de la máquina de estados de pedidos."""
+
     PENDIENTE = "PENDIENTE"
     EN_PRODUCCION = "EN_PRODUCCION"
     COMPLETADO = "COMPLETADO"
@@ -28,6 +30,7 @@ class OrderStatus(str, Enum):
 # ---------------------------------------------------------------------------
 # Schemas de entrada
 # ---------------------------------------------------------------------------
+
 
 class OrderBase(BaseModel):
     """Campos base compartidos por creación y lectura de pedidos."""
@@ -75,17 +78,15 @@ class OrderBase(BaseModel):
     @classmethod
     def validate_fecha_futura(cls, v: date) -> date:
         if v < date.today():
-            raise ValueError("La fecha de entrega estimada no puede ser una fecha pasada.")
+            raise ValueError(
+                "La fecha de entrega estimada no puede ser una fecha pasada."
+            )
         return v
 
 
 class OrderCreate(OrderBase):
     """Payload para registrar un nuevo pedido de producción."""
 
-    # Hereda todos los campos de OrderBase.
-    # El campo `creado_por` se infiere del JWT en el endpoint.
-    # El `codigo_pedido` se genera automáticamente en el servicio.
-    # El `estado` siempre inicia como 'PENDIENTE'.
     pass
 
 
@@ -108,6 +109,7 @@ class OrderStatusUpdate(BaseModel):
 # Schemas de salida
 # ---------------------------------------------------------------------------
 
+
 class OrderResponse(OrderBase):
     """Respuesta completa de un pedido de producción."""
 
@@ -117,7 +119,9 @@ class OrderResponse(OrderBase):
         description="Código consecutivo único del pedido (formato PED-YYYY-XXXXX).",
         examples=["PED-2026-00001"],
     )
-    estado: str = Field(..., description="Estado actual del pedido en la máquina de estados.")
+    estado: str = Field(
+        ..., description="Estado actual del pedido en la máquina de estados."
+    )
     creado_por: int = Field(..., description="ID del usuario que registró el pedido.")
     tipo_caseton_nombre: str | None = Field(
         default=None,
@@ -133,39 +137,72 @@ class OrderResponse(OrderBase):
 
 
 class OrderListResponse(BaseModel):
-
     """Respuesta paginada para el listado de pedidos."""
 
-    total: int = Field(..., description="Total de registros encontrados con los filtros aplicados.")
+    total: int = Field(
+        ..., description="Total de registros encontrados con los filtros aplicados."
+    )
     skip: int = Field(..., description="Offset aplicado en la paginación.")
     limit: int = Field(..., description="Límite de registros por página.")
-    items: list[OrderResponse] = Field(..., description="Lista de pedidos de producción.")
-
+    items: list[OrderResponse] = Field(
+        ..., description="Lista de pedidos de producción."
+    )
 
 
 # ---------------------------------------------------------------------------
-# Schemas HU11 — Previsualización de Consumo BOM
+# Schemas de Previsualización BOM (HU11)
 # ---------------------------------------------------------------------------
+
 
 class RecipePreviewItem(BaseModel):
-    """Detalle de consumo proyectado por cada material de la receta BOM."""
-    material_id: int
-    material_nombre: str
-    unidad_medida: str
-    cantidad_por_unidad: float
-    cantidad_total_requerida: float
-    stock_actual: float
-    suficiente: bool
-    deficit: float = 0.0
+    """Detalle de consumo por material en la receta BOM."""
+
+    material_id: int = Field(..., description="ID de la materia prima.")
+    material_nombre: str = Field(..., description="Nombre del material.")
+    unidad_medida: str = Field(
+        ..., description="Unidad de medida (ej. M2, M, KG, UNIDAD)."
+    )
+    cantidad_por_unidad: float = Field(
+        ..., description="Consumo por unidad de casetón."
+    )
+    cantidad_total_requerida: float = Field(
+        ..., description="Consumo total para el pedido completo."
+    )
+    stock_actual: float = Field(
+        ..., description="Stock actualmente disponible en inventario."
+    )
+    deficit: float = Field(
+        default=0.0, description="Déficit de material si el stock es insuficiente."
+    )
+    suficiente: bool = Field(
+        ..., description="Indica si hay suficiente stock para cubrir el pedido."
+    )
 
 
 class OrderRecipePreviewResponse(BaseModel):
-    """Respuesta de la previsualización de explosión de materiales BOM."""
-    order_id: int
-    codigo_pedido: str
-    tipo_caseton_nombre: str
-    cantidad: int
-    es_viable: bool
-    materiales: list[RecipePreviewItem]
-    resumen_deficits: list[str] = Field(default_factory=list)
+    """Respuesta completa de la explosión y viabilidad de la receta BOM para un pedido."""
 
+    order_id: int = Field(..., description="ID del pedido.")
+    codigo_pedido: str = Field(
+        ..., description="Código del pedido (ej. PED-2026-00001)."
+    )
+    cliente: str | None = Field(
+        default=None, description="Nombre del cliente del pedido."
+    )
+    tipo_caseton_id: int | None = Field(
+        default=None, description="ID del tipo de casetón."
+    )
+    tipo_caseton_nombre: str | None = Field(
+        default=None, description="Nombre del tipo de casetón."
+    )
+    cantidad: int = Field(..., description="Cantidad de unidades a fabricar.")
+    es_viable: bool = Field(
+        ..., description="True si todas las materias primas tienen stock suficiente."
+    )
+    materiales: list[RecipePreviewItem] = Field(
+        ..., description="Lista de materiales requeridos y su balance."
+    )
+    resumen_deficits: list[str] = Field(
+        default_factory=list,
+        description="Lista textual de mensajes descriptivos de déficit.",
+    )

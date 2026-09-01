@@ -2,13 +2,19 @@
 core/init_db.py — Inicialización y siembra automática (seeding) de datos esenciales.
 
 Garantiza que cualquier entorno nuevo (ej. clonar el repo en otra máquina)
-tenga creados automáticamente los roles y los usuarios iniciales (Admin y Operario).
+tenga creados automáticamente los roles y los usuarios iniciales.
+
+Principios de seguridad aplicados:
+- La siembra SOLO se ejecuta en entornos distintos de "production".
+- Las contraseñas iniciales se leen desde variables de entorno.
+- La siembra es estrictamente idempotente.
 """
 
 import logging
 
 from sqlalchemy import select
 
+from app.core.config import settings
 from app.core.database import AsyncSessionLocal
 from app.core.security import get_password_hash
 from app.models.role import Role
@@ -20,13 +26,28 @@ logger = logging.getLogger("casetech.init_db")
 async def init_db() -> None:
     """
     Verifica y siembra roles y usuarios iniciales si no existen.
-    Se ejecuta de forma segura e idempotente al iniciar la aplicación.
+
+    - Solo se ejecuta cuando ENVIRONMENT != "production".
+    - Idempotente: no sobreescribe datos existentes.
     """
+    if settings.ENVIRONMENT == "production":
+        logger.info(
+            "init_db: ENVIRONMENT='production' — siembra automática omitida. "
+            "Gestionar usuarios mediante herramientas de administración."
+        )
+        return
+
     try:
         async with AsyncSessionLocal() as session:
-            # 1. Asegurar Roles
+            # ------------------------------------------------------------------
+            # 1. Asegurar Roles (idempotente por nombre)
+            # ------------------------------------------------------------------
             roles_data = [
-                (1, "ADMINISTRADOR", "Acceso completo a todos los módulos y configuraciones"),
+                (
+                    1,
+                    "ADMINISTRADOR",
+                    "Acceso completo a todos los módulos y configuraciones",
+                ),
                 (2, "OPERARIO", "Acceso a operaciones de producción e inventario"),
             ]
             for role_id, nombre, desc in roles_data:
@@ -40,56 +61,74 @@ async def init_db() -> None:
 
             await session.flush()
 
-            # 2. Asegurar Usuario Administrador
+            # ------------------------------------------------------------------
+            # 2. Asegurar Usuario Administrador (idempotente — NO sobreescribe)
+            # ------------------------------------------------------------------
             admin_user = (
                 await session.execute(
                     select(User).where(User.email == "admin@casetech.com")
                 )
             ).scalar_one_or_none()
+
             if not admin_user:
+                admin_password = (
+                    settings.ADMIN_INITIAL_PASSWORD.get_secret_value()
+                    if hasattr(settings.ADMIN_INITIAL_PASSWORD, "get_secret_value")
+                    else str(settings.ADMIN_INITIAL_PASSWORD)
+                )
                 admin = User(
                     nombre_completo="Administrador CASETECH",
                     email="admin@casetech.com",
-                    password_hash=get_password_hash("Admin1234"),
+                    password_hash=get_password_hash(admin_password),
                     rol_id=1,
                     activo=True,
                 )
                 session.add(admin)
-                logger.info("Usuario Administrador sembrado: admin@casetech.com")
+                logger.info(
+                    "Usuario Administrador sembrado: admin@casetech.com "
+                    "(contraseña desde ADMIN_INITIAL_PASSWORD)"
+                )
             else:
-                # Asegurar que esté activo y con contraseña por defecto sincronizada
-                admin_user.activo = True
-                admin_user.password_hash = get_password_hash("Admin1234")
-                admin_user.rol_id = 1
-                logger.info("Usuario Administrador verificado y activo: admin@casetech.com")
+                logger.info(
+                    "Usuario Administrador ya existe (admin@casetech.com) — "
+                    "contraseña preservada sin cambios."
+                )
 
-            # 3. Asegurar Usuario Operario
+            # ------------------------------------------------------------------
+            # 3. Asegurar Usuario Operario (idempotente — NO sobreescribe)
+            # ------------------------------------------------------------------
             operario_user = (
                 await session.execute(
                     select(User).where(User.email == "operario@casetech.com")
                 )
             ).scalar_one_or_none()
+
             if not operario_user:
+                operario_password = (
+                    settings.OPERARIO_INITIAL_PASSWORD.get_secret_value()
+                    if hasattr(settings.OPERARIO_INITIAL_PASSWORD, "get_secret_value")
+                    else str(settings.OPERARIO_INITIAL_PASSWORD)
+                )
                 operario = User(
                     nombre_completo="Operario Producción",
                     email="operario@casetech.com",
-                    password_hash=get_password_hash("Operario1234"),
+                    password_hash=get_password_hash(operario_password),
                     rol_id=2,
                     activo=True,
                 )
                 session.add(operario)
-                logger.info("Usuario Operario sembrado: operario@casetech.com")
+                logger.info(
+                    "Usuario Operario sembrado: operario@casetech.com "
+                    "(contraseña desde OPERARIO_INITIAL_PASSWORD)"
+                )
             else:
-                # Asegurar que esté activo y con contraseña por defecto sincronizada
-                operario_user.activo = True
-                operario_user.password_hash = get_password_hash("Operario1234")
-                operario_user.rol_id = 2
-                logger.info("Usuario Operario verificado y activo: operario@casetech.com")
+                logger.info(
+                    "Usuario Operario ya existe (operario@casetech.com) — "
+                    "contraseña preservada sin cambios."
+                )
 
             await session.commit()
             logger.info("Verificación de datos iniciales completada.")
-    except Exception as exc:
-        logger.warning(
-            "init_db omitido o pendiente de migraciones Alembic: %s", exc
-        )
 
+    except Exception as exc:
+        logger.warning("init_db omitido o pendiente de migraciones Alembic: %s", exc)

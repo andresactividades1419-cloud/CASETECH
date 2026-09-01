@@ -27,12 +27,16 @@ async def test_recipe_preview_endpoint(
         "cantidad": 10,
         "fecha_entrega_estimada": "2026-12-31",
     }
-    create_res = await client.post("/api/v1/orders/", json=create_payload, headers=admin_headers)
+    create_res = await client.post(
+        "/api/v1/orders/", json=create_payload, headers=admin_headers
+    )
     assert create_res.status_code == 201
     order_id = create_res.json()["id"]
 
     # 2. Consultar el preview de la receta BOM
-    preview_res = await client.get(f"/api/v1/orders/{order_id}/recipe-preview", headers=admin_headers)
+    preview_res = await client.get(
+        f"/api/v1/orders/{order_id}/recipe-preview", headers=admin_headers
+    )
     assert preview_res.status_code == 200
     data = preview_res.json()
 
@@ -55,11 +59,15 @@ async def test_export_kardex_csv_admin_role_enforced(
     HU06 / RF12: Valida que la exportación de Kardex a CSV esté protegida por rol ADMINISTRADOR.
     """
     # Operario debe recibir HTTP 403 Forbidden
-    operario_res = await client.get("/api/v1/reports/kardex/export-csv", headers=operario_headers)
+    operario_res = await client.get(
+        "/api/v1/reports/kardex/export-csv", headers=operario_headers
+    )
     assert operario_res.status_code == 403
 
     # Administrador debe recibir HTTP 200 con content-type text/csv
-    admin_res = await client.get("/api/v1/reports/kardex/export-csv", headers=admin_headers)
+    admin_res = await client.get(
+        "/api/v1/reports/kardex/export-csv", headers=admin_headers
+    )
     assert admin_res.status_code == 200
     assert "text/csv" in admin_res.headers.get("content-type", "")
     assert "ID Movimiento" in admin_res.text
@@ -91,7 +99,9 @@ async def test_user_management_crud_admin_only(
         "rol_id": 2,
         "activo": True,
     }
-    reg_res = await client.post("/api/v1/auth/register", json=new_user_payload, headers=admin_headers)
+    reg_res = await client.post(
+        "/api/v1/auth/register", json=new_user_payload, headers=admin_headers
+    )
     assert reg_res.status_code == 201
     user_data = reg_res.json()
     new_user_id = user_data["id"]
@@ -108,7 +118,9 @@ async def test_user_management_crud_admin_only(
     assert patch_res.json()["rol_nombre"] == "ADMINISTRADOR"
 
     # 5. Administrador desactiva el usuario
-    del_res = await client.delete(f"/api/v1/auth/users/{new_user_id}", headers=admin_headers)
+    del_res = await client.delete(
+        f"/api/v1/auth/users/{new_user_id}", headers=admin_headers
+    )
     assert del_res.status_code == 200
 
     # Verificar que quedó inactivo

@@ -10,7 +10,6 @@ Rutas expuestas bajo el prefijo ``/api/v1/materials``:
   PATCH  /{id}/status → Borrado lógico (toggle activo)         [ADMINISTRADOR]
 """
 
-
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -69,9 +68,15 @@ async def list_materials(
     _user: CurrentUser,
     db: AsyncSession = Depends(get_db),
     skip: int = Query(default=0, ge=0, description="Registros a omitir."),
-    limit: int = Query(default=50, ge=1, le=200, description="Límite de registros por página."),
-    nombre: str | None = Query(default=None, max_length=100, description="Filtro por nombre parcial."),
-    activo: bool | None = Query(default=None, description="Filtrar por estado activo (true/false)."),
+    limit: int = Query(
+        default=50, ge=1, le=200, description="Límite de registros por página."
+    ),
+    nombre: str | None = Query(
+        default=None, max_length=100, description="Filtro por nombre parcial."
+    ),
+    activo: bool | None = Query(
+        default=None, description="Filtrar por estado activo (true/false)."
+    ),
     alerta_stock: bool | None = Query(
         default=None,
         description="Si es true, retorna únicamente insumos con stock_actual <= stock_minimo (HU12).",

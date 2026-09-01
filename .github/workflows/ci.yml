@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   # ============================================================
-  # Job: Backend (Python 3.11 + FastAPI + UV + PostgreSQL 16)
+  # Job 1: Backend CI (PostgreSQL 16 Alpine + UV + Python 3.11)
   # ============================================================
   backend:
     name: Backend CI (Lint, Typecheck, Audit, Tests)
@@ -79,10 +79,10 @@ jobs:
         run: uv run pytest -v tests/
 
   # ============================================================
-  # Job: Frontend (Node 20 + React 18 + PNPM + Vite/Vitest)
+  # Job 2: Frontend CI (Node 20 + PNPM + React 18 + Vitest)
   # ============================================================
   frontend:
-    name: Frontend CI (Lint, Security Audit, Vitest)
+    name: Frontend CI (Lint, Security Audit, Vitest, Build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -114,4 +114,7 @@ jobs:
         run: pnpm audit --audit-level=moderate
 
       - name: Run Unit & Component Tests (Vitest)
-        run: pnpm run test -- --run
+        run: pnpm run test run
+
+      - name: Run Production Bundle Build
+        run: pnpm run build

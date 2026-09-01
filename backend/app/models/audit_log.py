@@ -18,20 +18,18 @@ class AuditLog(Base):
     Log de auditoría inmutable de todas las acciones del sistema.
     Tabla: auditoria_acciones
     """
+
     __tablename__ = "auditoria_acciones"
 
-    id: Mapped[int] = mapped_column(
-        BigInteger, primary_key=True, autoincrement=True
-    )
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     usuario_id: Mapped[int | None] = mapped_column(
-        BigInteger, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True, index=True
+        BigInteger,
+        ForeignKey("usuarios.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
-    accion: Mapped[str] = mapped_column(
-        String(50), nullable=False, index=True
-    )
-    entidad: Mapped[str] = mapped_column(
-        String(50), nullable=False, index=True
-    )
+    accion: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    entidad: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     entidad_id: Mapped[int | None] = mapped_column(
         BigInteger, nullable=True, index=True
     )
@@ -42,9 +40,7 @@ class AuditLog(Base):
         JSON_TYPE, nullable=True
     )
 
-    ip_origen: Mapped[str | None] = mapped_column(
-        String(45), nullable=True
-    )
+    ip_origen: Mapped[str | None] = mapped_column(String(45), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now(), index=True
     )

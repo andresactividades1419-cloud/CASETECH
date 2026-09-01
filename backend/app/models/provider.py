@@ -15,29 +15,18 @@ class Provider(Base):
     Directorio de proveedores con borrado lógico (campo activo) y NIT inmutable.
     Tabla: proveedores
     """
+
     __tablename__ = "proveedores"
 
-    id: Mapped[int] = mapped_column(
-        BigInteger, primary_key=True, autoincrement=True
-    )
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     nit: Mapped[str] = mapped_column(
         String(20), nullable=False, unique=True, index=True
     )
-    nombre_empresa: Mapped[str] = mapped_column(
-        String(255), nullable=False, index=True
-    )
-    contacto_nombre: Mapped[str | None] = mapped_column(
-        String(255), nullable=True
-    )
-    contacto_telefono: Mapped[str | None] = mapped_column(
-        String(20), nullable=True
-    )
-    contacto_email: Mapped[str | None] = mapped_column(
-        String(255), nullable=True
-    )
-    direccion: Mapped[str | None] = mapped_column(
-        Text, nullable=True
-    )
+    nombre_empresa: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    contacto_nombre: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    contacto_telefono: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    contacto_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    direccion: Mapped[str | None] = mapped_column(Text, nullable=True)
     activo: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
     )

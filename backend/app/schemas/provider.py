@@ -20,7 +20,7 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 # Validador de NIT reutilizable
 # ---------------------------------------------------------------------------
 
-_NIT_PATTERN = re.compile(r"^[\w\-]+$")   # letras, dígitos, guión y guión bajo
+_NIT_PATTERN = re.compile(r"^[\w\-]+$")  # letras, dígitos, guión y guión bajo
 
 
 def _validate_nit(v: str) -> str:
@@ -36,6 +36,7 @@ def _validate_nit(v: str) -> str:
 # ---------------------------------------------------------------------------
 # ProviderBase — campos comunes
 # ---------------------------------------------------------------------------
+
 
 class ProviderBase(BaseModel):
     """
@@ -91,17 +92,20 @@ class ProviderBase(BaseModel):
 # ProviderCreate — payload de registro (solo ADMINISTRADOR)
 # ---------------------------------------------------------------------------
 
+
 class ProviderCreate(ProviderBase):
     """
     Payload para registrar un nuevo proveedor mediante ``sp_crear_proveedor``.
     ``nit`` y ``nombre_empresa`` son obligatorios; heredados de ProviderBase.
     """
+
     pass
 
 
 # ---------------------------------------------------------------------------
 # ProviderUpdate — actualización parcial (PATCH semántico sobre PUT)
 # ---------------------------------------------------------------------------
+
 
 class ProviderUpdate(BaseModel):
     """
@@ -140,6 +144,7 @@ class ProviderUpdate(BaseModel):
 # ProviderRead — representación pública / respuesta de la API
 # ---------------------------------------------------------------------------
 
+
 class ProviderRead(ProviderBase):
     """
     Respuesta pública completa de un proveedor, incluyendo campos generados
@@ -148,7 +153,9 @@ class ProviderRead(ProviderBase):
     """
 
     id: int = Field(..., description="Identificador único del proveedor.", examples=[1])
-    activo: bool = Field(..., description="Indica si el proveedor está activo en el sistema.")
+    activo: bool = Field(
+        ..., description="Indica si el proveedor está activo en el sistema."
+    )
     created_at: datetime = Field(..., description="Timestamp de creación en UTC.")
     updated_at: datetime | None = Field(
         default=None,
@@ -161,6 +168,7 @@ class ProviderRead(ProviderBase):
 # ---------------------------------------------------------------------------
 # ProviderListResponse — wrapper de paginación
 # ---------------------------------------------------------------------------
+
 
 class ProviderListResponse(BaseModel):
     """Respuesta paginada para el listado de proveedores."""

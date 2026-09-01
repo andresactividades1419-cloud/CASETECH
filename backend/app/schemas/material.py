@@ -19,7 +19,11 @@ class MaterialBase(BaseModel):
         min_length=3,
         max_length=255,
         description="Nombre único del insumo o materia prima.",
-        examples=["Icopor EPS Densidad 10", "Lona Impermeable 600D", "Guadua Angustifolia"],
+        examples=[
+            "Icopor EPS Densidad 10",
+            "Lona Impermeable 600D",
+            "Guadua Angustifolia",
+        ],
     )
     unidad_medida: str = Field(
         ...,
@@ -104,7 +108,9 @@ class MaterialResponse(MaterialBase):
     stock_actual: Decimal = Field(..., description="Stock físico actual disponible.")
     activo: bool = Field(..., description="Indica si el insumo está activo.")
     created_at: datetime = Field(..., description="Fecha y hora de creación UTC.")
-    updated_at: datetime | None = Field(default=None, description="Fecha y hora de última modificación UTC.")
+    updated_at: datetime | None = Field(
+        default=None, description="Fecha y hora de última modificación UTC."
+    )
 
     # Campo auxiliar para determinar si está en alerta crítica de stock
     @property

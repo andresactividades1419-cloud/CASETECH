@@ -15,7 +15,9 @@ from collections.abc import AsyncGenerator
 # Configurar variables de entorno antes de importar componentes de la aplicación
 os.environ["ENVIRONMENT"] = "test"
 os.environ["DEBUG"] = "False"
-os.environ["JWT_SECRET"] = "super-secret-test-key-minimum-32-bytes-long-for-testing-ci-12345"
+os.environ["JWT_SECRET"] = (
+    "super-secret-test-key-minimum-32-bytes-long-for-testing-ci-12345"
+)
 os.environ["JWT_ALGORITHM"] = "HS256"
 os.environ["POSTGRES_PASSWORD"] = "testpassword123"
 
@@ -67,7 +69,9 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 
     async with TestingSessionLocal() as session:
         # 1. Sembrar Roles
-        admin_role = Role(id=1, nombre="ADMINISTRADOR", descripcion="Administrador del sistema")
+        admin_role = Role(
+            id=1, nombre="ADMINISTRADOR", descripcion="Administrador del sistema"
+        )
         operario_role = Role(id=2, nombre="OPERARIO", descripcion="Operario de planta")
         session.add_all([admin_role, operario_role])
         await session.flush()
@@ -131,7 +135,6 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
         await session.flush()
 
         # 5. Sembrar Recetas (BOM)
-        # 1 Casetón Lona requiere 1.5 M2 de lona y 4 M de madera
         receta1 = Recipe(
             id=1,
             tipo_caseton_id=1,
@@ -156,6 +159,7 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 @pytest_asyncio.fixture(scope="function")
 async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     """Cliente HTTP de pruebas con inyección de sesión de BD."""
+
     async def override_get_db():
         yield db_session
 
@@ -171,7 +175,9 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
 @pytest.fixture
 def admin_token() -> str:
     """Genera token JWT para rol ADMINISTRADOR."""
-    return create_access_token(data={"sub": "admin@casetech.com", "rol": "ADMINISTRADOR"})
+    return create_access_token(
+        data={"sub": "admin@casetech.com", "rol": "ADMINISTRADOR"}
+    )
 
 
 @pytest.fixture

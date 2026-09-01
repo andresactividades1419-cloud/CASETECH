@@ -13,6 +13,7 @@ import MaterialsPage from '../pages/MaterialsPage';
 import OrdersPage from '../pages/OrdersPage';
 import AdjustmentsPage from '../pages/AdjustmentsPage';
 import PurchasesPage from '../pages/PurchasesPage';
+import UsersPage from '../pages/UsersPage';
 
 import ErrorBoundary from '../components/common/ErrorBoundary';
 
@@ -33,8 +34,10 @@ export function AppRoutes() {
             <Route path="/materials" element={<MaterialsPage />} />
             <Route path="/orders" element={<OrdersPage />} />
             <Route path="/adjustments" element={<AdjustmentsPage />} />
+            <Route path="/users" element={<UsersPage />} />
           </Route>
         </Route>
+
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -2,7 +2,6 @@
 schemas/token.py — Esquemas Pydantic v2 para tokens JWT de CASETECH ERP.
 """
 
-
 from pydantic import BaseModel
 
 

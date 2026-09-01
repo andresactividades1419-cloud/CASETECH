@@ -8,7 +8,6 @@ Provee:
 - POST   /api/v1/stock-adjustments/{id}/review→ Aprobar o rechazar solicitud (Solo Admin con doble firma).
 """
 
-
 from fastapi import APIRouter, Query, status
 
 from app.api.deps import AdminUser, CurrentUser, DBSession
@@ -52,11 +51,20 @@ async def create_adjustment_endpoint(
 async def get_adjustments_endpoint(
     db: DBSession,
     current_user: CurrentUser,
-    estado: str | None = Query(None, description="Filtrar por estado: PENDIENTE, APROBADO, RECHAZADO"),
-    tipo: str | None = Query(None, description="Filtrar por tipo de ajuste (MERMA, SOBRANTE, CONTEO_FISICO, DANO)"),
-    material_id: int | None = Query(None, description="Filtrar por ID de la materia prima", gt=0),
+    estado: str | None = Query(
+        None, description="Filtrar por estado: PENDIENTE, APROBADO, RECHAZADO"
+    ),
+    tipo: str | None = Query(
+        None,
+        description="Filtrar por tipo de ajuste (MERMA, SOBRANTE, CONTEO_FISICO, DANO)",
+    ),
+    material_id: int | None = Query(
+        None, description="Filtrar por ID de la materia prima", gt=0
+    ),
     page: int = Query(1, ge=1, description="Número de página"),
-    limit: int = Query(20, ge=1, le=100, description="Cantidad de registros por página"),
+    limit: int = Query(
+        20, ge=1, le=100, description="Cantidad de registros por página"
+    ),
 ) -> StockAdjustmentListResponse:
     """Consulta el historial de ajustes de inventario según los filtros proporcionados."""
     return await stock_adjustment_service.get_adjustments(

@@ -68,10 +68,11 @@ async def get_dashboard_metrics(db: AsyncSession) -> DashboardMetricsResponse:
     # 4. Materiales con alerta de stock crítico (stock_actual <= stock_minimo)
     res_alertas = await db.execute(
         select(func.count(Material.id)).where(
-            Material.activo == True,
+            Material.activo.is_(True),
             Material.stock_actual <= Material.stock_minimo,
         )
     )
+
     materiales_alerta_stock = res_alertas.scalar_one() or 0
 
     # 5. Ajustes pendientes de doble firma
@@ -147,12 +148,21 @@ async def get_stock_movements_log(
     # Filtros
     if tipo_movimiento and tipo_movimiento.strip() and tipo_movimiento != "TODOS":
         tipo_clean = tipo_movimiento.strip().upper()
-        if tipo_clean in ("CONSUMO_PRODUCCION", "PRODUCCION", "DESCUENTO_PRODUCCION", "DESCUENTO_PRODUCCION_DEFINITIVO"):
+        if tipo_clean in (
+            "CONSUMO_PRODUCCION",
+            "PRODUCCION",
+            "DESCUENTO_PRODUCCION",
+            "DESCUENTO_PRODUCCION_DEFINITIVO",
+        ):
             query = query.where(StockMovement.tipo_movimiento.ilike("%PRODUCCION%"))
-            count_query = count_query.where(StockMovement.tipo_movimiento.ilike("%PRODUCCION%"))
+            count_query = count_query.where(
+                StockMovement.tipo_movimiento.ilike("%PRODUCCION%")
+            )
         else:
             query = query.where(StockMovement.tipo_movimiento.ilike(f"%{tipo_clean}%"))
-            count_query = count_query.where(StockMovement.tipo_movimiento.ilike(f"%{tipo_clean}%"))
+            count_query = count_query.where(
+                StockMovement.tipo_movimiento.ilike(f"%{tipo_clean}%")
+            )
 
     if material_id:
         query = query.where(StockMovement.material_id == material_id)
@@ -160,11 +170,15 @@ async def get_stock_movements_log(
 
     if fecha_desde:
         query = query.where(func.date(StockMovement.created_at) >= fecha_desde)
-        count_query = count_query.where(func.date(StockMovement.created_at) >= fecha_desde)
+        count_query = count_query.where(
+            func.date(StockMovement.created_at) >= fecha_desde
+        )
 
     if fecha_hasta:
         query = query.where(func.date(StockMovement.created_at) <= fecha_hasta)
-        count_query = count_query.where(func.date(StockMovement.created_at) <= fecha_hasta)
+        count_query = count_query.where(
+            func.date(StockMovement.created_at) <= fecha_hasta
+        )
 
     total_res = await db.execute(count_query)
     total = total_res.scalar_one() or 0
@@ -177,7 +191,9 @@ async def get_stock_movements_log(
     items = [
         StockMovementAuditItem(
             id=m.id,
-            material_nombre=m.material.nombre if m.material else f"Material #{m.material_id}",
+            material_nombre=m.material.nombre
+            if m.material
+            else f"Material #{m.material_id}",
             tipo_movimiento=m.tipo_movimiento,
             cantidad=m.cantidad,
             stock_antes=m.stock_antes,

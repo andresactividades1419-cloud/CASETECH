@@ -33,6 +33,7 @@ export function RecipePreviewModal({ order, isOpen, onClose, onConfirmStart, isS
       });
   }, [isOpen, order?.id]);
 
+  // Cerrar con Escape
   useEffect(() => {
     const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
     if (isOpen) window.addEventListener('keydown', handleKey);
@@ -72,6 +73,7 @@ export function RecipePreviewModal({ order, isOpen, onClose, onConfirmStart, isS
           overflow: 'hidden',
         }}
       >
+        {/* Header */}
         <div style={{
           padding: '1.25rem 1.75rem',
           borderBottom: '1px solid #1f2937',
@@ -100,6 +102,7 @@ export function RecipePreviewModal({ order, isOpen, onClose, onConfirmStart, isS
           </button>
         </div>
 
+        {/* Content */}
         <div style={{ padding: '1.5rem 1.75rem', overflowY: 'auto', flex: 1 }}>
           {loading ? (
             <div style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>
@@ -228,6 +231,7 @@ export function RecipePreviewModal({ order, isOpen, onClose, onConfirmStart, isS
           ) : null}
         </div>
 
+        {/* Footer */}
         <div style={{
           padding: '1.25rem 1.75rem',
           borderTop: '1px solid #1f2937',

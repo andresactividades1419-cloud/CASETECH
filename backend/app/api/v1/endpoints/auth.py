@@ -5,13 +5,16 @@ HU01 — Login con JWT:
     POST /api/v1/auth/login    → Emite token Bearer tras verificar credenciales.
     GET  /api/v1/auth/me       → Retorna datos del usuario autenticado.
 
-HU14 — Registro de usuarios (solo ADMINISTRADOR):
+HU14 / HU02 — Gestión de usuarios (solo ADMINISTRADOR):
     POST /api/v1/auth/register → Crea un nuevo usuario con rol asignado.
+    GET  /api/v1/auth/users    → Listar todas las cuentas de usuario.
+    PATCH /api/v1/auth/users/{id} → Actualizar datos/rol/contraseña/estado.
+    DELETE /api/v1/auth/users/{id} → Desactivar lógicamente un usuario.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import AdminUser, CurrentUser, get_db
@@ -20,20 +23,20 @@ from app.models.role import Role
 from app.models.user import User
 from app.schemas.token import Token
 from app.schemas.user import (
-    UserAdminResponse,
+    UserAdminRead,
     UserCreate,
     UserListResponse,
     UserRead,
-    UserUpdate,
+    UserUpdateAdmin,
 )
 
 router = APIRouter()
 
 
-
 # ---------------------------------------------------------------------------
 # POST /login  — HU01: Autenticación con credenciales y emisión de JWT
 # ---------------------------------------------------------------------------
+
 
 @router.post(
     "/login",
@@ -54,22 +57,14 @@ async def login(
 ) -> Token:
     """
     Endpoint OAuth2 estándar compatible con Swagger UI ``Authorize``.
-
-    - ``username``: email del usuario.
-    - ``password``: contraseña en texto plano.
-
-    Retorna un objeto ``Token`` con ``access_token`` y ``token_type = "bearer"``.
     """
-    from sqlalchemy import func
     normalized_email = form_data.username.strip().lower()
 
-    # Buscar usuario por email (insensible a mayúsculas en el correo)
     result = await db.execute(
         select(User).where(func.lower(User.email) == normalized_email)
     )
     user: User | None = result.scalar_one_or_none()
 
-    # Verificar existencia y contraseña exacta mediante hash seguro bcrypt
     if user is None or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -77,7 +72,6 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Verificar que la cuenta esté activa
     if not user.activo:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -85,17 +79,11 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Cargar el rol para incluirlo en el JWT
-    role_result = await db.execute(
-        select(Role).where(Role.id == user.rol_id)
-    )
+    role_result = await db.execute(select(Role).where(Role.id == user.rol_id))
     role: Role | None = role_result.scalar_one_or_none()
     role_name: str = role.nombre if role else "DESCONOCIDO"
 
-    # Emitir el token con sub=email y rol=nombre_rol
-    access_token = create_access_token(
-        data={"sub": user.email, "rol": role_name}
-    )
+    access_token = create_access_token(data={"sub": user.email, "rol": role_name})
 
     return Token(access_token=access_token, token_type="bearer")
 
@@ -104,15 +92,15 @@ async def login(
 # POST /register — HU14: Registro de nuevos usuarios (requiere ADMINISTRADOR)
 # ---------------------------------------------------------------------------
 
+
 @router.post(
     "/register",
-    response_model=UserRead,
+    response_model=UserAdminRead,
     status_code=status.HTTP_201_CREATED,
     summary="Registrar nuevo usuario",
     description=(
         "Crea un nuevo usuario en el sistema. "
-        "**Solo accesible por usuarios con rol ADMINISTRADOR.** "
-        "Valida unicidad de email y genera el hash bcrypt antes de persistir."
+        "**Solo accesible por usuarios con rol ADMINISTRADOR.**"
     ),
     responses={
         201: {"description": "Usuario creado correctamente."},
@@ -126,31 +114,15 @@ async def register(
     user_in: UserCreate,
     _admin: AdminUser,
     db: AsyncSession = Depends(get_db),
-) -> User:
-    """
-    Registra un nuevo usuario con rol asignado.
-
-    Validaciones:
-    - El email debe ser único en la tabla ``usuarios``.
-    - El ``rol_id`` debe existir en la tabla ``roles``.
-    - La contraseña se hashea con bcrypt antes de persistir.
-
-    Solo los usuarios con rol **ADMINISTRADOR** pueden invocar este endpoint.
-    """
-    # 1. Verificar unicidad del email
-    existing = await db.execute(
-        select(User).where(User.email == user_in.email)
-    )
+) -> UserAdminRead:
+    existing = await db.execute(select(User).where(User.email == user_in.email))
     if existing.scalar_one_or_none() is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"El email '{user_in.email}' ya está registrado en el sistema.",
         )
 
-    # 2. Verificar existencia del rol
-    role_result = await db.execute(
-        select(Role).where(Role.id == user_in.rol_id)
-    )
+    role_result = await db.execute(select(Role).where(Role.id == user_in.rol_id))
     role: Role | None = role_result.scalar_one_or_none()
     if role is None:
         raise HTTPException(
@@ -158,7 +130,6 @@ async def register(
             detail=f"El rol con id={user_in.rol_id} no existe.",
         )
 
-    # 3. Crear instancia ORM con hash de contraseña
     new_user = User(
         nombre_completo=user_in.nombre_completo,
         email=user_in.email,
@@ -171,12 +142,22 @@ async def register(
     await db.commit()
     await db.refresh(new_user)
 
-    return new_user
+    return UserAdminRead(
+        id=new_user.id,
+        nombre_completo=new_user.nombre_completo,
+        email=new_user.email,
+        rol_id=new_user.rol_id,
+        rol_nombre=role.nombre,
+        activo=new_user.activo,
+        created_at=new_user.created_at,
+        updated_at=new_user.updated_at,
+    )
 
 
 # ---------------------------------------------------------------------------
 # GET /me — Datos del usuario autenticado actualmente
 # ---------------------------------------------------------------------------
+
 
 @router.get(
     "/me",
@@ -189,24 +170,19 @@ async def register(
     },
 )
 async def me(current_user: CurrentUser) -> User:
-    """
-    Retorna el perfil del usuario autenticado.
-
-    No requiere parámetros adicionales; la identidad se extrae
-    directamente del JWT mediante la dependencia ``get_current_user``.
-    """
     return current_user
 
 
 # ---------------------------------------------------------------------------
-# HU02 / HU14 — Gestión de Usuarios (Exclusivo ADMINISTRADOR)
+# GET /users — HU02: Listado de usuarios del sistema (solo ADMINISTRADOR)
 # ---------------------------------------------------------------------------
+
 
 @router.get(
     "/users",
     response_model=UserListResponse,
-    summary="Listar usuarios del sistema (Admin)",
-    description="Retorna la lista de usuarios registrados con su respectivo rol. **Exclusivo ADMINISTRADOR.**",
+    summary="Listar usuarios del sistema (HU02)",
+    description="Retorna la lista de todas las cuentas de usuario con sus roles y estados asociados. **Solo ADMINISTRADOR**.",
 )
 async def list_users(
     _admin: AdminUser,
@@ -214,108 +190,139 @@ async def list_users(
 ) -> UserListResponse:
     query = (
         select(User, Role.nombre.label("rol_nombre"))
-        .join(Role, Role.id == User.rol_id)
+        .outerjoin(Role, Role.id == User.rol_id)
         .order_by(User.id.asc())
     )
     result = await db.execute(query)
     rows = result.all()
 
-    items = []
+    items: list[UserAdminRead] = []
     for user_obj, rol_nombre in rows:
-        user_dict = {
-            "id": user_obj.id,
-            "nombre_completo": user_obj.nombre_completo,
-            "email": user_obj.email,
-            "rol_id": user_obj.rol_id,
-            "rol_nombre": rol_nombre,
-            "activo": user_obj.activo,
-            "created_at": user_obj.created_at,
-            "updated_at": user_obj.updated_at,
-        }
-        items.append(UserAdminResponse(**user_dict))
+        items.append(
+            UserAdminRead(
+                id=user_obj.id,
+                nombre_completo=user_obj.nombre_completo,
+                email=user_obj.email,
+                rol_id=user_obj.rol_id,
+                rol_nombre=rol_nombre or "OPERARIO",
+                activo=user_obj.activo,
+                created_at=user_obj.created_at,
+                updated_at=user_obj.updated_at,
+            )
+        )
 
     return UserListResponse(total=len(items), items=items)
 
 
+# ---------------------------------------------------------------------------
+# PATCH /users/{user_id} — HU02: Actualizar cuenta de usuario (solo ADMINISTRADOR)
+# ---------------------------------------------------------------------------
+
+
 @router.patch(
     "/users/{user_id}",
-    response_model=UserAdminResponse,
-    summary="Actualizar usuario (Admin)",
-    description="Permite modificar rol, datos o activar/desactivar a un usuario. **Exclusivo ADMINISTRADOR.**",
+    response_model=UserAdminRead,
+    summary="Actualizar cuenta de usuario (HU02)",
+    description="Permite modificar rol, estado activo/inactivo, nombre o restablecer contraseña. **Solo ADMINISTRADOR**.",
 )
 async def update_user(
     user_id: int,
-    user_in: UserUpdate,
+    user_update: UserUpdateAdmin,
     _admin: AdminUser,
     db: AsyncSession = Depends(get_db),
-) -> UserAdminResponse:
-    user = await db.get(User, user_id)
-    if not user:
+) -> UserAdminRead:
+    result = await db.execute(select(User).where(User.id == user_id))
+    user: User | None = result.scalar_one_or_none()
+
+    if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Usuario con ID {user_id} no encontrado.",
         )
 
-    if user_in.email is not None and user_in.email != user.email:
-        existing = await db.execute(select(User).where(User.email == user_in.email))
-        if existing.scalar_one_or_none():
+    if user_update.email and user_update.email != user.email:
+        email_check = await db.execute(
+            select(User).where(User.email == user_update.email)
+        )
+        if email_check.scalar_one_or_none() is not None:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"El email '{user_in.email}' ya está registrado.",
+                detail=f"El correo '{user_update.email}' ya está en uso por otro usuario.",
             )
-        user.email = user_in.email
+        user.email = user_update.email
 
-    if user_in.rol_id is not None:
-        role = await db.get(Role, user_in.rol_id)
-        if not role:
+    if user_update.nombre_completo is not None:
+        user.nombre_completo = user_update.nombre_completo
+
+    if user_update.rol_id is not None:
+        role_res = await db.execute(select(Role).where(Role.id == user_update.rol_id))
+        if role_res.scalar_one_or_none() is None:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"El rol {user_in.rol_id} no existe.",
+                detail=f"El rol con ID {user_update.rol_id} no existe.",
             )
-        user.rol_id = user_in.rol_id
+        user.rol_id = user_update.rol_id
 
-    if user_in.nombre_completo is not None:
-        user.nombre_completo = user_in.nombre_completo
+    if user_update.activo is not None:
+        if user.id == _admin.id and not user_update.activo:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="No puede desactivar su propia cuenta de Administrador en sesión.",
+            )
+        user.activo = user_update.activo
 
-    if user_in.activo is not None:
-        user.activo = user_in.activo
-
-    if user_in.password:
-        user.password_hash = get_password_hash(user_in.password)
+    if user_update.password is not None and user_update.password.strip():
+        user.password_hash = get_password_hash(user_update.password.strip())
 
     await db.commit()
     await db.refresh(user)
 
-    role_nombre = await db.scalar(select(Role.nombre).where(Role.id == user.rol_id))
-    return UserAdminResponse(
+    role_res = await db.execute(select(Role.nombre).where(Role.id == user.rol_id))
+    rol_nombre = role_res.scalar_one_or_none() or "OPERARIO"
+
+    return UserAdminRead(
         id=user.id,
         nombre_completo=user.nombre_completo,
         email=user.email,
         rol_id=user.rol_id,
-        rol_nombre=role_nombre or "OPERARIO",
+        rol_nombre=rol_nombre,
         activo=user.activo,
         created_at=user.created_at,
         updated_at=user.updated_at,
     )
 
 
+# ---------------------------------------------------------------------------
+# DELETE /users/{user_id} — HU02: Desactivación lógica de usuario
+# ---------------------------------------------------------------------------
+
+
 @router.delete(
     "/users/{user_id}",
-    summary="Desactivar usuario (Admin)",
-    description="Desactiva lógicamente una cuenta de usuario. **Exclusivo ADMINISTRADOR.**",
+    summary="Desactivar lógicamente un usuario (HU02)",
+    description="Marca una cuenta de usuario como inactiva (activo = False). **Solo ADMINISTRADOR**.",
 )
-async def delete_user(
+async def deactivate_user(
     user_id: int,
     _admin: AdminUser,
     db: AsyncSession = Depends(get_db),
-):
-    user = await db.get(User, user_id)
-    if not user:
+) -> dict[str, str]:
+    if user_id == _admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="No puede desactivar su propia cuenta de Administrador en sesión.",
+        )
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user: User | None = result.scalar_one_or_none()
+
+    if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Usuario con ID {user_id} no encontrado.",
         )
+
     user.activo = False
     await db.commit()
-    return {"message": f"Usuario {user.email} desactivado exitosamente.", "id": user_id, "activo": False}
 
+    return {"message": f"Usuario '{user.email}' desactivado exitosamente."}

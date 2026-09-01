@@ -32,6 +32,16 @@ api_router.include_router(
 )
 
 # -----------------------------------------------------------------------
+# Reportes y Exportación de Datos  (HU06, RF12)
+# -----------------------------------------------------------------------
+api_router.include_router(
+    reports.router,
+    prefix="/reports",
+    tags=["Reportes"],
+)
+
+
+# -----------------------------------------------------------------------
 # Autenticación y gestión de usuarios  (HU01, HU14)
 # -----------------------------------------------------------------------
 api_router.include_router(
@@ -93,13 +103,3 @@ api_router.include_router(
     prefix="/stock-adjustments",
     tags=["Ajustes de Inventario"],
 )
-
-# -----------------------------------------------------------------------
-# Reportes y Exportación  (HU06, RF12)
-# -----------------------------------------------------------------------
-api_router.include_router(
-    reports.router,
-    prefix="/reports",
-    tags=["Reportes"],
-)
-

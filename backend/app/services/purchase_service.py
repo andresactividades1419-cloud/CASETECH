@@ -53,7 +53,9 @@ async def _generate_codigo_compra(db: AsyncSession) -> str:
 def _to_purchase_dto(purchase: Purchase) -> PurchaseResponse:
     """Convierte una entidad ORM Purchase a su DTO enriquecido PurchaseResponse."""
     proveedor_nombre = purchase.proveedor.nombre_empresa if purchase.proveedor else None
-    registrado_por_nombre = purchase.registrador.nombre_completo if purchase.registrador else None
+    registrado_por_nombre = (
+        purchase.registrador.nombre_completo if purchase.registrador else None
+    )
 
     items_dto = []
     if purchase.detalles:
@@ -61,7 +63,11 @@ def _to_purchase_dto(purchase: Purchase) -> PurchaseResponse:
             mat_nombre = d.material.nombre if d.material else None
             unidad_med = d.material.unidad_medida if d.material else None
             # Asegurar subtotal si aún no ha sido refrescado desde la columna calculada de BD
-            subtotal_val = d.subtotal if d.subtotal is not None else (d.cantidad * d.precio_unitario)
+            subtotal_val = (
+                d.subtotal
+                if d.subtotal is not None
+                else (d.cantidad * d.precio_unitario)
+            )
             items_dto.append(
                 PurchaseItemResponse(
                     id=d.id,
@@ -113,7 +119,9 @@ async def create_purchase(
     6. Commit y retorno del DTO completo.
     """
     # 1. Validar proveedor
-    res_prov = await db.execute(select(Provider).where(Provider.id == data.proveedor_id))
+    res_prov = await db.execute(
+        select(Provider).where(Provider.id == data.proveedor_id)
+    )
     proveedor = res_prov.scalar_one_or_none()
 
     if not proveedor:
@@ -201,15 +209,17 @@ async def create_purchase(
         )
         db.add(detalle)
 
-        items_audit.append({
-            "material_id": material.id,
-            "material_nombre": material.nombre,
-            "cantidad": float(cant_decimal),
-            "precio_unitario": float(precio_decimal),
-            "subtotal": float(subtotal_linea),
-            "stock_antes": float(stock_antes),
-            "stock_despues": float(stock_despues),
-        })
+        items_audit.append(
+            {
+                "material_id": material.id,
+                "material_nombre": material.nombre,
+                "cantidad": float(cant_decimal),
+                "precio_unitario": float(precio_decimal),
+                "subtotal": float(subtotal_linea),
+                "stock_antes": float(stock_antes),
+                "stock_despues": float(stock_despues),
+            }
+        )
 
     # 5. Actualizar total en cabecera
     new_purchase.total = total_acumulado
