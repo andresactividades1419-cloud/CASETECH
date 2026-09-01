@@ -64,10 +64,10 @@ export const dashboardApi = {
   },
 
   /**
-   * Descarga el reporte CSV del Kardex de inventario (HU06, RF12).
+   * Descarga el reporte CSV del Kardex de movimientos de inventario (HU06, RF12).
    * @param {Object} params - { tipo_movimiento, material_id, fecha_desde, fecha_hasta }
    */
-  async exportKardexCsv(params = {}) {
+  async exportStockMovementsCSV(params = {}) {
     const queryParams = {};
     if (params.tipo_movimiento && params.tipo_movimiento !== 'TODOS') {
       queryParams.tipo_movimiento = params.tipo_movimiento;
@@ -82,29 +82,78 @@ export const dashboardApi = {
       queryParams.fecha_hasta = params.fecha_hasta;
     }
 
-    const response = await apiClient.get('/reports/kardex/export-csv', {
+    const response = await apiClient.get('/dashboard/movements/export-csv', {
       params: queryParams,
       responseType: 'blob',
     });
 
-    // Disparar descarga del blob en el navegador
     const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv;charset=utf-8;' }));
     const link = document.createElement('a');
     link.href = url;
-    
-    // Obtener nombre del archivo desde header o default
+
     const contentDisposition = response.headers['content-disposition'];
-    let filename = 'kardex_casetech.csv';
+    let filename = `kardex_movimientos_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.csv`;
     if (contentDisposition) {
       const match = contentDisposition.match(/filename="?([^"]+)"?/);
       if (match && match[1]) filename = match[1];
     }
-    
+
     link.setAttribute('download', filename);
     document.body.appendChild(link);
     link.click();
     link.parentNode.removeChild(link);
     window.URL.revokeObjectURL(url);
+    return true;
+  },
+
+  /**
+   * Descarga el reporte CSV de la bitácora administrativa de auditoría (HU06, RF12).
+   * @param {Object} params - { entidad, usuario_id, fecha_desde, fecha_hasta }
+   */
+  async exportAuditLogsCSV(params = {}) {
+    const queryParams = {};
+    if (params.entidad && params.entidad !== 'TODAS') {
+      queryParams.entidad = params.entidad;
+    }
+    if (params.usuario_id) {
+      queryParams.usuario_id = Number(params.usuario_id);
+    }
+    if (params.fecha_desde) {
+      queryParams.fecha_desde = params.fecha_desde;
+    }
+    if (params.fecha_hasta) {
+      queryParams.fecha_hasta = params.fecha_hasta;
+    }
+
+    const response = await apiClient.get('/dashboard/audit-logs/export-csv', {
+      params: queryParams,
+      responseType: 'blob',
+    });
+
+    const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv;charset=utf-8;' }));
+    const link = document.createElement('a');
+    link.href = url;
+
+    const contentDisposition = response.headers['content-disposition'];
+    let filename = `bitacora_auditoria_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.csv`;
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename="?([^"]+)"?/);
+      if (match && match[1]) filename = match[1];
+    }
+
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    return true;
+  },
+
+  /**
+   * Alias de retrocompatibilidad para exportStockMovementsCSV.
+   */
+  async exportKardexCsv(params = {}) {
+    return this.exportStockMovementsCSV(params);
   },
 };
 
