@@ -322,7 +322,9 @@ async def review_adjustment(
             await db.execute(select(Material).where(Material.id == adj.material_id))
         ).scalar_one_or_none()
         if mat:
-            nuevo_stock = mat.stock_actual + adj.cantidad
+            curr_stock = Decimal(str(mat.stock_actual))
+            adj_qty = Decimal(str(adj.cantidad))
+            nuevo_stock = curr_stock + adj_qty
             if nuevo_stock < 0:
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -337,11 +339,11 @@ async def review_adjustment(
             mov = StockMovement(
                 material_id=mat.id,
                 tipo_movimiento="AJUSTE_APROBADO",
-                cantidad=abs(adj.cantidad),
+                cantidad=abs(adj_qty),
                 stock_antes=adj.stock_antes,
                 stock_despues=nuevo_stock,
                 referencia_id=adj.id,
-                referencia_tipo="AJUSTE_INVENTARIO",
+                referencia_tipo="AJUSTE",
                 ejecutado_por=admin_user.id,
             )
             db.add(mov)
@@ -357,6 +359,7 @@ async def review_adjustment(
                 CAST(:aprobar AS BOOLEAN)
             )
         """)
+
         await db.execute(
             query,
             {

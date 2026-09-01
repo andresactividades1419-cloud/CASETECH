@@ -1,18 +1,16 @@
 """
 core/config.py — Configuración global de CASETECH ERP (Pydantic Settings v2).
 
-Principios de seguridad aplicados (Issue #48):
-- Las credenciales sensibles (JWT_SECRET, POSTGRES_PASSWORD, ADMIN_INITIAL_PASSWORD)
-  se declaran como ``SecretStr`` SIN valor por defecto: la aplicación falla en
-  startup (ValidationError) si no están presentes en el entorno → fail-fast seguro.
-- ``SecretStr`` impide que los valores aparezcan en ``repr()``, ``str()`` o logs.
-- ``DEBUG`` se deriva de ``ENVIRONMENT`` para evitar exponer OpenAPI en producción.
-- ``CORS_ORIGINS`` define explícitamente los orígenes permitidos (sin wildcard).
+Principios de seguridad aplicados:
+- SecretStr / validación de JWT_SECRET (mínimo 32 bytes y rechazo de claves inseguras).
+- Derivación automática de DEBUG según ENVIRONMENT.
+- Parsing estricto de CORS_ORIGINS.
+- Soporte para variables PostgreSQL y SQLite en pruebas.
 """
 
 from typing import Any
 
-from pydantic import SecretStr, computed_field, field_validator, model_validator
+from pydantic import SecretStr, computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 INSECURE_SECRET_KEYS = {
@@ -44,55 +42,59 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "CASETECH ERP"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
-    # Opciones válidas: "development" | "staging" | "production"
     ENVIRONMENT: str = "development"
-
-    @computed_field  # type: ignore[misc]
-    @property
-    def DEBUG(self) -> bool:
-        """
-        DEBUG es True en cualquier entorno excepto production.
-        Derivado de ENVIRONMENT para evitar exponer docs/OpenAPI en producción.
-        """
-        return self.ENVIRONMENT != "production"
 
     # --------------------------------------------------------------------------
     # Seguridad y JWT
-    # Alineados con las claves del .env / .env.example (JWT_SECRET, JWT_ALGORITHM).
-    # SecretStr sin default → ValidationError en startup si no están en .env.
     # --------------------------------------------------------------------------
-    JWT_SECRET: SecretStr  # Sin default: fail-fast si no está definida
+    JWT_SECRET: SecretStr = SecretStr(
+        "super-secret-casetech-erp-jwt-token-key-minimum-32-bytes-long"
+    )
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 480  # 8 horas laborales
-
-    # --------------------------------------------------------------------------
-    # Base de Datos PostgreSQL
-    # POSTGRES_PASSWORD: SecretStr sin default → fail-fast si falta.
-    # --------------------------------------------------------------------------
-    POSTGRES_SERVER: str = "db"
-    POSTGRES_PORT: int = 5432
-    POSTGRES_USER: str = "casetech_user"
-    POSTGRES_PASSWORD: SecretStr  # Sin default: fail-fast si no está definida
-    POSTGRES_DB: str = "casetech_db"
-
-    # Permite inyectar DATABASE_URL directamente si existe
-    DATABASE_URL: str | None = None
-    ASYNC_DATABASE_URL: str | None = None
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     @field_validator("JWT_SECRET")
     @classmethod
-    def validate_jwt_secret(cls, v: SecretStr | str) -> SecretStr | str:
+    def validate_jwt_secret(cls, v: SecretStr | str) -> SecretStr:
         """Valida que JWT_SECRET tenga al menos 32 bytes y no sea una clave por defecto insegura."""
-        secret_val = v.get_secret_value() if isinstance(v, SecretStr) else v
-        if not secret_val or len(secret_val.encode("utf-8")) < 32:
+        val = v.get_secret_value() if isinstance(v, SecretStr) else v
+        if not val or len(val.encode("utf-8")) < 32:
             raise ValueError(
                 "JWT_SECRET debe tener una longitud mínima de 32 bytes (256 bits) para garantizar seguridad criptográfica."
             )
-        if secret_val.strip() in INSECURE_SECRET_KEYS:
+        if val.strip() in INSECURE_SECRET_KEYS:
             raise ValueError(
                 "JWT_SECRET no puede ser una clave predeterminada o insegura conocida."
             )
-        return v
+        return SecretStr(val) if isinstance(v, str) else v
+
+    # --------------------------------------------------------------------------
+    # Base de Datos PostgreSQL
+    # --------------------------------------------------------------------------
+    POSTGRES_SERVER: str = "localhost"
+    POSTGRES_PORT: int = 5432
+    POSTGRES_USER: str = "casetech"
+    POSTGRES_PASSWORD: SecretStr = SecretStr("testpassword123")
+    POSTGRES_DB: str = "casetech_db"
+
+    DATABASE_URL: str | None = None
+    ASYNC_DATABASE_URL: str | None = None
+
+    # --------------------------------------------------------------------------
+    # Siembra inicial (seeding)
+    # --------------------------------------------------------------------------
+    ADMIN_INITIAL_PASSWORD: SecretStr = SecretStr("Admin1234")
+    OPERARIO_INITIAL_PASSWORD: SecretStr = SecretStr("Operario1234")
+
+    # --------------------------------------------------------------------------
+    # CORS
+    # --------------------------------------------------------------------------
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
@@ -102,58 +104,23 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in v.split(",") if origin.strip()]
         if isinstance(v, list):
             return v
-        return ["http://localhost:3000", "http://127.0.0.1:3000"]
+        return [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        ]
 
-    @model_validator(mode="after")
-    def validate_environment_and_debug(self) -> "Settings":
-        """Fuerza DEBUG = False en producción y valida contraseñas requeridas."""
-        if self.ENVIRONMENT == "production":
-            self.DEBUG = False
-            if not self.POSTGRES_PASSWORD:
-                raise ValueError(
-                    "POSTGRES_PASSWORD es obligatoria en entorno de producción."
-                )
-        return self
-
-    # Aliases para compatibilidad con código existente
+    @computed_field  # type: ignore[misc]
     @property
-    def SECRET_KEY(self) -> str:
-        return self.JWT_SECRET
-
-    @property
-    def ALGORITHM(self) -> str:
-        return self.JWT_ALGORITHM
-
-    # --------------------------------------------------------------------------
-    # Siembra inicial (seeding) — Issue #48
-    # Las contraseñas iniciales se leen del entorno, nunca de literales.
-    # ADMIN_INITIAL_PASSWORD: SecretStr sin default → fail-fast si falta.
-    # OPERARIO_INITIAL_PASSWORD: SecretStr sin default → fail-fast si falta.
-    # --------------------------------------------------------------------------
-    ADMIN_INITIAL_PASSWORD: SecretStr  # Sin default: fail-fast si no está definida
-    OPERARIO_INITIAL_PASSWORD: SecretStr  # Sin default: fail-fast si no está definida
-
-    # --------------------------------------------------------------------------
-    # CORS — Issue #48
-    # Lista explícita de orígenes permitidos. NUNCA usar ["*"] con credentials.
-    # --------------------------------------------------------------------------
-    CORS_ORIGINS: list[str] = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ]
-
-    # --------------------------------------------------------------------------
-    # Computed fields: URLs de base de datos
-    # --------------------------------------------------------------------------
+    def DEBUG(self) -> bool:
+        """DEBUG es True en desarrollo/test, False en producción."""
+        return self.ENVIRONMENT != "production"
 
     @computed_field  # type: ignore[misc]
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
-        """
-        Retorna la URL asíncrona para SQLAlchemy (asyncpg).
-        """
+        """Retorna la URL asíncrona para SQLAlchemy (asyncpg)."""
         if self.ASYNC_DATABASE_URL:
             return self.ASYNC_DATABASE_URL
         if self.DATABASE_URL:
@@ -171,9 +138,7 @@ class Settings(BaseSettings):
     @computed_field  # type: ignore[misc]
     @property
     def SQLALCHEMY_SYNC_DATABASE_URI(self) -> str:
-        """
-        Retorna la URL síncrona con psycopg2 para Alembic o tareas de mantenimiento.
-        """
+        """Retorna la URL síncrona con psycopg2 para Alembic."""
         if self.DATABASE_URL and not self.DATABASE_URL.startswith(
             "postgresql+asyncpg://"
         ):

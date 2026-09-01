@@ -8,6 +8,7 @@ Create Date: 2026-08-24 00:00:00.000000
 Esquema inicial relacional completo para CASETECH ERP basado en docs/04-modelo-datos.md.
 Incluye 12 tablas, claves foráneas, restricciones CHECK, índices optimizados y datos semilla.
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -31,7 +32,12 @@ def upgrade() -> None:
         sa.Column("id", sa.BigInteger(), autoincrement=True, nullable=False),
         sa.Column("nombre", sa.String(length=50), nullable=False),
         sa.Column("descripcion", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.PrimaryKeyConstraint("id", name="pk_roles"),
         sa.UniqueConstraint("nombre", name="uq_roles_nombre"),
     )
@@ -47,14 +53,23 @@ def upgrade() -> None:
         sa.Column("email", sa.String(length=255), nullable=False),
         sa.Column("password_hash", sa.String(length=255), nullable=False),
         sa.Column("rol_id", sa.BigInteger(), nullable=False),
-        sa.Column("activo", sa.Boolean(), server_default=sa.text("true"), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "activo", sa.Boolean(), server_default=sa.text("true"), nullable=False
+        ),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
         sa.CheckConstraint(
             r"email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'",
             name="ck_usuarios_email_format",
         ),
-        sa.ForeignKeyConstraint(["rol_id"], ["roles.id"], name="fk_usuarios_rol_id", ondelete="RESTRICT"),
+        sa.ForeignKeyConstraint(
+            ["rol_id"], ["roles.id"], name="fk_usuarios_rol_id", ondelete="RESTRICT"
+        ),
         sa.PrimaryKeyConstraint("id", name="pk_usuarios"),
         sa.UniqueConstraint("email", name="uq_usuarios_email"),
     )
@@ -73,8 +88,15 @@ def upgrade() -> None:
         sa.Column("contacto_telefono", sa.String(length=20), nullable=True),
         sa.Column("contacto_email", sa.String(length=255), nullable=True),
         sa.Column("direccion", sa.Text(), nullable=True),
-        sa.Column("activo", sa.Boolean(), server_default=sa.text("true"), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "activo", sa.Boolean(), server_default=sa.text("true"), nullable=False
+        ),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
         sa.PrimaryKeyConstraint("id", name="pk_proveedores"),
         sa.UniqueConstraint("nit", name="uq_proveedores_nit"),
@@ -90,13 +112,34 @@ def upgrade() -> None:
         sa.Column("id", sa.BigInteger(), autoincrement=True, nullable=False),
         sa.Column("nombre", sa.String(length=255), nullable=False),
         sa.Column("unidad_medida", sa.String(length=30), nullable=False),
-        sa.Column("stock_actual", sa.Numeric(precision=12, scale=3), server_default=sa.text("0"), nullable=False),
-        sa.Column("stock_minimo", sa.Numeric(precision=12, scale=3), server_default=sa.text("0"), nullable=False),
-        sa.Column("activo", sa.Boolean(), server_default=sa.text("true"), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "stock_actual",
+            sa.Numeric(precision=12, scale=3),
+            server_default=sa.text("0"),
+            nullable=False,
+        ),
+        sa.Column(
+            "stock_minimo",
+            sa.Numeric(precision=12, scale=3),
+            server_default=sa.text("0"),
+            nullable=False,
+        ),
+        sa.Column(
+            "activo", sa.Boolean(), server_default=sa.text("true"), nullable=False
+        ),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
-        sa.CheckConstraint("stock_actual >= 0", name="ck_materiales_stock_actual_non_negative"),
-        sa.CheckConstraint("stock_minimo >= 0", name="ck_materiales_stock_minimo_non_negative"),
+        sa.CheckConstraint(
+            "stock_actual >= 0", name="ck_materiales_stock_actual_non_negative"
+        ),
+        sa.CheckConstraint(
+            "stock_minimo >= 0", name="ck_materiales_stock_minimo_non_negative"
+        ),
         sa.PrimaryKeyConstraint("id", name="pk_materiales"),
         sa.UniqueConstraint("nombre", name="uq_materiales_nombre"),
     )
@@ -117,13 +160,25 @@ def upgrade() -> None:
         sa.Column("nombre", sa.String(length=255), nullable=False),
         sa.Column("descripcion", sa.Text(), nullable=True),
         sa.Column("naturaleza", sa.String(length=20), nullable=False),
-        sa.Column("activo", sa.Boolean(), server_default=sa.text("true"), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.CheckConstraint("naturaleza IN ('RECUPERABLE', 'PERDIDO')", name="ck_tipos_caseton_naturaleza"),
+        sa.Column(
+            "activo", sa.Boolean(), server_default=sa.text("true"), nullable=False
+        ),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.CheckConstraint(
+            "naturaleza IN ('RECUPERABLE', 'PERDIDO')",
+            name="ck_tipos_caseton_naturaleza",
+        ),
         sa.PrimaryKeyConstraint("id", name="pk_tipos_caseton"),
         sa.UniqueConstraint("nombre", name="uq_tipos_caseton_nombre"),
     )
-    op.create_index("idx_tipos_caseton_nombre", "tipos_caseton", ["nombre"], unique=True)
+    op.create_index(
+        "idx_tipos_caseton_nombre", "tipos_caseton", ["nombre"], unique=True
+    )
 
     # -------------------------------------------------------------
     # 6. Tabla: recetas
@@ -133,13 +188,34 @@ def upgrade() -> None:
         sa.Column("id", sa.BigInteger(), autoincrement=True, nullable=False),
         sa.Column("tipo_caseton_id", sa.BigInteger(), nullable=False),
         sa.Column("material_id", sa.BigInteger(), nullable=False),
-        sa.Column("cantidad_por_unidad", sa.Numeric(precision=10, scale=4), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.CheckConstraint("cantidad_por_unidad > 0", name="ck_recetas_cantidad_positive"),
-        sa.ForeignKeyConstraint(["material_id"], ["materiales.id"], name="fk_recetas_material_id", ondelete="RESTRICT"),
-        sa.ForeignKeyConstraint(["tipo_caseton_id"], ["tipos_caseton.id"], name="fk_recetas_tipo_caseton_id", ondelete="RESTRICT"),
+        sa.Column(
+            "cantidad_por_unidad", sa.Numeric(precision=10, scale=4), nullable=False
+        ),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.CheckConstraint(
+            "cantidad_por_unidad > 0", name="ck_recetas_cantidad_positive"
+        ),
+        sa.ForeignKeyConstraint(
+            ["material_id"],
+            ["materiales.id"],
+            name="fk_recetas_material_id",
+            ondelete="RESTRICT",
+        ),
+        sa.ForeignKeyConstraint(
+            ["tipo_caseton_id"],
+            ["tipos_caseton.id"],
+            name="fk_recetas_tipo_caseton_id",
+            ondelete="RESTRICT",
+        ),
         sa.PrimaryKeyConstraint("id", name="pk_recetas"),
-        sa.UniqueConstraint("tipo_caseton_id", "material_id", name="uq_receta_tipo_material"),
+        sa.UniqueConstraint(
+            "tipo_caseton_id", "material_id", name="uq_receta_tipo_material"
+        ),
     )
     op.create_index("idx_recetas_tipo_caseton", "recetas", ["tipo_caseton_id"])
     op.create_index("idx_recetas_material_id", "recetas", ["material_id"])
@@ -154,26 +230,52 @@ def upgrade() -> None:
         sa.Column("cliente", sa.String(length=255), nullable=False),
         sa.Column("tipo_caseton_id", sa.BigInteger(), nullable=False),
         sa.Column("cantidad", sa.Integer(), nullable=False),
-        sa.Column("estado", sa.String(length=20), server_default=sa.text("'PENDIENTE'"), nullable=False),
+        sa.Column(
+            "estado",
+            sa.String(length=20),
+            server_default=sa.text("'PENDIENTE'"),
+            nullable=False,
+        ),
         sa.Column("fecha_entrega_estimada", sa.Date(), nullable=False),
         sa.Column("creado_por", sa.BigInteger(), nullable=False),
         sa.Column("observaciones", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
         sa.CheckConstraint("cantidad > 0", name="ck_pedidos_cantidad_positive"),
         sa.CheckConstraint(
             "estado IN ('PENDIENTE', 'EN_PRODUCCION', 'COMPLETADO', 'CANCELADO')",
             name="ck_pedidos_estado",
         ),
-        sa.ForeignKeyConstraint(["creado_por"], ["usuarios.id"], name="fk_pedidos_creado_por", ondelete="RESTRICT"),
-        sa.ForeignKeyConstraint(["tipo_caseton_id"], ["tipos_caseton.id"], name="fk_pedidos_tipo_caseton_id", ondelete="RESTRICT"),
+        sa.ForeignKeyConstraint(
+            ["creado_por"],
+            ["usuarios.id"],
+            name="fk_pedidos_creado_por",
+            ondelete="RESTRICT",
+        ),
+        sa.ForeignKeyConstraint(
+            ["tipo_caseton_id"],
+            ["tipos_caseton.id"],
+            name="fk_pedidos_tipo_caseton_id",
+            ondelete="RESTRICT",
+        ),
         sa.PrimaryKeyConstraint("id", name="pk_pedidos"),
         sa.UniqueConstraint("codigo_pedido", name="uq_pedidos_codigo_pedido"),
     )
-    op.create_index("idx_pedidos_codigo_pedido", "pedidos", ["codigo_pedido"], unique=True)
+    op.create_index(
+        "idx_pedidos_codigo_pedido", "pedidos", ["codigo_pedido"], unique=True
+    )
     op.create_index("idx_pedidos_estado", "pedidos", ["estado"])
     op.create_index("idx_pedidos_cliente", "pedidos", ["cliente"])
-    op.create_index("idx_pedidos_tipo_fecha", "pedidos", ["tipo_caseton_id", sa.text("created_at DESC")])
+    op.create_index(
+        "idx_pedidos_tipo_fecha",
+        "pedidos",
+        ["tipo_caseton_id", sa.text("created_at DESC")],
+    )
 
     # -------------------------------------------------------------
     # 8. Tabla: compras
@@ -184,17 +286,39 @@ def upgrade() -> None:
         sa.Column("codigo_compra", sa.String(length=20), nullable=False),
         sa.Column("proveedor_id", sa.BigInteger(), nullable=False),
         sa.Column("fecha_compra", sa.Date(), nullable=False),
-        sa.Column("total", sa.Numeric(precision=14, scale=2), server_default=sa.text("0"), nullable=False),
+        sa.Column(
+            "total",
+            sa.Numeric(precision=14, scale=2),
+            server_default=sa.text("0"),
+            nullable=False,
+        ),
         sa.Column("registrado_por", sa.BigInteger(), nullable=False),
         sa.Column("observaciones", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.CheckConstraint("total >= 0", name="ck_compras_total_non_negative"),
-        sa.ForeignKeyConstraint(["proveedor_id"], ["proveedores.id"], name="fk_compras_proveedor_id", ondelete="RESTRICT"),
-        sa.ForeignKeyConstraint(["registrado_por"], ["usuarios.id"], name="fk_compras_registrado_por", ondelete="RESTRICT"),
+        sa.ForeignKeyConstraint(
+            ["proveedor_id"],
+            ["proveedores.id"],
+            name="fk_compras_proveedor_id",
+            ondelete="RESTRICT",
+        ),
+        sa.ForeignKeyConstraint(
+            ["registrado_por"],
+            ["usuarios.id"],
+            name="fk_compras_registrado_por",
+            ondelete="RESTRICT",
+        ),
         sa.PrimaryKeyConstraint("id", name="pk_compras"),
         sa.UniqueConstraint("codigo_compra", name="uq_compras_codigo_compra"),
     )
-    op.create_index("idx_compras_codigo_compra", "compras", ["codigo_compra"], unique=True)
+    op.create_index(
+        "idx_compras_codigo_compra", "compras", ["codigo_compra"], unique=True
+    )
     op.create_index("idx_compras_proveedor_id", "compras", ["proveedor_id"])
 
     # -------------------------------------------------------------
@@ -214,13 +338,27 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.CheckConstraint("cantidad > 0", name="ck_detalle_compras_cantidad_positive"),
-        sa.CheckConstraint("precio_unitario >= 0", name="ck_detalle_compras_precio_non_negative"),
-        sa.ForeignKeyConstraint(["compra_id"], ["compras.id"], name="fk_detalle_compras_compra_id", ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(["material_id"], ["materiales.id"], name="fk_detalle_compras_material_id", ondelete="RESTRICT"),
+        sa.CheckConstraint(
+            "precio_unitario >= 0", name="ck_detalle_compras_precio_non_negative"
+        ),
+        sa.ForeignKeyConstraint(
+            ["compra_id"],
+            ["compras.id"],
+            name="fk_detalle_compras_compra_id",
+            ondelete="CASCADE",
+        ),
+        sa.ForeignKeyConstraint(
+            ["material_id"],
+            ["materiales.id"],
+            name="fk_detalle_compras_material_id",
+            ondelete="RESTRICT",
+        ),
         sa.PrimaryKeyConstraint("id", name="pk_detalle_compras"),
     )
     op.create_index("idx_detalle_compras_compra_id", "detalle_compras", ["compra_id"])
-    op.create_index("idx_detalle_compras_material_id", "detalle_compras", ["material_id"])
+    op.create_index(
+        "idx_detalle_compras_material_id", "detalle_compras", ["material_id"]
+    )
 
     # -------------------------------------------------------------
     # 10. Tabla: movimientos_inventario
@@ -236,7 +374,12 @@ def upgrade() -> None:
         sa.Column("referencia_id", sa.BigInteger(), nullable=True),
         sa.Column("referencia_tipo", sa.String(length=20), nullable=True),
         sa.Column("ejecutado_por", sa.BigInteger(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.CheckConstraint(
             "tipo_movimiento IN ("
             "'INGRESO_COMPRA', "
@@ -251,8 +394,18 @@ def upgrade() -> None:
             "referencia_tipo IS NULL OR referencia_tipo IN ('PEDIDO', 'COMPRA', 'AJUSTE')",
             name="ck_movimientos_referencia_tipo",
         ),
-        sa.ForeignKeyConstraint(["ejecutado_por"], ["usuarios.id"], name="fk_movimientos_ejecutado_por", ondelete="SET NULL"),
-        sa.ForeignKeyConstraint(["material_id"], ["materiales.id"], name="fk_movimientos_material_id", ondelete="RESTRICT"),
+        sa.ForeignKeyConstraint(
+            ["ejecutado_por"],
+            ["usuarios.id"],
+            name="fk_movimientos_ejecutado_por",
+            ondelete="SET NULL",
+        ),
+        sa.ForeignKeyConstraint(
+            ["material_id"],
+            ["materiales.id"],
+            name="fk_movimientos_material_id",
+            ondelete="RESTRICT",
+        ),
         sa.PrimaryKeyConstraint("id", name="pk_movimientos_inventario"),
     )
     op.create_index(
@@ -260,7 +413,11 @@ def upgrade() -> None:
         "movimientos_inventario",
         ["material_id", sa.text("created_at DESC")],
     )
-    op.create_index("idx_movimientos_referencia", "movimientos_inventario", ["referencia_tipo", "referencia_id"])
+    op.create_index(
+        "idx_movimientos_referencia",
+        "movimientos_inventario",
+        ["referencia_tipo", "referencia_id"],
+    )
 
     # -------------------------------------------------------------
     # 11. Tabla: ajustes_inventario
@@ -274,23 +431,50 @@ def upgrade() -> None:
         sa.Column("stock_antes", sa.Numeric(precision=12, scale=3), nullable=False),
         sa.Column("stock_despues", sa.Numeric(precision=12, scale=3), nullable=True),
         sa.Column("justificacion", sa.Text(), nullable=False),
-        sa.Column("estado", sa.String(length=25), server_default=sa.text("'PENDIENTE_APROBACION'"), nullable=False),
+        sa.Column(
+            "estado",
+            sa.String(length=25),
+            server_default=sa.text("'PENDIENTE_APROBACION'"),
+            nullable=False,
+        ),
         sa.Column("solicitado_por", sa.BigInteger(), nullable=False),
         sa.Column("aprobado_por", sa.BigInteger(), nullable=True),
-        sa.Column("fecha_solicitud", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "fecha_solicitud",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.Column("fecha_aprobacion", sa.DateTime(timezone=True), nullable=True),
         sa.CheckConstraint(
             "tipo_ajuste IN ('MERMA', 'DEVOLUCION_PROVEEDOR', 'CONTEO_FISICO', 'SOBRANTE')",
             name="ck_ajustes_tipo_ajuste",
         ),
-        sa.CheckConstraint("LENGTH(justificacion) >= 20", name="ck_ajustes_justificacion_min_length"),
+        sa.CheckConstraint(
+            "LENGTH(justificacion) >= 20", name="ck_ajustes_justificacion_min_length"
+        ),
         sa.CheckConstraint(
             "estado IN ('PENDIENTE_APROBACION', 'APROBADO', 'RECHAZADO')",
             name="ck_ajustes_estado",
         ),
-        sa.ForeignKeyConstraint(["aprobado_por"], ["usuarios.id"], name="fk_ajustes_aprobado_por", ondelete="RESTRICT"),
-        sa.ForeignKeyConstraint(["material_id"], ["materiales.id"], name="fk_ajustes_material_id", ondelete="RESTRICT"),
-        sa.ForeignKeyConstraint(["solicitado_por"], ["usuarios.id"], name="fk_ajustes_solicitado_por", ondelete="RESTRICT"),
+        sa.ForeignKeyConstraint(
+            ["aprobado_por"],
+            ["usuarios.id"],
+            name="fk_ajustes_aprobado_por",
+            ondelete="RESTRICT",
+        ),
+        sa.ForeignKeyConstraint(
+            ["material_id"],
+            ["materiales.id"],
+            name="fk_ajustes_material_id",
+            ondelete="RESTRICT",
+        ),
+        sa.ForeignKeyConstraint(
+            ["solicitado_por"],
+            ["usuarios.id"],
+            name="fk_ajustes_solicitado_por",
+            ondelete="RESTRICT",
+        ),
         sa.PrimaryKeyConstraint("id", name="pk_ajustes_inventario"),
     )
     op.create_index(
@@ -310,11 +494,25 @@ def upgrade() -> None:
         sa.Column("accion", sa.String(length=50), nullable=False),
         sa.Column("entidad", sa.String(length=50), nullable=False),
         sa.Column("entidad_id", sa.BigInteger(), nullable=True),
-        sa.Column("payload_antes", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-        sa.Column("payload_despues", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column(
+            "payload_antes", postgresql.JSONB(astext_type=sa.Text()), nullable=True
+        ),
+        sa.Column(
+            "payload_despues", postgresql.JSONB(astext_type=sa.Text()), nullable=True
+        ),
         sa.Column("ip_origen", sa.String(length=45), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.ForeignKeyConstraint(["usuario_id"], ["usuarios.id"], name="fk_auditoria_usuario_id", ondelete="SET NULL"),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.ForeignKeyConstraint(
+            ["usuario_id"],
+            ["usuarios.id"],
+            name="fk_auditoria_usuario_id",
+            ondelete="SET NULL",
+        ),
         sa.PrimaryKeyConstraint("id", name="pk_auditoria_acciones"),
     )
     op.create_index(
@@ -322,7 +520,9 @@ def upgrade() -> None:
         "auditoria_acciones",
         ["usuario_id", sa.text("created_at DESC")],
     )
-    op.create_index("idx_auditoria_entidad", "auditoria_acciones", ["entidad", "entidad_id"])
+    op.create_index(
+        "idx_auditoria_entidad", "auditoria_acciones", ["entidad", "entidad_id"]
+    )
 
     # -------------------------------------------------------------
     # 13. Datos semilla iniciales (Roles y Tipos de Casetón iniciales)

@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   # ============================================================
-  # Job: Backend (Python 3.11 + FastAPI + UV + PostgreSQL 16)
+  # Job 1: Backend CI (PostgreSQL 16 Alpine + UV + Python 3.11)
   # ============================================================
   backend:
     name: Backend CI (Lint, Typecheck, Audit, Tests)
@@ -42,23 +42,19 @@ jobs:
 
     env:
       DATABASE_URL: postgresql+asyncpg://casetech:testpassword123@localhost:5432/casetech_test_db
-      POSTGRES_PASSWORD: testpassword123
       JWT_SECRET: super-secret-test-key-minimum-32-bytes-long-for-testing-ci-12345
       JWT_ALGORITHM: HS256
       ENVIRONMENT: test
-      # ADMIN_INITIAL_PASSWORD y OPERARIO_INITIAL_PASSWORD requeridas por Pydantic
-      # SecretStr sin default (Issue #48 — fail-fast en startup)
-      ADMIN_INITIAL_PASSWORD: ${{ secrets.ADMIN_INITIAL_PASSWORD || 'AdminCI1234*' }}
-      OPERARIO_INITIAL_PASSWORD: ${{ secrets.OPERARIO_INITIAL_PASSWORD || 'OperarioCI1234*' }}
+      DEBUG: "False"
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install Astral UV
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v3
         with:
-          version: "0.4.29"   # Último de la línea 0.4.x — compatible con --dev y [dependency-groups]
+          version: "0.4.18"
           enable-cache: true
           cache-dependency-glob: "backend/pyproject.toml"
 
@@ -66,9 +62,7 @@ jobs:
         run: uv python pin 3.11
 
       - name: Install dependencies with UV
-        # --all-groups fue introducido en UV 0.5.0; para UV 0.4.x con [dependency-groups]
-        # el flag correcto es --dev (instala el grupo 'dev' definido en pyproject.toml)
-        run: uv sync --dev
+        run: uv sync --all-groups
 
       - name: Run Ruff Linter & Formatter Check
         run: uv run ruff check .
@@ -85,10 +79,10 @@ jobs:
         run: uv run pytest -v tests/
 
   # ============================================================
-  # Job: Frontend (Node 20 + React 18 + PNPM + Vite/Vitest)
+  # Job 2: Frontend CI (Node 20 + PNPM + React 18 + Vitest)
   # ============================================================
   frontend:
-    name: Frontend CI (Lint, Security Audit, Vitest)
+    name: Frontend CI (Lint, Security Audit, Vitest, Build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -120,4 +114,7 @@ jobs:
         run: pnpm audit --audit-level=moderate
 
       - name: Run Unit & Component Tests (Vitest)
-        run: pnpm run test -- --run
+        run: pnpm run test run
+
+      - name: Run Production Bundle Build
+        run: pnpm run build

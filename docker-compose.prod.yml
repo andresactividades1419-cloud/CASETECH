@@ -2,9 +2,9 @@
 # docker-compose.prod.yml — Despliegue de Producción CASETECH ERP
 # ============================================================
 # Arquitectura de Producción:
-# - DB: PostgreSQL 16 Alpine aislado en red privada interna (puerto 5432 no expuesto al host)
+# - DB: PostgreSQL 16 Alpine aislado en red interna privada (puerto 5432 no expuesto al host)
 # - Backend: FastAPI ejecutado con 4 workers (sin reload) por usuario appuser no-root
-# - Frontend: Nginx 1.27 Alpine multi-stage con SPA fallback, gzip y proxy reverso en puerto 80
+# - Frontend: Nginx Alpine multi-stage con SPA fallback, gzip y proxy reverso en puerto 80
 # ============================================================
 
 services:
@@ -16,24 +16,23 @@ services:
     container_name: casetech_db_prod
     restart: always
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-casetech_db}
+      POSTGRES_USER: ${POSTGRES_USER:-casetech}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD es obligatoria en produccion}
     volumes:
-      - postgres_data_prod:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    # NOTA DE SEGURIDAD: Puerto 5432 NO se expone al host en producción
+      - postgres_data:/var/lib/postgresql/data
+    # NOTA DE SEGURIDAD CRÍTICA: Puerto 5432 NO se expone al host en producción
     networks:
-      - casetech_prod_network
+      - casetech_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-casetech} -d ${POSTGRES_DB:-casetech_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 15s
 
   # ============================================================
-  # 2. Backend FastAPI (Python 3.11 + UV + 4 Workers)
+  # 2. Backend FastAPI (Python 3.11 + UV + 4 Workers + Non-Root)
   # ============================================================
   backend:
     build:
@@ -46,24 +45,27 @@ services:
       DEBUG: "False"
       POSTGRES_SERVER: db
       POSTGRES_PORT: "5432"
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
+      POSTGRES_DB: ${POSTGRES_DB:-casetech_db}
+      POSTGRES_USER: ${POSTGRES_USER:-casetech}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD es obligatoria en produccion}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET es obligatoria en produccion}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://127.0.0.1}
+      ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-}
+      OPERARIO_INITIAL_PASSWORD: ${OPERARIO_INITIAL_PASSWORD:-}
     networks:
-      - casetech_prod_network
+      - casetech_network
     depends_on:
       db:
         condition: service_healthy
     command: >
-      uv run uvicorn app.main:app
-      --host 0.0.0.0
-      --port 8000
-      --workers 4
-      --no-access-log
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app
+             --host 0.0.0.0
+             --port 8000
+             --workers 4
+             --no-access-log"
     healthcheck:
       test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/api/v1/auth/me\")' || exit 0"]
       interval: 15s
@@ -72,7 +74,7 @@ services:
       start_period: 10s
 
   # ============================================================
-  # 3. Frontend Nginx (Producción Multi-Stage)
+  # 3. Frontend Nginx (Producción Multi-Stage + Reverse Proxy)
   # ============================================================
   frontend:
     build:
@@ -82,14 +84,16 @@ services:
     container_name: casetech_frontend_prod
     restart: always
     ports:
-      - "80:80"
+      - "${FRONTEND_PORT:-80}:80"
     networks:
-      - casetech_prod_network
+      - casetech_network
     depends_on:
       backend:
         condition: service_started
+      db:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/"]
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -99,13 +103,12 @@ services:
 # Volúmenes persistentes
 # ============================================================
 volumes:
-  postgres_data_prod:
+  postgres_data:
     driver: local
 
 # ============================================================
 # Red interna aislada
 # ============================================================
 networks:
-  casetech_prod_network:
+  casetech_network:
     driver: bridge
-    name: casetech_prod_network

@@ -7,6 +7,7 @@ Rutas expuestas bajo el prefijo ``/api/v1/orders``:
   GET    /                → Listar pedidos con filtros y paginación        [autenticado]
   GET    /{id}            → Detalle completo de un pedido                  [autenticado]
   PATCH  /{id}/status     → Cambiar estado e invocar sp_descontar_receta   [autenticado]
+  GET    /{id}/recipe-preview → Previsualización de consumo BOM            [autenticado]
 
 Ruta auxiliar expuesta bajo ``/api/v1/product-types``:
 
@@ -239,10 +240,13 @@ async def get_order_recipe_preview(
     return await order_service.preview_order_recipe(db=db, order_id=order_id)
 
 
+# Alias para retrocompatibilidad
+get_recipe_preview = get_order_recipe_preview
+
+
 # ---------------------------------------------------------------------------
 # Router auxiliar: tipos de casetón (selector frontend)
 # ---------------------------------------------------------------------------
-
 
 product_types_router = APIRouter()
 

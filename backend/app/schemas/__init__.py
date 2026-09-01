@@ -28,6 +28,7 @@ from app.schemas.order import (
     OrderStatus,
     OrderStatusUpdate,
     RecipeItemPreview,
+    RecipePreviewItem,
 )
 from app.schemas.product_type import ProductTypeListResponse, ProductTypeResponse
 from app.schemas.provider import (
@@ -57,6 +58,7 @@ from app.schemas.stock_adjustment import (
 from app.schemas.token import Token, TokenPayload
 from app.schemas.user import (
     UserAdminRead,
+    UserAdminResponse,
     UserBase,
     UserCreate,
     UserListResponse,
@@ -64,6 +66,7 @@ from app.schemas.user import (
     UserResponse,
     UserStatusToggle,
     UserUpdate,
+    UserUpdateAdmin,
 )
 
 __all__ = [
@@ -76,9 +79,11 @@ __all__ = [
     "UserCreate",
     "UserRead",
     "UserUpdate",
-    "UserStatusToggle",
+    "UserUpdateAdmin",
     "UserAdminRead",
+    "UserAdminResponse",
     "UserResponse",
+    "UserStatusToggle",
     "UserListResponse",
     # Token
     "Token",
@@ -103,8 +108,9 @@ __all__ = [
     "OrderResponse",
     "OrderListResponse",
     "OrderStatus",
-    "RecipeItemPreview",
     "OrderRecipePreviewResponse",
+    "RecipePreviewItem",
+    "RecipeItemPreview",
     # ProductType
     "ProductTypeResponse",
     "ProductTypeListResponse",

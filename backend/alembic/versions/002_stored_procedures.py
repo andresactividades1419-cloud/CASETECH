@@ -9,6 +9,7 @@ Creación de Stored Procedures transaccionales PL/pgSQL:
 - sp_descontar_receta
 - sp_ajuste_inventario
 """
+
 import os
 from collections.abc import Sequence
 
@@ -32,6 +33,14 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.execute(sa.text("DROP PROCEDURE IF EXISTS sp_ajuste_inventario(BIGINT, BIGINT, BOOLEAN);"))
+    op.execute(
+        sa.text(
+            "DROP PROCEDURE IF EXISTS sp_ajuste_inventario(BIGINT, BIGINT, BOOLEAN);"
+        )
+    )
     op.execute(sa.text("DROP PROCEDURE IF EXISTS sp_descontar_receta(BIGINT, BIGINT);"))
-    op.execute(sa.text("DROP PROCEDURE IF EXISTS sp_crear_proveedor(VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, TEXT, BIGINT, OUT BIGINT);"))
+    op.execute(
+        sa.text(
+            "DROP PROCEDURE IF EXISTS sp_crear_proveedor(VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, TEXT, BIGINT, OUT BIGINT);"
+        )
+    )

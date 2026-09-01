@@ -5,13 +5,16 @@ HU01 — Login con JWT:
     POST /api/v1/auth/login    → Emite token Bearer tras verificar credenciales.
     GET  /api/v1/auth/me       → Retorna datos del usuario autenticado.
 
-HU14 — Registro de usuarios (solo ADMINISTRADOR):
+HU14 / HU02 — Gestión de usuarios (solo ADMINISTRADOR):
     POST /api/v1/auth/register → Crea un nuevo usuario con rol asignado.
+    GET  /api/v1/auth/users    → Listar todas las cuentas de usuario.
+    PATCH /api/v1/auth/users/{id} → Actualizar datos/rol/contraseña/estado.
+    DELETE /api/v1/auth/users/{id} → Desactivar lógicamente un usuario.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import AdminUser, CurrentUser, get_db
@@ -54,17 +57,14 @@ async def login(
 ) -> Token:
     """
     Endpoint OAuth2 estándar compatible con Swagger UI ``Authorize``.
-
-    - ``username``: email del usuario.
-    - ``password``: contraseña en texto plano.
-
-    Retorna un objeto ``Token`` con ``access_token`` y ``token_type = "bearer"``.
     """
-    # Buscar usuario por email (username en el form de OAuth2)
-    result = await db.execute(select(User).where(User.email == form_data.username))
+    normalized_email = form_data.username.strip().lower()
+
+    result = await db.execute(
+        select(User).where(func.lower(User.email) == normalized_email)
+    )
     user: User | None = result.scalar_one_or_none()
 
-    # Verificar existencia y hash de contraseña
     if user is None or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -72,7 +72,6 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Verificar que la cuenta esté activa
     if not user.activo:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -80,12 +79,10 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Cargar el rol para incluirlo en el JWT
     role_result = await db.execute(select(Role).where(Role.id == user.rol_id))
     role: Role | None = role_result.scalar_one_or_none()
     role_name: str = role.nombre if role else "DESCONOCIDO"
 
-    # Emitir el token con sub=email y rol=nombre_rol
     access_token = create_access_token(data={"sub": user.email, "rol": role_name})
 
     return Token(access_token=access_token, token_type="bearer")
@@ -103,8 +100,7 @@ async def login(
     summary="Registrar nuevo usuario",
     description=(
         "Crea un nuevo usuario en el sistema. "
-        "**Solo accesible por usuarios con rol ADMINISTRADOR.** "
-        "Valida unicidad de email y genera el hash bcrypt antes de persistir."
+        "**Solo accesible por usuarios con rol ADMINISTRADOR.**"
     ),
     responses={
         201: {"description": "Usuario creado correctamente."},
@@ -119,10 +115,6 @@ async def register(
     _admin: AdminUser,
     db: AsyncSession = Depends(get_db),
 ) -> UserAdminRead:
-    """
-    Registra un nuevo usuario con rol asignado.
-    """
-    # 1. Verificar unicidad del email
     existing = await db.execute(select(User).where(User.email == user_in.email))
     if existing.scalar_one_or_none() is not None:
         raise HTTPException(
@@ -130,7 +122,6 @@ async def register(
             detail=f"El email '{user_in.email}' ya está registrado en el sistema.",
         )
 
-    # 2. Verificar existencia del rol
     role_result = await db.execute(select(Role).where(Role.id == user_in.rol_id))
     role: Role | None = role_result.scalar_one_or_none()
     if role is None:
@@ -139,7 +130,6 @@ async def register(
             detail=f"El rol con id={user_in.rol_id} no existe.",
         )
 
-    # 3. Crear instancia ORM con hash de contraseña
     new_user = User(
         nombre_completo=user_in.nombre_completo,
         email=user_in.email,
@@ -180,9 +170,6 @@ async def register(
     },
 )
 async def me(current_user: CurrentUser) -> User:
-    """
-    Retorna el perfil del usuario autenticado.
-    """
     return current_user
 
 
@@ -201,9 +188,6 @@ async def list_users(
     _admin: AdminUser,
     db: AsyncSession = Depends(get_db),
 ) -> UserListResponse:
-    """
-    Consulta todas las cuentas de usuario registradas con sus roles.
-    """
     query = (
         select(User, Role.nombre.label("rol_nombre"))
         .outerjoin(Role, Role.id == User.rol_id)
@@ -213,17 +197,17 @@ async def list_users(
     rows = result.all()
 
     items: list[UserAdminRead] = []
-    for user, rol_nombre in rows:
+    for user_obj, rol_nombre in rows:
         items.append(
             UserAdminRead(
-                id=user.id,
-                nombre_completo=user.nombre_completo,
-                email=user.email,
-                rol_id=user.rol_id,
+                id=user_obj.id,
+                nombre_completo=user_obj.nombre_completo,
+                email=user_obj.email,
+                rol_id=user_obj.rol_id,
                 rol_nombre=rol_nombre or "OPERARIO",
-                activo=user.activo,
-                created_at=user.created_at,
-                updated_at=user.updated_at,
+                activo=user_obj.activo,
+                created_at=user_obj.created_at,
+                updated_at=user_obj.updated_at,
             )
         )
 
@@ -247,9 +231,6 @@ async def update_user(
     _admin: AdminUser,
     db: AsyncSession = Depends(get_db),
 ) -> UserAdminRead:
-    """
-    Actualiza la información y credenciales de un usuario existente.
-    """
     result = await db.execute(select(User).where(User.id == user_id))
     user: User | None = result.scalar_one_or_none()
 
@@ -259,7 +240,6 @@ async def update_user(
             detail=f"Usuario con ID {user_id} no encontrado.",
         )
 
-    # Validar email único si se modifica
     if user_update.email and user_update.email != user.email:
         email_check = await db.execute(
             select(User).where(User.email == user_update.email)
@@ -284,7 +264,6 @@ async def update_user(
         user.rol_id = user_update.rol_id
 
     if user_update.activo is not None:
-        # Prevenir que el administrador autenticado desactive su propia cuenta
         if user.id == _admin.id and not user_update.activo:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -298,7 +277,6 @@ async def update_user(
     await db.commit()
     await db.refresh(user)
 
-    # Obtener nombre del rol
     role_res = await db.execute(select(Role.nombre).where(Role.id == user.rol_id))
     rol_nombre = role_res.scalar_one_or_none() or "OPERARIO"
 
@@ -329,9 +307,6 @@ async def deactivate_user(
     _admin: AdminUser,
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, str]:
-    """
-    Desactiva lógicamente la cuenta impidiendo inicios de sesión posteriores.
-    """
     if user_id == _admin.id:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

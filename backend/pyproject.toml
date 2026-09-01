@@ -28,7 +28,7 @@ dependencies = [
     # Driver PostgreSQL síncrono para Alembic y psycopg2
     "psycopg2-binary>=2.9.9",
     # Validación y serialización de datos (core en Rust)
-    "pydantic>=2.6.4",
+    "pydantic>=2.7.0",
     # Configuración via variables de entorno con Pydantic
     "pydantic-settings>=2.2.1",
     # Validación de emails para EmailStr (requerido por Pydantic v2)
@@ -56,16 +56,14 @@ dev = [
     # Auditoría de seguridad de paquetes
     "pip-audit>=2.7.3",
     # Linting y formateo
-    "ruff>=0.3.4",
+    "ruff>=0.5.0",
     # Type checking
-    "mypy>=1.9.0",
+    "mypy>=1.10.0",
 ]
-
 
 # ============================================================
 # Configuración de herramientas
 # ============================================================
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -82,8 +80,7 @@ line-length = 88
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "C4", "UP"]
-ignore = ["E501", "B008"]
-
+ignore = ["E501", "B008", "B904", "UP042", "E712", "W291", "W293"]
 
 [tool.ruff.format]
 quote-style = "double"

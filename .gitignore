@@ -54,6 +54,7 @@ out/
 .env
 .env.*
 !.env.example
+!.env.prod.example
 *.local
 
 # --------------- Docker ---------------
