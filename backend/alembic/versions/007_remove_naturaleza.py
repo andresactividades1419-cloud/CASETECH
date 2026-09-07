@@ -29,10 +29,11 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    # SQL directo en vez de op.drop_constraint(): con el naming_convention
-    # agregado en #81, Alembic reinterpreta el nombre pasado como el token
-    # "constraint_name" de la plantilla y lo duplica
-    # (ck_tipos_caseton_ck_tipos_caseton_naturaleza). SQL crudo evita eso.
+    # SQL directo (no op.drop_constraint) para no depender de que Alembic
+    # reconstruya el nombre del constraint. La causa real de que este nombre
+    # pudiera no coincidir se corrigió en alembic/env.py (target_metadata ya
+    # no expone el naming_convention de #81 a las migraciones) — ver el
+    # comentario ahí para el detalle completo.
     op.execute(
         sa.text(
             "ALTER TABLE tipos_caseton DROP CONSTRAINT ck_tipos_caseton_naturaleza"

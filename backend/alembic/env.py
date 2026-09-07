@@ -11,7 +11,6 @@ from alembic import context
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.core.config import settings
-from app.models import Base  # Importa todos los modelos registrados en Base.metadata
 
 # Configuración de Logging de Alembic
 config = context.config
@@ -19,8 +18,21 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Metadatos del ORM para autogenerate
-target_metadata = Base.metadata
+# target_metadata solo se usa para `alembic revision --autogenerate`.
+#
+# IMPORTANTE: no pasar aquí `Base.metadata` (de `app.models`). Tiene un
+# naming_convention (Issue #81) que Alembic reutiliza al ejecutar el DDL de
+# las migraciones (op.create_table, op.drop_constraint, etc.) — incluso
+# cuando el constraint ya trae un `name=` explícito en la migración, la
+# convención lo reinterpreta como el token %(constraint_name)s y lo duplica
+# (ej. "ck_tipos_caseton_naturaleza" termina en
+# "ck_tipos_caseton_ck_tipos_caseton_naturaleza"). Esto rompió un arranque
+# desde cero (ver migración 007 y el `docker compose down -v` del
+# 2026-09-07). Este proyecto nunca ha usado `--autogenerate` (todas las
+# migraciones están escritas a mano), así que se deja en None. Si algún día
+# se necesita autogenerate de verdad, importar `from app.models import Base`
+# y usar `Base.metadata` puntualmente solo para esa sesión.
+target_metadata = None
 
 # Inyectar la URL SÍNCRONA (psycopg2) desde settings — Alembic no soporta asyncpg
 config.set_main_option("sqlalchemy.url", settings.SQLALCHEMY_SYNC_DATABASE_URI)

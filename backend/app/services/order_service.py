@@ -148,6 +148,11 @@ async def update_order_status(
 ) -> OrderResponse:
     order = await _get_order_orm(db, order_id)
     current_status = order.estado
+    # Se guarda en una variable plana: si el flujo hace rollback mas abajo
+    # (ej. stock insuficiente), SQLAlchemy expira el objeto ORM y acceder a
+    # sus atributos despues dispara una recarga perezosa que no funciona en
+    # contexto async (mismo patron que en recipe_service.py, Issue #88).
+    codigo_pedido = order.codigo_pedido
     new_status = (
         status_update.estado.value
         if hasattr(status_update.estado, "value")
@@ -164,7 +169,7 @@ async def update_order_status(
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=(
-                    f"El pedido '{order.codigo_pedido}' se encuentra en estado terminal '{current_status}'. "
+                    f"El pedido '{codigo_pedido}' se encuentra en estado terminal '{current_status}'. "
                     "No puede modificarse."
                 ),
             )
@@ -203,7 +208,7 @@ async def update_order_status(
                     raise HTTPException(
                         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                         detail=(
-                            f"No se puede iniciar la producción del pedido '{order.codigo_pedido}'. "
+                            f"No se puede iniciar la producción del pedido '{codigo_pedido}'. "
                             f"Stock insuficiente en inventario: Para '{material_item.nombre}' se requieren "
                             f"{consumo_total:.3f} {material_item.unidad_medida}, disponible {stock_act:.3f} "
                             f"{material_item.unidad_medida} (déficit: {deficit:.3f} {material_item.unidad_medida})."
@@ -265,7 +270,7 @@ async def update_order_status(
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                     detail=(
-                        f"No se puede iniciar la producción del pedido '{order.codigo_pedido}'. "
+                        f"No se puede iniciar la producción del pedido '{codigo_pedido}'. "
                         f"Stock insuficiente en inventario: {detail_msg}"
                     ),
                 ) from exc
