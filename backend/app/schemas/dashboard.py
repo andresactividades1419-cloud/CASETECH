@@ -35,10 +35,9 @@ class DashboardKPIs(BaseModel):
 
 
 class ProductionByType(BaseModel):
-    """Distribución y agregación de producción por tipo de casetón y naturaleza BOM."""
+    """Distribución y agregación de producción por tipo de casetón."""
 
     tipo_caseton: str = Field(..., description="Nombre del tipo de casetón")
-    naturaleza: str = Field(..., description="Naturaleza BOM: RECUPERABLE o PERDIDO")
     total_pedidos: int = Field(..., description="Cantidad de órdenes registradas")
     total_unidades: Decimal = Field(
         ..., description="Total de unidades producidas o solicitadas"

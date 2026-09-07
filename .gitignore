@@ -84,3 +84,9 @@ temp/
 # --------------- Antigravity IDE / AI Agent Rules & Context ---------------
 .agents/
 *.agent.md
+
+# --------------- Claude Code (notas personales, no compartidas) ---------------
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+Claude outputs/

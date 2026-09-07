@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import materialsApi from '../../api/materialsApi';
+import { primaryButtonStyle } from '../../styles/buttons';
 
 const UNITS_OPTIONS = [
   { value: 'm2', label: 'Metros cuadrados (m²) — Ej: Lonas, láminas' },
@@ -57,9 +58,9 @@ export function MaterialModal({ isOpen, onClose, onSuccess, materialToEdit = nul
     setApiError(null);
   }, [materialToEdit, isOpen]);
 
-  if (!isOpen) return null;
-
-  const validate = () => {
+  // Validación pura (sin efectos secundarios) — se usa tanto para decidir
+  // si el botón de guardar debe estar habilitado como para el submit real.
+  const getValidationErrors = () => {
     const newErrors = {};
 
     if (!formData.nombre.trim()) {
@@ -73,15 +74,24 @@ export function MaterialModal({ isOpen, onClose, onSuccess, materialToEdit = nul
     }
 
     const stockMin = Number(formData.stock_minimo);
-    if (isNaN(stockMin) || stockMin < 0) {
+    if (formData.stock_minimo === '' || isNaN(stockMin) || stockMin < 0) {
       newErrors.stock_minimo = 'El stock mínimo no puede ser negativo.';
     }
 
     const stockAct = Number(formData.stock_actual);
-    if (isNaN(stockAct) || stockAct < 0) {
+    if (formData.stock_actual === '' || isNaN(stockAct) || stockAct < 0) {
       newErrors.stock_actual = 'El stock actual no puede ser negativo.';
     }
 
+    return newErrors;
+  };
+
+  const isFormValid = Object.keys(getValidationErrors()).length === 0;
+
+  if (!isOpen) return null;
+
+  const validate = () => {
+    const newErrors = getValidationErrors();
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -428,21 +438,8 @@ export function MaterialModal({ isOpen, onClose, onSuccess, materialToEdit = nul
 
             <button
               type="submit"
-              disabled={loading}
-              style={{
-                padding: '0.65rem 1.5rem',
-                backgroundColor: loading ? '#1d4ed8' : '#2563eb',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '0.9rem',
-                fontWeight: '600',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.4)',
-              }}
+              disabled={loading || !isFormValid}
+              style={primaryButtonStyle(isFormValid, loading)}
             >
               {loading && (
                 <span style={{

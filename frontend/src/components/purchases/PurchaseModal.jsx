@@ -13,6 +13,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import materialsApi from '../../api/materialsApi';
 import providersApi from '../../api/providersApi';
 import purchasesApi from '../../api/purchasesApi';
+import { primaryButtonStyle } from '../../styles/buttons';
 
 const today = () => new Date().toISOString().split('T')[0];
 
@@ -133,7 +134,7 @@ export function PurchaseModal({ isOpen, onClose, onSuccess }) {
     }, 0);
   };
 
-  const validate = () => {
+  const getValidationErrors = () => {
     const newErrors = {};
 
     if (!proveedorId) {
@@ -162,6 +163,13 @@ export function PurchaseModal({ isOpen, onClose, onSuccess }) {
       }
     });
 
+    return newErrors;
+  };
+
+  const isFormValid = Object.keys(getValidationErrors()).length === 0;
+
+  const validate = () => {
+    const newErrors = getValidationErrors();
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -561,21 +569,8 @@ export function PurchaseModal({ isOpen, onClose, onSuccess }) {
               </button>
               <button
                 type="submit"
-                disabled={submitting}
-                style={{
-                  padding: '0.6rem 1.5rem',
-                  backgroundColor: '#0284c7',
-                  border: 'none',
-                  borderRadius: '8px',
-                  color: '#ffffff',
-                  fontSize: '0.875rem',
-                  fontWeight: '700',
-                  cursor: submitting ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
-                }}
+                disabled={submitting || !isFormValid}
+                style={primaryButtonStyle(isFormValid, submitting)}
               >
                 {submitting ? (
                   <>

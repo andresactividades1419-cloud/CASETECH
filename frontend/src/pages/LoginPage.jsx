@@ -25,6 +25,8 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const isFormValid = email.trim().length > 0 && password.length > 0;
+
   // Si ya está autenticado, redirigir al panel principal
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
@@ -65,11 +67,11 @@ export function LoginPage() {
     <div style={{
       minHeight: '100vh',
       width: '100%',
-      backgroundColor: '#f1f5f9',
+      backgroundColor: '#0b0f19',
       display: 'flex',
       alignItems: 'stretch',
       fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-      color: '#0f172a',
+      color: '#f8fafc',
       position: 'relative',
       overflowX: 'hidden',
     }}>
@@ -92,8 +94,8 @@ export function LoginPage() {
           flexDirection: 'column',
           justifyContent: 'center',
           padding: '3rem 2rem',
-          backgroundColor: '#f8fafc',
-          boxShadow: '4px 0 24px -10px rgba(0, 0, 0, 0.05)',
+          backgroundColor: '#111827',
+          boxShadow: '4px 0 24px -10px rgba(0, 0, 0, 0.35)',
           zIndex: 10,
         }}
         className="login-left-col"
@@ -125,7 +127,7 @@ export function LoginPage() {
                 fontSize: '2.35rem',
                 fontWeight: '800',
                 letterSpacing: '-0.03em',
-                color: '#0f172a',
+                color: '#f8fafc',
                 margin: '0 0 0.5rem 0',
                 lineHeight: '1.15',
               }}>
@@ -133,7 +135,7 @@ export function LoginPage() {
               </h1>
               <p style={{
                 fontSize: '0.95rem',
-                color: '#64748b',
+                color: '#94a3b8',
                 margin: 0,
                 lineHeight: '1.4',
               }}>
@@ -145,17 +147,16 @@ export function LoginPage() {
             {error && (
               <div style={{
                 padding: '0.85rem 1rem',
-                backgroundColor: '#fef2f2',
-                border: '1px solid #fecaca',
+                backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
                 borderRadius: '12px',
-                color: '#991b1b',
+                color: '#fca5a5',
                 fontSize: '0.875rem',
                 marginBottom: '1.5rem',
                 display: 'flex',
                 alignItems: 'flex-start',
                 gap: '0.65rem',
                 lineHeight: '1.4',
-                boxShadow: '0 2px 4px rgba(239, 68, 68, 0.05)',
               }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '2px' }}>
                   <circle cx="12" cy="12" r="10" />
@@ -202,23 +203,22 @@ export function LoginPage() {
                     style={{
                       width: '100%',
                       padding: '0.95rem 1rem 0.95rem 3rem',
-                      backgroundColor: '#ffffff',
-                      border: '1.5px solid #e2e8f0',
+                      backgroundColor: '#0b0f19',
+                      border: '1.5px solid #334155',
                       borderRadius: '14px',
-                      color: '#0f172a',
+                      color: '#f1f5f9',
                       fontSize: '0.95rem',
                       outline: 'none',
                       boxSizing: 'border-box',
                       transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = '#0f172a';
-                      e.target.style.boxShadow = '0 0 0 4px rgba(15, 23, 42, 0.06)';
+                      e.target.style.borderColor = '#d4f84c';
+                      e.target.style.boxShadow = '0 0 0 4px rgba(212, 248, 76, 0.12)';
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = '#e2e8f0';
-                      e.target.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.02)';
+                      e.target.style.borderColor = '#334155';
+                      e.target.style.boxShadow = 'none';
                     }}
                   />
                 </div>
@@ -257,23 +257,22 @@ export function LoginPage() {
                     style={{
                       width: '100%',
                       padding: '0.95rem 3rem 0.95rem 3rem',
-                      backgroundColor: '#ffffff',
-                      border: '1.5px solid #e2e8f0',
+                      backgroundColor: '#0b0f19',
+                      border: '1.5px solid #334155',
                       borderRadius: '14px',
-                      color: '#0f172a',
+                      color: '#f1f5f9',
                       fontSize: '0.95rem',
                       outline: 'none',
                       boxSizing: 'border-box',
                       transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = '#0f172a';
-                      e.target.style.boxShadow = '0 0 0 4px rgba(15, 23, 42, 0.06)';
+                      e.target.style.borderColor = '#d4f84c';
+                      e.target.style.boxShadow = '0 0 0 4px rgba(212, 248, 76, 0.12)';
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = '#e2e8f0';
-                      e.target.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.02)';
+                      e.target.style.borderColor = '#334155';
+                      e.target.style.boxShadow = 'none';
                     }}
                   />
 
@@ -322,13 +321,13 @@ export function LoginPage() {
                   }}
                   style={{
                     fontSize: '0.875rem',
-                    color: '#64748b',
+                    color: '#94a3b8',
                     textDecoration: 'none',
                     transition: 'color 0.15s ease',
                     fontWeight: '500',
                   }}
-                  onMouseEnter={(e) => e.target.style.color = '#0f172a'}
-                  onMouseLeave={(e) => e.target.style.color = '#64748b'}
+                  onMouseEnter={(e) => e.target.style.color = '#f8fafc'}
+                  onMouseLeave={(e) => e.target.style.color = '#94a3b8'}
                 >
                   ¿No recuerdas tu contraseña?
                 </a>
@@ -337,45 +336,45 @@ export function LoginPage() {
               {/* Botón Principal Submit — Katana Lime Neón */}
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !isFormValid}
                 style={{
                   marginTop: '0.5rem',
                   padding: '1rem 1.5rem',
-                  backgroundColor: loading ? '#c2e93b' : '#d4f84c',
-                  color: '#0f172a',
+                  backgroundColor: !isFormValid ? '#334155' : loading ? '#c2e93b' : '#d4f84c',
+                  color: !isFormValid ? '#64748b' : '#0f172a',
                   border: 'none',
                   borderRadius: '14px',
                   fontSize: '1rem',
                   fontWeight: '800',
-                  cursor: loading ? 'not-allowed' : 'pointer',
+                  cursor: !isFormValid ? 'not-allowed' : loading ? 'wait' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '0.65rem',
                   transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                  boxShadow: '0 4px 14px rgba(212, 248, 76, 0.35), 0 1px 2px rgba(0, 0, 0, 0.05)',
+                  boxShadow: isFormValid ? '0 4px 14px rgba(212, 248, 76, 0.35), 0 1px 2px rgba(0, 0, 0, 0.05)' : 'none',
                   letterSpacing: '-0.01em',
-                  opacity: loading ? 0.75 : 1,
+                  opacity: !isFormValid ? 0.7 : loading ? 0.75 : 1,
                 }}
                 onMouseEnter={(e) => {
-                  if (!loading) {
+                  if (!loading && isFormValid) {
                     e.currentTarget.style.backgroundColor = '#c8ee3a';
                     e.currentTarget.style.transform = 'translateY(-1px)';
                     e.currentTarget.style.boxShadow = '0 6px 20px rgba(212, 248, 76, 0.45)';
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (!loading) {
+                  if (!loading && isFormValid) {
                     e.currentTarget.style.backgroundColor = '#d4f84c';
                     e.currentTarget.style.transform = 'translateY(0)';
                     e.currentTarget.style.boxShadow = '0 4px 14px rgba(212, 248, 76, 0.35)';
                   }
                 }}
                 onMouseDown={(e) => {
-                  if (!loading) e.currentTarget.style.transform = 'scale(0.98)';
+                  if (!loading && isFormValid) e.currentTarget.style.transform = 'scale(0.98)';
                 }}
                 onMouseUp={(e) => {
-                  if (!loading) e.currentTarget.style.transform = 'scale(1)';
+                  if (!loading && isFormValid) e.currentTarget.style.transform = 'scale(1)';
                 }}
               >
                 {loading ? (
@@ -410,7 +409,7 @@ export function LoginPage() {
           alignItems: 'center',
           justifyContent: 'center',
           padding: '3rem',
-          backgroundColor: '#eef2f6',
+          backgroundColor: '#0f172a',
           overflow: 'hidden',
         }}
         className="login-right-col"

@@ -8,6 +8,7 @@ Convenciones:
 - Todas las funciones son ``async/await`` para compatibilidad con asyncpg.
 """
 
+import re
 from datetime import date, datetime
 
 from fastapi import HTTPException, status
@@ -33,6 +34,15 @@ from app.schemas.product_type import ProductTypeListResponse, ProductTypeRespons
 # ---------------------------------------------------------------------------
 # Helpers internos
 # ---------------------------------------------------------------------------
+
+
+def _clean_pg_error_message(raw_msg: str) -> str:
+    """
+    Quita el prefijo "<class '...'>: " que antepone str(exc.orig) para
+    algunas excepciones de asyncpg, para no mostrarle al usuario detalles
+    de implementación en el mensaje de error.
+    """
+    return re.sub(r"^<class '[\w.]+'>:\s*", "", raw_msg)
 
 
 async def _generate_codigo_pedido(db: AsyncSession) -> str:
@@ -148,6 +158,11 @@ async def update_order_status(
 ) -> OrderResponse:
     order = await _get_order_orm(db, order_id)
     current_status = order.estado
+    # Se guarda en una variable plana: si el flujo hace rollback mas abajo
+    # (ej. stock insuficiente), SQLAlchemy expira el objeto ORM y acceder a
+    # sus atributos despues dispara una recarga perezosa que no funciona en
+    # contexto async (mismo patron que en recipe_service.py, Issue #88).
+    codigo_pedido = order.codigo_pedido
     new_status = (
         status_update.estado.value
         if hasattr(status_update.estado, "value")
@@ -164,7 +179,7 @@ async def update_order_status(
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=(
-                    f"El pedido '{order.codigo_pedido}' se encuentra en estado terminal '{current_status}'. "
+                    f"El pedido '{codigo_pedido}' se encuentra en estado terminal '{current_status}'. "
                     "No puede modificarse."
                 ),
             )
@@ -203,7 +218,7 @@ async def update_order_status(
                     raise HTTPException(
                         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                         detail=(
-                            f"No se puede iniciar la producción del pedido '{order.codigo_pedido}'. "
+                            f"No se puede iniciar la producción del pedido '{codigo_pedido}'. "
                             f"Stock insuficiente en inventario: Para '{material_item.nombre}' se requieren "
                             f"{consumo_total:.3f} {material_item.unidad_medida}, disponible {stock_act:.3f} "
                             f"{material_item.unidad_medida} (déficit: {deficit:.3f} {material_item.unidad_medida})."
@@ -251,7 +266,7 @@ async def update_order_status(
 
         except DBAPIError as exc:
             await db.rollback()
-            raw_msg = str(exc.orig) if exc.orig else str(exc)
+            raw_msg = _clean_pg_error_message(str(exc.orig) if exc.orig else str(exc))
 
             is_stock_error = (
                 "P0001" in raw_msg
@@ -265,7 +280,7 @@ async def update_order_status(
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                     detail=(
-                        f"No se puede iniciar la producción del pedido '{order.codigo_pedido}'. "
+                        f"No se puede iniciar la producción del pedido '{codigo_pedido}'. "
                         f"Stock insuficiente en inventario: {detail_msg}"
                     ),
                 ) from exc
@@ -279,6 +294,90 @@ async def update_order_status(
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error al ejecutar el motor BOM: {raw_msg}",
+            ) from exc
+
+        await db.refresh(order)
+        return await _enrich_order(db, order)
+
+    # ─────────────────────────────────────────────────────────────
+    # Transición especial: EN_PRODUCCION → CANCELADO
+    # Revierte el descuento de sp_descontar_receta: la producción no
+    # se completó, así que los materiales ya descontados no se
+    # perdieron y deben volver al inventario.
+    # ─────────────────────────────────────────────────────────────
+    if current_status == "EN_PRODUCCION" and new_status == "CANCELADO":
+        bind = db.get_bind()
+        is_sqlite = bind and bind.dialect.name == "sqlite"
+
+        if is_sqlite:
+            mov_query = (
+                select(
+                    StockMovement.material_id,
+                    func.sum(StockMovement.cantidad).label("total_a_devolver"),
+                )
+                .where(
+                    StockMovement.referencia_id == order_id,
+                    StockMovement.referencia_tipo == "PEDIDO",
+                    StockMovement.tipo_movimiento.in_(
+                        ["DESCUENTO_PRODUCCION", "DESCUENTO_PRODUCCION_DEFINITIVO"]
+                    ),
+                )
+                .group_by(StockMovement.material_id)
+                .order_by(StockMovement.material_id)
+            )
+            mov_rows = (await db.execute(mov_query)).all()
+
+            for material_id, total_a_devolver in mov_rows:
+                material_item = await db.get(Material, material_id)
+                if material_item is None:
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail=(
+                            f"Material {material_id} referenciado en el descuento "
+                            "original ya no existe."
+                        ),
+                    )
+                stock_antes = float(material_item.stock_actual)
+                stock_despues = stock_antes + float(total_a_devolver)
+                material_item.stock_actual = stock_despues
+
+                mov = StockMovement(
+                    material_id=material_id,
+                    tipo_movimiento="DEVOLUCION_CANCELACION",
+                    cantidad=total_a_devolver,
+                    stock_antes=stock_antes,
+                    stock_despues=stock_despues,
+                    referencia_id=order.id,
+                    referencia_tipo="PEDIDO",
+                    ejecutado_por=user_id,
+                )
+                db.add(mov)
+
+            order.estado = "CANCELADO"
+            await db.commit()
+            await db.refresh(order)
+            return await _enrich_order(db, order)
+
+        try:
+            # En PostgreSQL: ejecuta el Stored Procedure transaccional con FOR UPDATE
+            query = text("""
+                CALL sp_revertir_receta(
+                    CAST(:pedido_id AS BIGINT),
+                    CAST(:usuario_id AS BIGINT)
+                )
+            """)
+            await db.execute(
+                query,
+                {"pedido_id": int(order_id), "usuario_id": int(user_id)},
+            )
+            await db.commit()
+
+        except DBAPIError as exc:
+            await db.rollback()
+            raw_msg = _clean_pg_error_message(str(exc.orig) if exc.orig else str(exc))
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error al revertir el inventario del pedido: {raw_msg}",
             ) from exc
 
         await db.refresh(order)

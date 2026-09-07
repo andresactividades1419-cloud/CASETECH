@@ -3,15 +3,20 @@
  *
  * Administra:
  * - user: { id, email, nombre_completo, rol_id, rol, activo }
- * - token: string JWT
+ * - token: string JWT (vive solo en memoria — ver api/tokenStore.js, Issue #76)
  * - isAuthenticated: boolean
- * - loading: boolean (durante verificación inicial de token)
+ * - loading: boolean (durante el intento de renovación inicial de sesión)
  * - login(email, password): autenticación OAuth2 y carga de perfil
- * - logout(): limpieza de sesión y estado
+ * - logout(): revoca la sesión en el servidor y limpia el estado local
+ *
+ * La sesión sobrevive a un F5 gracias al refresh token en cookie httpOnly
+ * (Issue #86): al montar, se intenta POST /auth/refresh en silencio antes
+ * de mostrar el login.
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import apiClient, { authEvents } from '../api/client';
+import { setToken as setStoredToken, clearToken } from '../api/tokenStore';
 
 const AuthContext = createContext(null);
 
@@ -36,37 +41,38 @@ function parseJwt(token) {
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('casetech_token'));
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('casetech_token');
+    // Revocar la sesión en el servidor; si falla (ya expirada, sin red),
+    // igual se limpia el estado local — no debe bloquear el logout.
+    apiClient.post('/auth/logout').catch(() => {});
+    clearToken();
     setToken(null);
     setUser(null);
   }, []);
 
-  // Verificar y restaurar sesión al iniciar la aplicación
+  // Al montar la app, intentar renovar la sesión en silencio usando la
+  // cookie httpOnly de refresh (Issue #86) — así sobrevive a un F5 aunque
+  // el access token solo viva en memoria (Issue #76).
   useEffect(() => {
     async function restoreSession() {
-      const storedToken = localStorage.getItem('casetech_token');
-      if (!storedToken) {
-        setLoading(false);
-        return;
-      }
-
       try {
-        const response = await apiClient.get('/auth/me');
-        const jwtPayload = parseJwt(storedToken);
-        const roleName = jwtPayload?.rol || (response.data.rol_id === 1 ? 'ADMINISTRADOR' : 'OPERARIO');
+        const refreshResponse = await apiClient.post('/auth/refresh');
+        const newToken = refreshResponse.data.access_token;
+        setStoredToken(newToken);
 
-        setUser({
-          ...response.data,
-          rol: roleName,
-        });
-        setToken(storedToken);
+        const meResponse = await apiClient.get('/auth/me');
+        const jwtPayload = parseJwt(newToken);
+        const roleName = jwtPayload?.rol || (meResponse.data.rol_id === 1 ? 'ADMINISTRADOR' : 'OPERARIO');
+
+        setUser({ ...meResponse.data, rol: roleName });
+        setToken(newToken);
       } catch (error) {
-        console.warn('Sesión previa inválida o expirada:', error.message);
-        logout();
+        // Normal cuando no hay sesión previa (primera visita, o cookie expirada)
+        console.warn('No hay sesión previa que renovar:', error.message);
+        clearToken();
       } finally {
         setLoading(false);
       }
@@ -99,7 +105,7 @@ export function AuthProvider({ children }) {
     });
 
     const accessToken = loginResponse.data.access_token;
-    localStorage.setItem('casetech_token', accessToken);
+    setStoredToken(accessToken);
     setToken(accessToken);
 
     // Obtener perfil del usuario autenticado inmediatamente

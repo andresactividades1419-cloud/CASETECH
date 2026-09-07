@@ -193,6 +193,22 @@ export function OrdersPage() {
   const [stockError, setStockError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  // ── Exportación CSV (R01, RF12, Issue #77) ─────────────────────────────
+  const [exportingCsv, setExportingCsv] = useState(false);
+  const handleExportCsv = async () => {
+    setExportingCsv(true);
+    try {
+      await ordersApi.exportOrdersCSV({
+        estado: estadoFilter || undefined,
+        cliente: debouncedCliente || undefined,
+      });
+    } catch {
+      setStockError('Error al descargar el reporte CSV de Pedidos.');
+    } finally {
+      setExportingCsv(false);
+    }
+  };
+
   // ── Débounce del buscador de cliente ────────────────────────────────
   const debounceRef = useRef(null);
   useEffect(() => {
@@ -315,18 +331,18 @@ export function OrdersPage() {
             alignItems: 'center',
             gap: '0.5rem',
             padding: '0.65rem 1.35rem',
-            backgroundColor: '#0369a1',
-            color: '#f0f9ff',
+            backgroundColor: '#2563eb',
+            color: '#ffffff',
             border: 'none',
             borderRadius: '9px',
             fontSize: '0.9rem',
             fontWeight: '600',
             cursor: 'pointer',
             transition: 'background-color 0.15s ease',
-            boxShadow: '0 4px 14px rgba(3,105,161,0.35)',
+            boxShadow: '0 4px 14px rgba(37,99,235,0.35)',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#075985'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#0369a1'; }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#1d4ed8'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#2563eb'; }}
         >
           <span style={{ fontSize: '1.1rem' }}>+</span> Nuevo Pedido
         </button>
@@ -429,6 +445,34 @@ export function OrdersPage() {
             onBlur={(e) => { e.target.style.borderColor = '#334155'; }}
           />
         </div>
+
+        {isAdmin && (
+          <button
+            id="btn-export-orders-csv"
+            onClick={handleExportCsv}
+            disabled={exportingCsv}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              padding: '0.4rem 0.85rem',
+              backgroundColor: '#2563eb',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '0.8rem',
+              fontWeight: '600',
+              cursor: exportingCsv ? 'wait' : 'pointer',
+              transition: 'background-color 0.15s ease',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => { if (!exportingCsv) e.currentTarget.style.backgroundColor = '#1d4ed8'; }}
+            onMouseLeave={(e) => { if (!exportingCsv) e.currentTarget.style.backgroundColor = '#2563eb'; }}
+          >
+            <span>📥</span>
+            <span>{exportingCsv ? 'Descargando...' : 'Exportar CSV'}</span>
+          </button>
+        )}
       </div>
 
       {/* ── Tabla de pedidos ───────────────────────────────────────── */}

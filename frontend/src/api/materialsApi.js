@@ -3,6 +3,7 @@
  */
 
 import apiClient from './client';
+import downloadCsvResponse from '../utils/downloadCsv';
 
 export const materialsApi = {
   /**
@@ -76,6 +77,28 @@ export const materialsApi = {
   async toggleMaterialStatus(id) {
     const response = await apiClient.patch(`/materials/${id}/status`);
     return response.data;
+  },
+
+  /**
+   * Descarga el reporte CSV del Stock Actual (R04, RF12, Issue #77).
+   * @param {Object} params - { estado_stock: 'CRITICO'|'BAJO'|'NORMAL' }
+   */
+  async exportMaterialsCSV(params = {}) {
+    const queryParams = {};
+    if (params.estado_stock && params.estado_stock !== 'TODOS') {
+      queryParams.estado_stock = params.estado_stock;
+    }
+
+    const response = await apiClient.get('/reports/materials/export-csv', {
+      params: queryParams,
+      responseType: 'blob',
+    });
+
+    downloadCsvResponse(
+      response,
+      `stock_actual_casetech_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.csv`
+    );
+    return true;
   },
 };
 

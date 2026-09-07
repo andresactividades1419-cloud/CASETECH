@@ -454,31 +454,27 @@ Entonces el sistema muestra el estado vacío: "No hay registros para el período
 
 #### Criterios de Aceptación
 
-**Escenario 1 — Registro exitoso de pedido de Casetón de Lona (recuperable)**
+**Escenario 1 — Registro exitoso de pedido de Casetón de Lona**
 
 ```gherkin
 Dado que soy ADMINISTRADOR en la sección "Pedidos" > "Nuevo Pedido"
 Cuando completo el formulario con cliente "Constructora Urbes SAS",
-  tipo de casetón "Casetón de Lona 60x60" (naturaleza: RECUPERABLE), cantidad 150, fecha entrega "2026-09-15"
+  tipo de casetón "Casetón de Lona 60x60", cantidad 150, fecha entrega "2026-09-15"
   Y hago clic en "Registrar Pedido"
 Entonces el sistema crea el pedido con estado PENDIENTE
   Y muestra el mensaje: "Pedido #42 registrado exitosamente."
-  Y el pedido aparece en el listado con el indicador ♻️ Recuperable
   Y el inventario NO ha sido modificado en este punto
 ```
 
-**Escenario 2 — Registro de pedido de Casetón de Icopor/EPS (perdido) con advertencia**
+**Escenario 2 — Registro exitoso de pedido de Casetón de Icopor/EPS**
 
 ```gherkin
 Dado que soy ADMINISTRADOR registrando un pedido
-Cuando selecciono el tipo "Casetón de Icopor 60x60" (naturaleza: PERDIDO)
-Entonces el formulario muestra el aviso destacado en amarillo:
-  ⚠️ "Este tipo de casetón usa material no recuperable (EPS/Icopor).
-     Los bloques descontados al iniciar producción NO podrán revertirse al inventario,
-     incluso si el pedido se cancela posteriormente."
-  Y el indicador 🚫 Perdido aparece junto al nombre del tipo de casetón
-  Y el usuario debe hacer clic en "Entendido" para confirmar que leyó la advertencia
-  Y el pedido se registra con estado PENDIENTE tras la confirmación
+Cuando selecciono el tipo "Casetón de Icopor 60x60", cantidad 80, fecha entrega "2026-09-20"
+  Y hago clic en "Registrar Pedido"
+Entonces el sistema crea el pedido con estado PENDIENTE
+  Y muestra el mensaje: "Pedido #43 registrado exitosamente."
+  Y el inventario NO ha sido modificado en este punto
 ```
 
 **Escenario 3 — Cantidad inválida**
@@ -504,7 +500,7 @@ Entonces el sistema muestra el error: "La fecha de entrega debe ser posterior a 
 
 > **Como** ADMINISTRADOR,  
 > **Quiero** confirmar el inicio de producción de un pedido,  
-> **Para** que el sistema descuente automáticamente las materias primas requeridas por la receta y el inventario quede actualizado al instante, respetando la naturaleza recuperable o perdida del tipo de casetón.
+> **Para** que el sistema descuente automáticamente las materias primas requeridas por la receta y el inventario quede actualizado al instante.
 
 **Sprint:** 3 | **MoSCoW:** Must Have | **Puntos:** 13  
 **RF relacionados:** RF06, RF08 | **Responsable:** Andrés Fernández
@@ -513,35 +509,33 @@ Entonces el sistema muestra el error: "La fecha de entrega debe ser posterior a 
 
 #### Criterios de Aceptación
 
-**Escenario 1 — Confirmación de producción de Casetón de Lona/Guadua (recuperable, stock suficiente)**
+**Escenario 1 — Confirmación de producción de Casetón de Lona/Guadua (stock suficiente)**
 
 ```gherkin
-Dado que existe el pedido #42 en estado PENDIENTE para "Casetón de Lona" (naturaleza: RECUPERABLE)
+Dado que existe el pedido #42 en estado PENDIENTE para "Casetón de Lona"
   Y el inventario tiene suficiente stock de Madera y Lona para la receta
 Cuando selecciono el pedido y hago clic en "Iniciar Producción"
   Y confirmo en el diálogo con la tabla de materiales a descontar
 Entonces el backend invoca CALL sp_descontar_inventario(42, usuario_id)
   Y el SP descuenta Madera y Lona dentro de una transacción atómica
-  Y registra los movimientos con tipo DESCUENTO_PRODUCCION (reversible)
+  Y registra los movimientos con tipo DESCUENTO_PRODUCCION (reversible si se cancela el pedido en producción)
   Y el pedido cambia a estado EN_PRODUCCION
   Y el inventario refleja los nuevos saldos en tiempo real
   Y se muestra el mensaje: "Producción iniciada. Inventario actualizado. Los materiales podrán revertirse si se cancela el pedido."
 ```
 
-**Escenario 2 — Confirmación de producción de Casetón de Icopor/EPS (perdido, stock suficiente)**
+**Escenario 2 — Confirmación de producción de Casetón de Icopor/EPS (stock suficiente)**
 
 ```gherkin
-Dado que existe el pedido #50 en estado PENDIENTE para "Casetón de Icopor" (naturaleza: PERDIDO)
+Dado que existe el pedido #50 en estado PENDIENTE para "Casetón de Icopor"
   Y el inventario tiene 200 bloques EPS disponibles y la receta requiere 80 bloques
 Cuando selecciono el pedido y hago clic en "Iniciar Producción"
-Entonces el sistema muestra el diálogo de confirmación con advertencia especial:
-  🚫 "ATENCIÓN: Los bloques de EPS/Icopor descontados son IRRECUPERABLES.
-      Una vez iniciada la producción, el inventario NO podrá revertirse aunque se cancele el pedido.
-      ¿Confirma iniciar la producción de 80 bloques EPS?"
-  Y al confirmar, el backend invoca CALL sp_descontar_inventario(50, usuario_id)
-  Y el SP descuenta 80 bloques EPS y registra el movimiento con tipo DESCUENTO_PRODUCCION_DEFINITIVO
+  Y confirmo en el diálogo con la tabla de materiales a descontar
+Entonces el backend invoca CALL sp_descontar_inventario(50, usuario_id)
+  Y el SP descuenta 80 bloques EPS dentro de una transacción atómica
+  Y registra el movimiento con tipo DESCUENTO_PRODUCCION (reversible si se cancela el pedido en producción)
   Y el pedido cambia a estado EN_PRODUCCION
-  Y se muestra el mensaje: "Producción iniciada. 80 bloques EPS descontados de forma definitiva."
+  Y se muestra el mensaje: "Producción iniciada. Inventario actualizado. Los materiales podrán revertirse si se cancela el pedido."
 ```
 
 **Escenario 3 — Stock insuficiente en un material (Flujo de excepción crítico)**
@@ -665,35 +659,19 @@ Entonces el pedido cambia a estado COMPLETADO
   Y los botones de acción quedan deshabilitados (estado final)
 ```
 
-**Escenario 2 — Cancelar pedido de Casetón recuperable en producción (con opción de reversión)**
+**Escenario 2 — Cancelar un pedido en producción (reversión automática de inventario)**
 
 ```gherkin
-Dado que el pedido #44 es de "Casetón de Lona" (naturaleza: RECUPERABLE) y está en estado EN_PRODUCCION
-Cuando el ADMINISTRADOR selecciona "Cancelar Pedido"
-Entonces el sistema muestra el diálogo:
-  "Este pedido tiene materiales descontados (Madera, Lona). ¿Desea revertir el inventario?"
-  Y si el ADMINISTRADOR confirma la reversión:
-    El sistema ejecuta el SP de reversión, sumando los materiales de vuelta a inventario
-    Y registra movimientos de tipo DEVOLUCION_CANCELACION en movimientos_inventario
-    Y el pedido cambia a CANCELADO con nota: "Inventario revertido por cancelación"
-  Y si no confirma la reversión:
-    El pedido cambia a CANCELADO sin revertir el inventario, con nota de no-reversión
+Dado que el pedido #44 es de "Casetón de Lona" y está en estado EN_PRODUCCION
+  Y ya se le habían descontado Madera y Lona al iniciar producción
+Cuando el ADMINISTRADOR selecciona "Cancelar Pedido" y confirma la acción
+Entonces el sistema ejecuta automáticamente el SP de reversión (sp_revertir_receta),
+  sumando los materiales de vuelta a inventario porque la producción no se completó
+  Y registra movimientos de tipo DEVOLUCION_CANCELACION en movimientos_inventario
+  Y el pedido cambia a CANCELADO
 ```
 
-**Escenario 3 — Cancelar pedido de Casetón de Icopor/EPS en producción (SIN reversión posible)**
-
-```gherkin
-Dado que el pedido #55 es de "Casetón de Icopor" (naturaleza: PERDIDO) y está en estado EN_PRODUCCION
-Cuando el ADMINISTRADOR selecciona "Cancelar Pedido"
-Entonces el sistema muestra el diálogo con advertencia no reversible:
-  🚫 "Este pedido usó bloques de EPS/Icopor que ya han sido comprometidos de forma definitiva.
-      El inventario de EPS NO puede revertirse (material de naturaleza PERDIDO).
-      El pedido será cancelado sin reversión de inventario."
-  Y NO muestra la opción de revertir el inventario (el botón de reversión está ausente)
-  Y al confirmar la cancelación, el pedido cambia a CANCELADO
-  Y el movimiento DESCUENTO_PRODUCCION_DEFINITIVO permanece intacto en el historial
-  Y el stock de EPS NO se modifica
-```
+Esta misma lógica aplica sin distinción a los 3 tipos de casetón (Lona, Guadua, Icopor/EPS) — ninguno tiene un comportamiento especial de "no reversión".
 
 **Escenario 3 — Transición inválida (Flujo de excepción)**
 
@@ -720,41 +698,39 @@ Entonces la opción de cambio de estado no está disponible (botón deshabilitad
 
 #### Criterios de Aceptación
 
-**Escenario 1 — Receta de Casetón de Lona (recuperable) con stock suficiente**
+**Escenario 1 — Receta de Casetón de Lona con stock suficiente**
 
 ```gherkin
-Dado que estoy registrando un pedido de 100 módulos de "Casetón de Lona 60x60" (naturaleza: RECUPERABLE)
+Dado que estoy registrando un pedido de 100 módulos de "Casetón de Lona 60x60"
   Y el stock de Madera y Lona es suficiente
 Cuando ingreso la cantidad 100 en el formulario de pedido
-Entonces el sistema muestra la tabla de requerimientos con indicador ♻️ Recuperable:
-  | Material        | Por unidad | Total req. | Stock actual | Estado  | Reversible |
-  | Madera (m lin.) | 2.5        | 250 m      | 400 m        | 🟢 OK   | ✅ Sí      |
-  | Lona (m²)       | 0.8        | 80 m²      | 120 m²       | 🟢 OK   | ✅ Sí      |
+Entonces el sistema muestra la tabla de requerimientos:
+  | Material        | Por unidad | Total req. | Stock actual | Estado  |
+  | Madera (m lin.) | 2.5        | 250 m      | 400 m        | 🟢 OK   |
+  | Lona (m²)       | 0.8        | 80 m²      | 120 m²       | 🟢 OK   |
   Y el botón "Registrar Pedido" está habilitado
 ```
 
-**Escenario 2 — Receta de Casetón de Guadua (recuperable) con stock suficiente**
+**Escenario 2 — Receta de Casetón de Guadua con stock suficiente**
 
 ```gherkin
-Dado que estoy registrando un pedido de 50 módulos de "Casetón de Guadua 60x60" (naturaleza: RECUPERABLE)
+Dado que estoy registrando un pedido de 50 módulos de "Casetón de Guadua 60x60"
 Cuando ingreso la cantidad 50 en el formulario de pedido
-Entonces el sistema muestra la tabla de requerimientos con indicador ♻️ Recuperable:
-  | Material             | Por unidad | Total req. | Stock actual | Estado  | Reversible |
-  | Guadua (culmos m lin)| 1.2        | 60 m       | 100 m        | 🟢 OK   | ✅ Sí      |
-  | Madera — refuerzo    | 0.6        | 30 m       | 80 m         | 🟢 OK   | ✅ Sí      |
+Entonces el sistema muestra la tabla de requerimientos:
+  | Material             | Por unidad | Total req. | Stock actual | Estado  |
+  | Guadua (culmos m lin)| 1.2        | 60 m       | 100 m        | 🟢 OK   |
+  | Madera — refuerzo    | 0.6        | 30 m       | 80 m         | 🟢 OK   |
   Y el botón "Registrar Pedido" está habilitado
 ```
 
-**Escenario 3 — Receta de Casetón de Icopor/EPS (perdido) con advertencia de irreversibilidad**
+**Escenario 3 — Receta de Casetón de Icopor/EPS con stock suficiente**
 
 ```gherkin
-Dado que estoy registrando un pedido de 80 unidades de "Casetón de Icopor 60x60" (naturaleza: PERDIDO)
+Dado que estoy registrando un pedido de 80 unidades de "Casetón de Icopor 60x60"
 Cuando ingreso la cantidad 80 en el formulario de pedido
-Entonces el sistema muestra la tabla de requerimientos con indicador 🚫 Perdido:
-  | Material          | Por unidad | Total req. | Stock actual | Estado  | Reversible |
-  | Bloques EPS (und) | 1.0        | 80         | 150          | 🟢 OK   | 🚫 No      |
-  Y aparece la advertencia en recuadro amarillo:
-    ⚠️ "Los bloques EPS descontados al iniciar producción NO podrán revertirse al inventario."
+Entonces el sistema muestra la tabla de requerimientos:
+  | Material          | Por unidad | Total req. | Stock actual | Estado  |
+  | Bloques EPS (und) | 1.0        | 80         | 150          | 🟢 OK   |
   Y el botón "Registrar Pedido" está habilitado
 ```
 
@@ -764,7 +740,7 @@ Entonces el sistema muestra la tabla de requerimientos con indicador 🚫 Perdid
 Dado que el stock de "Lona" es 30 m² y se requieren 80 m² para 100 módulos de Casetón de Lona
 Cuando ingreso la cantidad 100
 Entonces la tabla muestra:
-  | Lona (m²) | 0.8 m² | 80 m² | 30 m² | 🔴 Déficit: -50 m² | ✅ Sí |
+  | Lona (m²) | 0.8 m² | 80 m² | 30 m² | 🔴 Déficit: -50 m² |
   Y aparece la advertencia: "Materiales insuficientes para completar este pedido. Puede registrarse pero no podrá iniciar producción."
   Y el botón "Registrar Pedido" permanece habilitado (el pedido se crea en PENDIENTE)
   Y el botón "Iniciar Producción" estará deshabilitado al ver el detalle del pedido
@@ -777,7 +753,7 @@ Dado que tengo el tipo "Casetón de Lona 60x60" seleccionado y una cantidad de 5
 Cuando cambio la cantidad a 200
 Entonces la tabla de requerimientos se actualiza automáticamente en menos de 500ms
   Y los cálculos muestran los nuevos totales para 200 módulos
-  Y los indicadores de estado y reversibilidad se actualizan según los nuevos requerimientos vs stock
+  Y los indicadores de estado se actualizan según los nuevos requerimientos vs stock
 ```
 
 ---

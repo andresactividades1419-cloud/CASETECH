@@ -11,10 +11,19 @@ Cubre:
 3. Test 3 — Validación de Regla de Doble Firma en Ajustes de Inventario (HU09):
    - Creación de solicitud de ajuste manual de inventario.
    - Intento de auto-aprobación por parte del mismo usuario solicitante -> HTTP 403 Forbidden.
+4. Test 4 — Reversión de Inventario al Cancelar un Pedido EN_PRODUCCION (RF06, Issue #75):
+   - Transición EN_PRODUCCION -> CANCELADO después de un descuento BOM exitoso.
+   - Valida que el stock vuelve exactamente a su valor anterior y que queda
+     registrado el movimiento DEVOLUCION_CANCELACION por cada material.
 """
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.material import Material
+from app.models.stock_movement import StockMovement
 
 
 @pytest.mark.asyncio
@@ -154,3 +163,77 @@ async def test_double_signature_prevents_self_approval(
         "doble firma" in self_review_res.json()["detail"].lower()
         or "propia solicitud" in self_review_res.json()["detail"].lower()
     )
+
+
+@pytest.mark.asyncio
+async def test_cancel_order_in_production_reverts_inventory(
+    client: AsyncClient,
+    admin_headers: dict[str, str],
+    db_session: AsyncSession,
+):
+    """
+    Test 4: Reversión de Inventario al Cancelar un Pedido EN_PRODUCCION (RF06, Issue #75).
+
+    Verifica que cancelar un pedido que ya había descontado materiales
+    (EN_PRODUCCION) devuelve exactamente esas cantidades al inventario, y que
+    queda registrado un movimiento DEVOLUCION_CANCELACION por cada material.
+    """
+    # Asegurar stock suficiente para que la producción sí pueda iniciar
+    madera = await db_session.get(Material, 2)
+    madera.stock_actual = 100.000
+    await db_session.commit()
+
+    create_payload = {
+        "cliente": "Constructora Andina S.A.",
+        "tipo_caseton_id": 1,
+        "cantidad": 2,
+        "fecha_entrega_estimada": "2026-12-31",
+    }
+    create_res = await client.post(
+        "/api/v1/orders/", json=create_payload, headers=admin_headers
+    )
+    assert create_res.status_code == 201, create_res.text
+    order_id = create_res.json()["id"]
+
+    start_res = await client.patch(
+        f"/api/v1/orders/{order_id}/status",
+        json={"estado": "EN_PRODUCCION"},
+        headers=admin_headers,
+    )
+    assert start_res.status_code == 200, start_res.text
+
+    # El descuento ya debió aplicarse: lona 1.5*2=3.0, madera 4*2=8.0
+    lona = await db_session.get(Material, 1)
+    await db_session.refresh(lona)
+    await db_session.refresh(madera)
+    assert float(lona.stock_actual) == 10.0 - 3.0
+    assert float(madera.stock_actual) == 100.0 - 8.0
+
+    cancel_res = await client.patch(
+        f"/api/v1/orders/{order_id}/status",
+        json={"estado": "CANCELADO"},
+        headers=admin_headers,
+    )
+    assert cancel_res.status_code == 200, cancel_res.text
+    assert cancel_res.json()["estado"] == "CANCELADO"
+
+    # El stock debe volver exactamente a su valor previo al descuento
+    await db_session.refresh(lona)
+    await db_session.refresh(madera)
+    assert float(lona.stock_actual) == 10.0
+    assert float(madera.stock_actual) == 100.0
+
+    movimientos = (
+        (
+            await db_session.execute(
+                select(StockMovement).where(
+                    StockMovement.referencia_id == order_id,
+                    StockMovement.tipo_movimiento == "DEVOLUCION_CANCELACION",
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert len(movimientos) == 2
+    assert {m.material_id for m in movimientos} == {1, 2}

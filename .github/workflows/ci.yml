@@ -57,6 +57,7 @@ jobs:
       - name: Install Astral UV
         uses: astral-sh/setup-uv@v4
         with:
+          version: "0.12.10"
           enable-cache: true
           cache-dependency-glob: "backend/pyproject.toml"
 
@@ -74,7 +75,7 @@ jobs:
 
       - name: Security Audit (pip-audit)
         run: |
-          uv export --no-dev --format requirements-txt > req.txt
+          uv export --no-dev --no-emit-project --format requirements-txt > req.txt
           uv run pip-audit -r req.txt --desc || echo "pip-audit completed with non-critical warnings"
 
       - name: Run Pytest Integration Suite

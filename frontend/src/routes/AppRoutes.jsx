@@ -14,6 +14,7 @@ import OrdersPage from '../pages/OrdersPage';
 import AdjustmentsPage from '../pages/AdjustmentsPage';
 import PurchasesPage from '../pages/PurchasesPage';
 import UsersPage from '../pages/UsersPage';
+import RecipesPage from '../pages/RecipesPage';
 
 import ErrorBoundary from '../components/common/ErrorBoundary';
 
@@ -39,6 +40,7 @@ export function AppRoutes() {
             {/* Rutas exclusivas para ADMINISTRADOR */}
             <Route element={<ProtectedRoute allowedRoles={['ADMINISTRADOR']} />}>
               <Route path="/users" element={<UsersPage />} />
+              <Route path="/recipes" element={<RecipesPage />} />
             </Route>
           </Route>
         </Route>

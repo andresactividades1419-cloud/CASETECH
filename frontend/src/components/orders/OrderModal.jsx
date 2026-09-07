@@ -7,12 +7,13 @@
  * - Campo de cantidad (entero positivo).
  * - Date picker de fecha estimada de entrega.
  * - Textarea de observaciones (opcional).
- * - Badge de naturaleza BOM (RECUPERABLE / PERDIDO) según el tipo seleccionado.
+ * - Muestra la descripción del tipo de casetón seleccionado.
  */
 
 import React, { useEffect, useRef, useState } from 'react';
 import productTypesApi from '../../api/productTypesApi';
 import ordersApi from '../../api/ordersApi';
+import { primaryButtonStyle } from '../../styles/buttons';
 
 /* ─── Helpers de estilo ─────────────────────────────────────────────────── */
 
@@ -101,7 +102,7 @@ export function OrderModal({ isOpen, onClose, onSuccess }) {
     return () => window.removeEventListener('keydown', handleKey);
   }, [isOpen, onClose]);
 
-  // ── Tipo seleccionado (para mostrar badge de naturaleza BOM) ──────────
+  // ── Tipo seleccionado (para mostrar su descripción) ────────────────────
   const selectedType = productTypes.find(
     (t) => String(t.id) === String(form.tipo_caseton_id)
   );
@@ -114,8 +115,8 @@ export function OrderModal({ isOpen, onClose, onSuccess }) {
     setApiError('');
   };
 
-  // ── Validación cliente ─────────────────────────────────────────────────
-  const validate = () => {
+  // ── Validación cliente (función pura, sin efectos secundarios) ─────────
+  const getValidationErrors = () => {
     const errs = {};
     if (!form.cliente.trim() || form.cliente.trim().length < 3) {
       errs.cliente = 'El nombre del cliente debe tener al menos 3 caracteres.';
@@ -134,6 +135,9 @@ export function OrderModal({ isOpen, onClose, onSuccess }) {
     }
     return errs;
   };
+
+  const validate = getValidationErrors;
+  const isFormValid = Object.keys(getValidationErrors()).length === 0;
 
   // ── Submit ─────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
@@ -398,23 +402,8 @@ export function OrderModal({ isOpen, onClose, onSuccess }) {
             </button>
             <button
               type="submit"
-              disabled={submitting || loadingTypes}
-              style={{
-                padding: '0.6rem 1.5rem',
-                backgroundColor: submitting ? '#1e3a5f' : '#0369a1',
-                border: '1px solid transparent',
-                borderRadius: '8px',
-                color: '#f0f9ff',
-                fontSize: '0.88rem',
-                fontWeight: '600',
-                cursor: submitting ? 'wait' : 'pointer',
-                transition: 'background-color 0.15s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-              }}
-              onMouseEnter={(e) => { if (!submitting) e.currentTarget.style.backgroundColor = '#075985'; }}
-              onMouseLeave={(e) => { if (!submitting) e.currentTarget.style.backgroundColor = '#0369a1'; }}
+              disabled={submitting || loadingTypes || !isFormValid}
+              style={primaryButtonStyle(isFormValid, submitting)}
             >
               {submitting ? (
                 <>
