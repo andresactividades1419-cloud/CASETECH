@@ -2,7 +2,7 @@
 core/security.py — Utilidades criptográficas de CASETECH ERP.
 
 Responsabilidades:
-- Hashing y verificación de contraseñas con bcrypt (passlib).
+- Hashing y verificación de contraseñas con bcrypt nativo.
 - Emisión de tokens JWT firmados con HS256 (python-jose).
 - Generación y hashing de refresh tokens (Issue #86).
 """
