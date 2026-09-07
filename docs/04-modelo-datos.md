@@ -270,23 +270,22 @@ Inventario maestro de materias primas. `stock_actual` es la **fuente de verdad**
 
 ### 2.5 `tipos_caseton`
 
-Catálogo de tipos de producto (núcleo BOM genérico). `naturaleza` determina el comportamiento del descuento de inventario.
+Catálogo de tipos de producto (núcleo BOM genérico). Los 3 tipos se tratan igual frente al inventario — no existe ningún campo que distinga un comportamiento especial por tipo (la columna `naturaleza` que existió hasta la migración 006 se eliminó en la 007: los casetones se venden como producto terminado, ninguno regresa a la fábrica, así que la distinción "cuál tipo regresa" no tenía sustento — ver Issue #78).
 
 | Columna | Tipo PostgreSQL | Restricciones | Descripción |
 |---------|----------------|---------------|-------------|
 | `id` | `BIGSERIAL` | `PK` | Identificador autoincremental |
 | `nombre` | `VARCHAR(255)` | `NOT NULL, UNIQUE` | Nombre del tipo (ej. "Casetón de Lona 60x60") |
 | `descripcion` | `TEXT` | `NULL` | Descripción técnica del producto |
-| `naturaleza` | `VARCHAR(20)` | `NOT NULL, CHECK (naturaleza IN ('RECUPERABLE', 'PERDIDO'))` | `RECUPERABLE`: módulo reutilizable (Lona, Guadua) · `PERDIDO`: material embebido en obra (Icopor/EPS) |
 | `activo` | `BOOLEAN` | `NOT NULL, DEFAULT TRUE` | Borrado lógico; no se puede desactivar con pedidos activos |
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT NOW()` | Fecha y hora de creación |
 
 **Datos semilla:**
 ```sql
-INSERT INTO tipos_caseton (nombre, descripcion, naturaleza) VALUES
-  ('Casetón de Lona 60x60',   'Bastidor de madera con lona tensada. Módulo reutilizable.',               'RECUPERABLE'),
-  ('Casetón de Guadua 60x60', 'Cercha estructural en guadua y madera con amarres. Módulo reutilizable.', 'RECUPERABLE'),
-  ('Casetón de Icopor 60x60', 'Bloque EPS. Queda fundido permanentemente en la losa.',                   'PERDIDO');
+INSERT INTO tipos_caseton (nombre, descripcion) VALUES
+  ('Casetón de Lona 60x60',   'Bastidor de madera con lona tensada, para vaciado de losa.'),
+  ('Casetón de Guadua 60x60', 'Cercha estructural en guadua y madera con amarres, para vaciado de losa.'),
+  ('Casetón de Icopor 60x60', 'Bloque de Poliestireno Expandido (EPS). Queda fundido en la losa.');
 ```
 
 ---
@@ -395,10 +394,12 @@ Log **inmutable** de todos los movimientos de inventario. Nunca se elimina ni mo
 | `tipo_movimiento` | Efecto | Origen | Reversible |
 |-------------------|--------|--------|:----------:|
 | `INGRESO_COMPRA` | ➕ Suma | Registro de compra | ✅ |
-| `DESCUENTO_PRODUCCION` | ➖ Resta | Pedido `RECUPERABLE` a `EN_PRODUCCION` | ✅ |
-| `DESCUENTO_PRODUCCION_DEFINITIVO` | ➖ Resta | Pedido `PERDIDO` (EPS) a `EN_PRODUCCION` | 🚫 |
-| `DEVOLUCION_CANCELACION` | ➕ Suma | Cancelación de pedido `RECUPERABLE` | ✅ |
+| `DESCUENTO_PRODUCCION` | ➖ Resta | Cualquier pedido (Lona, Guadua o Icopor) a `EN_PRODUCCION` | ✅ |
+| `DEVOLUCION_CANCELACION` | ➕ Suma | Cancelación de un pedido en `EN_PRODUCCION` | ✅ |
 | `AJUSTE_APROBADO` | ➕/➖ | Ajuste de inventario aprobado | ✅ Auditable |
+
+> [!NOTE]
+> `DESCUENTO_PRODUCCION_DEFINITIVO` sigue siendo un valor permitido por el `CHECK` de esta tabla (`ck_movimientos_tipo_movimiento`), pero es **solo histórico**: existía cuando `tipos_caseton` distinguía naturaleza `RECUPERABLE`/`PERDIDO` (ver 2.5). Desde el Issue #78, `sp_descontar_inventario` ya no genera este valor para pedidos nuevos — los movimientos antiguos que ya lo tenían no se migraron, para no reescribir el historial de auditoría.
 
 ---
 
@@ -619,11 +620,10 @@ db.commit()
 
 ### 5.2 `sp_descontar_receta`
 
-**Propósito:** Descuento atómico de todas las materias primas de la receta BOM al confirmar el inicio de producción. Opera con **bloqueo pesimista** (`SELECT FOR UPDATE`) para serializar el acceso concurrente y evitar condiciones de carrera. Diferencia el tipo de movimiento según la naturaleza del casetón.
+**Propósito:** Descuento atómico de todas las materias primas de la receta BOM al confirmar el inicio de producción. Opera con **bloqueo pesimista** (`SELECT FOR UPDATE`) para serializar el acceso concurrente y evitar condiciones de carrera. Los 3 tipos de casetón se tratan igual: no hay ninguna ramificación por tipo de producto.
 
-**Lógica diferenciada:**
-- `RECUPERABLE` (Lona, Guadua) → `DESCUENTO_PRODUCCION` (reversible)
-- `PERDIDO` (Icopor/EPS) → `DESCUENTO_PRODUCCION_DEFINITIVO` (irreversible)
+> [!NOTE]
+> Hasta la migración 006 este SP sí diferenciaba el tipo de movimiento según una columna `naturaleza` en `tipos_caseton` (`RECUPERABLE` → `DESCUENTO_PRODUCCION`, `PERDIDO` → `DESCUENTO_PRODUCCION_DEFINITIVO`). La migración 007 (Issue #78) eliminó esa columna y esa ramificación: los casetones se venden como producto terminado, ninguno regresa a la fábrica, así que no había un comportamiento distinto que preservar. El SP de abajo es la versión vigente.
 
 ```sql
 CREATE OR REPLACE PROCEDURE sp_descontar_receta(
@@ -634,10 +634,8 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
     v_tipo_caseton_id BIGINT;
-    v_naturaleza      VARCHAR(20);
     v_cantidad_pedido INTEGER;
     v_estado_actual   VARCHAR(20);
-    v_tipo_mov        VARCHAR(40);
     v_rec             RECORD;
     v_stock_actual    DECIMAL(12,3);
     v_consumo_total   DECIMAL(12,3);
@@ -658,26 +656,13 @@ BEGIN
 
     IF v_estado_actual <> 'PENDIENTE' THEN
         RAISE EXCEPTION
-            'El pedido % no puede iniciar producción desde el estado "%". Solo pedidos PENDIENTE pueden iniciarse.',
+            'El pedido % no puede iniciar producción desde el estado "%". Solo pedidos en estado PENDIENTE pueden iniciarse.',
             p_pedido_id, v_estado_actual
         USING ERRCODE = 'P0001';
     END IF;
 
     -- ─────────────────────────────────────────────────
-    -- 2. Determinar naturaleza y tipo de movimiento
-    -- ─────────────────────────────────────────────────
-    SELECT naturaleza INTO v_naturaleza
-    FROM   tipos_caseton
-    WHERE  id = v_tipo_caseton_id;
-
-    IF v_naturaleza = 'PERDIDO' THEN
-        v_tipo_mov := 'DESCUENTO_PRODUCCION_DEFINITIVO';
-    ELSE
-        v_tipo_mov := 'DESCUENTO_PRODUCCION';
-    END IF;
-
-    -- ─────────────────────────────────────────────────
-    -- 3. Iterar sobre la receta BOM con bloqueo por material
+    -- 2. Iterar sobre la receta BOM con bloqueo por material
     --    ORDER BY material_id garantiza orden consistente
     --    entre sesiones concurrentes (previene deadlocks)
     -- ─────────────────────────────────────────────────
@@ -719,26 +704,26 @@ BEGIN
 
         -- Registrar movimiento con snapshot de stock
         INSERT INTO movimientos_inventario (
-            material_id,        tipo_movimiento,  cantidad,
+            material_id,        tipo_movimiento,       cantidad,
             stock_antes,        stock_despues,
-            referencia_id,      referencia_tipo,  ejecutado_por
+            referencia_id,      referencia_tipo,       ejecutado_por
         )
         VALUES (
-            v_rec.material_id,  v_tipo_mov,       v_consumo_total,
+            v_rec.material_id,  'DESCUENTO_PRODUCCION', v_consumo_total,
             v_stock_actual,     v_stock_actual - v_consumo_total,
-            p_pedido_id,        'PEDIDO',          p_usuario_id
+            p_pedido_id,        'PEDIDO',               p_usuario_id
         );
     END LOOP;
 
     -- ─────────────────────────────────────────────────
-    -- 4. Cambiar estado del pedido a EN_PRODUCCION
+    -- 3. Cambiar estado del pedido a EN_PRODUCCION
     -- ─────────────────────────────────────────────────
     UPDATE pedidos
     SET    estado     = 'EN_PRODUCCION',
            updated_at = NOW()
     WHERE  id = p_pedido_id;
 
-    -- 5. Registrar en auditoría
+    -- 4. Registrar en auditoría
     INSERT INTO auditoria_acciones (
         usuario_id, accion, entidad, entidad_id, payload_despues
     )
@@ -748,10 +733,9 @@ BEGIN
         'pedidos',
         p_pedido_id,
         jsonb_build_object(
-            'estado_anterior',    'PENDIENTE',
-            'estado_nuevo',       'EN_PRODUCCION',
-            'naturaleza_caseton', v_naturaleza,
-            'tipo_movimiento',    v_tipo_mov
+            'estado_anterior', 'PENDIENTE',
+            'estado_nuevo',    'EN_PRODUCCION',
+            'tipo_movimiento', 'DESCUENTO_PRODUCCION'
         )
     );
 
@@ -939,7 +923,6 @@ En lugar de tipos `ENUM` de PostgreSQL (costosos de migrar), CASETECH usa `VARCH
 | Campo | Tabla | Valores válidos |
 |-------|-------|----------------|
 | `roles.nombre` | `roles` | `ADMINISTRADOR`, `OPERARIO` |
-| `tipos_caseton.naturaleza` | `tipos_caseton` | `RECUPERABLE`, `PERDIDO` |
 | `pedidos.estado` | `pedidos` | `PENDIENTE`, `EN_PRODUCCION`, `COMPLETADO`, `CANCELADO` |
 | `ajustes_inventario.tipo_ajuste` | `ajustes_inventario` | `MERMA`, `DEVOLUCION_PROVEEDOR`, `CONTEO_FISICO`, `SOBRANTE` |
 | `ajustes_inventario.estado` | `ajustes_inventario` | `PENDIENTE_APROBACION`, `APROBADO`, `RECHAZADO` |
