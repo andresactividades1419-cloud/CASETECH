@@ -100,15 +100,13 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
         tipo_lona = ProductType(
             id=1,
             nombre="Casetón Lona 60x60",
-            descripcion="Casetón recuperable de lona",
-            naturaleza="RECUPERABLE",
+            descripcion="Casetón de lona",
             activo=True,
         )
         tipo_perdido = ProductType(
             id=2,
             nombre="Casetón Icopor Perdido",
-            descripcion="Casetón de poliestireno perdido",
-            naturaleza="PERDIDO",
+            descripcion="Casetón de poliestireno",
             activo=True,
         )
         session.add_all([tipo_lona, tipo_perdido])

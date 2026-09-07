@@ -7,7 +7,7 @@
  * - Campo de cantidad (entero positivo).
  * - Date picker de fecha estimada de entrega.
  * - Textarea de observaciones (opcional).
- * - Badge de naturaleza BOM (RECUPERABLE / PERDIDO) según el tipo seleccionado.
+ * - Muestra la descripción del tipo de casetón seleccionado.
  */
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -101,7 +101,7 @@ export function OrderModal({ isOpen, onClose, onSuccess }) {
     return () => window.removeEventListener('keydown', handleKey);
   }, [isOpen, onClose]);
 
-  // ── Tipo seleccionado (para mostrar badge de naturaleza BOM) ──────────
+  // ── Tipo seleccionado (para mostrar su descripción) ────────────────────
   const selectedType = productTypes.find(
     (t) => String(t.id) === String(form.tipo_caseton_id)
   );

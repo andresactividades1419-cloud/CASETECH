@@ -18,10 +18,6 @@ class ProductTypeResponse(BaseModel):
     descripcion: str | None = Field(
         default=None, description="Descripción técnica del casetón."
     )
-    naturaleza: str = Field(
-        ...,
-        description="Naturaleza del material: 'RECUPERABLE' (Lona, Guadua) o 'PERDIDO' (Icopor, cemento).",
-    )
     activo: bool = Field(
         ..., description="Indica si el tipo de casetón está disponible para producción."
     )
