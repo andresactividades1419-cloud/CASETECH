@@ -5,6 +5,7 @@ Cubre:
 1. HU11: Previsualización de consumo BOM y cálculo de balance de stock.
 2. HU06: Exportación de Kardex a formato CSV descargable (solo Administrador).
 3. HU02 / HU14: Gestión administrativa de usuarios (listar, registrar, editar, desactivar).
+4. RF12 (Issue #77): Exportación a CSV de Pedidos, Stock Actual y Proveedores.
 """
 
 import pytest
@@ -175,3 +176,87 @@ async def test_dashboard_audit_logs_export_csv(
     assert "bitacora_auditoria_" in admin_res.headers.get("content-disposition", "")
     assert "Acción" in admin_res.text
     assert "Entidad Afectada" in admin_res.text
+
+
+@pytest.mark.asyncio
+async def test_export_orders_csv_admin_role_enforced(
+    client: AsyncClient,
+    admin_headers: dict[str, str],
+    operario_headers: dict[str, str],
+):
+    """
+    R01 / RF12 (Issue #77): Valida que la exportación de Pedidos a CSV esté
+    protegida por rol ADMINISTRADOR y retorne las columnas esperadas.
+    """
+    op_res = await client.get(
+        "/api/v1/reports/orders/export-csv", headers=operario_headers
+    )
+    assert op_res.status_code == 403
+
+    admin_res = await client.get(
+        "/api/v1/reports/orders/export-csv", headers=admin_headers
+    )
+    assert admin_res.status_code == 200
+    assert "text/csv" in admin_res.headers.get("content-type", "")
+    assert "pedidos_casetech_" in admin_res.headers.get("content-disposition", "")
+    assert "Código Pedido" in admin_res.text
+    assert "Cliente" in admin_res.text
+
+
+@pytest.mark.asyncio
+async def test_export_materials_csv_stock_classification(
+    client: AsyncClient,
+    admin_headers: dict[str, str],
+    operario_headers: dict[str, str],
+):
+    """
+    R04 / RF12 (Issue #77): Valida que la exportación de Stock Actual a CSV esté
+    protegida por rol ADMINISTRADOR y clasifique correctamente el material con
+    stock bajo el mínimo sembrado en conftest (madera: stock_actual=2, stock_minimo=10).
+    """
+    op_res = await client.get(
+        "/api/v1/reports/materials/export-csv", headers=operario_headers
+    )
+    assert op_res.status_code == 403
+
+    admin_res = await client.get(
+        "/api/v1/reports/materials/export-csv", headers=admin_headers
+    )
+    assert admin_res.status_code == 200
+    assert "text/csv" in admin_res.headers.get("content-type", "")
+    assert "stock_actual_casetech_" in admin_res.headers.get("content-disposition", "")
+    assert "Estado Stock" in admin_res.text
+    # Listón de Madera: stock_actual=2.000 <= 50% de stock_minimo=10.000 -> CRITICO
+    assert "Listón de Madera 2x2;M;2.000;10.000;CRITICO" in admin_res.text
+
+    critico_res = await client.get(
+        "/api/v1/reports/materials/export-csv?estado_stock=CRITICO",
+        headers=admin_headers,
+    )
+    assert "Lona Impermeable 600D" not in critico_res.text
+    assert "Listón de Madera 2x2" in critico_res.text
+
+
+@pytest.mark.asyncio
+async def test_export_providers_csv_admin_role_enforced(
+    client: AsyncClient,
+    admin_headers: dict[str, str],
+    operario_headers: dict[str, str],
+):
+    """
+    R05 / RF12 (Issue #77): Valida que la exportación de Proveedores a CSV esté
+    protegida por rol ADMINISTRADOR y retorne las columnas esperadas.
+    """
+    op_res = await client.get(
+        "/api/v1/reports/providers/export-csv", headers=operario_headers
+    )
+    assert op_res.status_code == 403
+
+    admin_res = await client.get(
+        "/api/v1/reports/providers/export-csv", headers=admin_headers
+    )
+    assert admin_res.status_code == 200
+    assert "text/csv" in admin_res.headers.get("content-type", "")
+    assert "proveedores_casetech_" in admin_res.headers.get("content-disposition", "")
+    assert "NIT" in admin_res.text
+    assert "Nombre Empresa" in admin_res.text
