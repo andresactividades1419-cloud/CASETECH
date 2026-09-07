@@ -1,11 +1,16 @@
 # ============================================================
 # Backend Dockerfile — CASETECH ERP (Producción y Hardening)
-# Base: python:3.11-slim + UV (ghcr.io/astral-sh/uv:0.4.18)
+# Base: python:3.11-slim + UV (ghcr.io/astral-sh/uv:0.12.10)
 # Multi-stage & Non-Root (appuser: 10001)
+#
+# ¿Por qué 0.12.10 y no 0.4.18? La versión 0.4.18 es anterior a que uv
+# soportara correctamente [dependency-groups] (PEP 735, agregado en uv
+# 0.4.27) — con 0.4.18, un simple "uv lock" podía perder silenciosamente
+# el grupo "dev" (pytest, ruff, mypy, pip-audit) del uv.lock. Ver Issue #92.
 # ============================================================
 
 # --- Etapa 1: Instalador UV ---
-FROM ghcr.io/astral-sh/uv:0.4.18 AS uv-installer
+FROM ghcr.io/astral-sh/uv:0.12.10 AS uv-installer
 
 # --- Etapa 2: Imagen de producción / runtime ---
 FROM python:3.11-slim AS runtime
