@@ -132,13 +132,13 @@ La lista de proveedores debe soportar búsqueda y filtrado para facilitar la loc
 **Actor principal:** ADMINISTRADOR
 
 **Descripción:**  
-El sistema debe permitir registrar nuevos pedidos especificando el cliente, el tipo de casetón requerido y la cantidad. La fábrica produce tres tipos de casetón con naturalezas distintas que impactan directamente la lógica de inventario:
+El sistema debe permitir registrar nuevos pedidos especificando el cliente, el tipo de casetón requerido y la cantidad. La fábrica produce tres tipos de casetón, todos con el mismo comportamiento de inventario (se venden como producto terminado, ninguno regresa a la fábrica):
 
-| Tipo de Casetón | Naturaleza | Materias primas principales | Reversión al cancelar |
-|-----------------|------------|-----------------------------|-----------------------|
-| **Casetón de Lona** | ♻️ Recuperable | Madera (listones) + Lona (m²) | ✅ Posible (materiales reincorporables) |
-| **Casetón de Guadua** | ♻️ Recuperable | Guadua (culmos) + Madera + Amarres | ✅ Posible (materiales reincorporables) |
-| **Casetón de Icopor/EPS** | 🚫 Perdido | Bloques EPS (unidades/m³) | ❌ No aplica (material fundido en obra) |
+| Tipo de Casetón | Materias primas principales | Reversión al cancelar en producción |
+|-----------------|------------------------------|--------------------------------------|
+| **Casetón de Lona** | Madera (listones) + Lona (m²) | ✅ Sí — se revierte el descuento |
+| **Casetón de Guadua** | Guadua (culmos) + Madera + Amarres | ✅ Sí — se revierte el descuento |
+| **Casetón de Icopor/EPS** | Bloques EPS (unidades/m³) | ✅ Sí — se revierte el descuento |
 
 Al registrar el pedido, el sistema calcula automáticamente el total de materias primas necesarias según la receta del tipo de casetón seleccionado y muestra la disponibilidad de inventario.
 
@@ -153,7 +153,7 @@ Al registrar el pedido, el sistema calcula automáticamente el total de materias
 | `observaciones` | `TEXT` | Notas adicionales sobre el pedido |
 
 **Cálculo automático de receta:**  
-Al seleccionar tipo de casetón y cantidad, el frontend consulta `GET /api/v1/recetas/{tipo_caseton_id}?cantidad={n}` y muestra una tabla de requerimientos vs. stock disponible con indicación visual de déficit (🔴) o suficiencia (🟢). Para el Casetón de Icopor/EPS, la interfaz debe mostrar el aviso: ⚠️ *"Los bloques EPS descontados no podrán recuperarse al inventario."*
+Al seleccionar tipo de casetón y cantidad, el frontend consulta `GET /api/v1/recetas/{tipo_caseton_id}?cantidad={n}` y muestra una tabla de requerimientos vs. stock disponible con indicación visual de déficit (🔴) o suficiencia (🟢).
 
 ---
 
@@ -192,29 +192,29 @@ PENDIENTE ──► CANCELADO       (Acción: ninguna sobre inventario)
 **Actor principal:** Sistema (automático)
 
 **Descripción:**  
-El sistema debe calcular en tiempo real el consumo total de materias primas para un pedido dado, multiplicando la receta del casetón por la cantidad solicitada. Este cálculo se realiza tanto en el frontend (para visualización previa) como en el backend (para validación antes del descuento). La respuesta debe incluir la naturaleza del tipo de casetón para que la UI pueda mostrar advertencias diferenciadas.
+El sistema debe calcular en tiempo real el consumo total de materias primas para un pedido dado, multiplicando la receta del casetón por la cantidad solicitada. Este cálculo se realiza tanto en el frontend (para visualización previa) como en el backend (para validación antes del descuento).
 
 **Recetas ilustrativas por tipo de casetón:**
 
-**🧵 Casetón de Lona — Recuperable** (ejemplo: módulo 60×60 cm)
+**🧵 Casetón de Lona** (ejemplo: módulo 60×60 cm)
 
-| Material | Receta por unidad | Pedido: 100 módulos | Reversible |
-|----------|-------------------|---------------------|------------|
-| Madera — listones (m lin.) | 2.5 | 250 m | ✅ Sí |
-| Lona (m²) | 0.8 | 80 m² | ✅ Sí |
+| Material | Receta por unidad | Pedido: 100 módulos |
+|----------|-------------------|----------------------|
+| Madera — listones (m lin.) | 2.5 | 250 m |
+| Lona (m²) | 0.8 | 80 m² |
 
-**🪵 Casetón de Guadua — Recuperable** (ejemplo: cercha 60×60 cm)
+**🪵 Casetón de Guadua** (ejemplo: cercha 60×60 cm)
 
-| Material | Receta por unidad | Pedido: 100 módulos | Reversible |
-|----------|-------------------|---------------------|------------|
-| Guadua — culmos (m lin.) | 1.2 | 120 m | ✅ Sí |
-| Madera — refuerzo (m lin.) | 0.6 | 60 m | ✅ Sí |
+| Material | Receta por unidad | Pedido: 100 módulos |
+|----------|-------------------|----------------------|
+| Guadua — culmos (m lin.) | 1.2 | 120 m |
+| Madera — refuerzo (m lin.) | 0.6 | 60 m |
 
-**🟡 Casetón de Icopor/EPS — Perdido** (ejemplo: bloque 60×60×25 cm)
+**🟡 Casetón de Icopor/EPS** (ejemplo: bloque 60×60×25 cm)
 
-| Material | Receta por unidad | Pedido: 100 unidades | Reversible |
-|----------|-------------------|----------------------|------------|
-| Bloques EPS (unidades) | 1.0 | 100 bloques | 🚫 **No** |
+| Material | Receta por unidad | Pedido: 100 unidades |
+|----------|-------------------|------------------------|
+| Bloques EPS (unidades) | 1.0 | 100 bloques |
 
 > [!NOTE]
 > **Arquitectura BOM genérica:** El endpoint y el modelo de datos son independientes del tipo de producto. `tipo_caseton_id` es en realidad un `tipo_producto_id` genérico; las tablas `recetas` y `materiales` implementan el patrón BOM estándar. Agregar un nuevo tipo de producto solo requiere insertar filas en `tipos_caseton` y `recetas`, sin cambios en el código.
@@ -225,9 +225,7 @@ El sistema debe calcular en tiempo real el consumo total de materias primas para
 ```json
 {
   "tipo_caseton": "Casetón de Icopor 60x60",
-  "naturaleza": "PERDIDO",
   "cantidad_pedida": 100,
-  "advertencia": "Los materiales de este tipo de casetón no son recuperables al inventario una vez iniciada la producción.",
   "materiales": [
     {
       "material_id": 3,
@@ -235,8 +233,7 @@ El sistema debe calcular en tiempo real el consumo total de materias primas para
       "requerido": 100.0,
       "disponible": 150.0,
       "deficit": 0.0,
-      "suficiente": true,
-      "reversible": false
+      "suficiente": true
     }
   ]
 }
@@ -251,14 +248,9 @@ El sistema debe calcular en tiempo real el consumo total de materias primas para
 **Actor principal:** Sistema (automático al confirmar producción)
 
 **Descripción:**  
-Al transicionar un pedido a estado `EN_PRODUCCION`, el backend debe invocar el Stored Procedure `sp_descontar_inventario` en PostgreSQL 16. Este SP opera dentro de una transacción atómica y tiene en cuenta la **naturaleza del tipo de casetón** para etiquetar correctamente el tipo de movimiento de inventario.
+Al transicionar un pedido a estado `EN_PRODUCCION`, el backend debe invocar el Stored Procedure `sp_descontar_inventario` en PostgreSQL 16. Este SP opera dentro de una transacción atómica y descuenta las materias primas de la receta del pedido, sin distinción por tipo de casetón — los 3 tipos se tratan igual frente al inventario.
 
-**Regla crítica por naturaleza de casetón:**
-
-| Naturaleza | Tipo de movimiento registrado | ¿Permite reversión? |
-|------------|-------------------------------|---------------------|
-| Recuperable (Lona, Guadua) | `DESCUENTO_PRODUCCION` | ✅ Sí — al cancelar en producción |
-| Perdido (Icopor/EPS) | `DESCUENTO_PRODUCCION_DEFINITIVO` | 🚫 **No** — el EPS queda fundido en la losa |
+Todo movimiento generado por este SP se registra con el mismo tipo, `DESCUENTO_PRODUCCION`, y es reversible si el pedido se cancela mientras está `EN_PRODUCCION` (ver RF06 y el Stored Procedure de reversión).
 
 **Especificación del Stored Procedure:**
 
@@ -273,22 +265,7 @@ DECLARE
     v_rec RECORD;
     v_stock_actual NUMERIC;
     v_consumo NUMERIC;
-    v_naturaleza VARCHAR(20);
-    v_tipo_mov VARCHAR(40);
 BEGIN
-    -- Obtener la naturaleza del tipo de casetón del pedido
-    SELECT tc.naturaleza INTO v_naturaleza
-    FROM pedidos p
-    JOIN tipos_caseton tc ON tc.id = p.tipo_caseton_id
-    WHERE p.id = p_pedido_id;
-
-    -- Determinar el tipo de movimiento según la naturaleza
-    IF v_naturaleza = 'PERDIDO' THEN
-        v_tipo_mov := 'DESCUENTO_PRODUCCION_DEFINITIVO';
-    ELSE
-        v_tipo_mov := 'DESCUENTO_PRODUCCION';
-    END IF;
-
     -- Iterar sobre cada material de la receta del pedido
     FOR v_rec IN
         SELECT
@@ -319,11 +296,11 @@ BEGIN
         SET stock_actual = stock_actual - v_consumo
         WHERE id = v_rec.material_id;
 
-        -- Registrar movimiento con tipo diferenciado según naturaleza
+        -- Registrar movimiento (mismo tipo para los 3 tipos de casetón)
         INSERT INTO movimientos_inventario
             (material_id, tipo_movimiento, cantidad, referencia_id, referencia_tipo, created_at)
         VALUES
-            (v_rec.material_id, v_tipo_mov, v_consumo, p_pedido_id, 'PEDIDO', NOW());
+            (v_rec.material_id, 'DESCUENTO_PRODUCCION', v_consumo, p_pedido_id, 'PEDIDO', NOW());
     END LOOP;
 END;
 $$;
@@ -341,7 +318,7 @@ db.commit()
 Si el SP lanza una excepción (stock insuficiente), SQLAlchemy realiza automáticamente el rollback y el backend retorna `HTTP 422 Unprocessable Entity` con el mensaje descriptivo del material faltante.
 
 **Nota sobre la tabla `tipos_caseton`:**  
-Debe incluir el campo `naturaleza VARCHAR(20) NOT NULL CHECK (naturaleza IN ('RECUPERABLE', 'PERDIDO'))` para que el SP pueda determinar el comportamiento correcto.
+No lleva ningún campo de "naturaleza" — los 3 tipos de casetón se comportan igual frente al inventario, así que no hace falta que el SP distinga un comportamiento por tipo.
 
 ---
 
@@ -735,10 +712,9 @@ class ProveedorResponse(BaseModel):
 | `tipos_caseton` | Catálogo de productos terminados | ✅ Agregar nuevos tipos sin cambios de código |
 | `recetas` | Lista de materiales (BOM) por tipo de producto | ✅ N materiales por producto, cantidad configurable |
 | `materiales` | Insumos o componentes del inventario | ✅ Cualquier material con unidad de medida arbitraria |
-| `tipos_caseton.naturaleza` | Clasifica el comportamiento de inventario (`RECUPERABLE` / `PERDIDO`) | ✅ Extensible a otras naturalezas en v2.0 |
 
 **Principio de extensión:** Para incorporar una nueva línea de producción (ej. fabricación de formaletas metálicas), solo se requiere:
-1. Insertar el nuevo tipo en `tipos_caseton` con su `naturaleza`.
+1. Insertar el nuevo tipo en `tipos_caseton` (nombre y descripción).
 2. Insertar las filas correspondientes en `recetas` con las cantidades por unidad.
 3. Verificar que los materiales requeridos existen en `materiales` (o crearlos).
 
@@ -792,9 +768,7 @@ settings = Settings()
 | RN-08 | El campo `stock_actual` de un material no puede ser negativo. El SP debe rechazar el descuento si resulta en saldo negativo. | M3 |
 | RN-09 | Un ADMINISTRADOR no puede desactivarse a sí mismo si es el único ADMINISTRADOR activo en el sistema. | M0 |
 | RN-10 | El stock mínimo de un material debe ser mayor que cero para activar alertas. | M3 |
-| RN-11 | Los movimientos de inventario generados por pedidos de **Casetón de Icopor/EPS** (naturaleza `PERDIDO`) se registran como `DESCUENTO_PRODUCCION_DEFINITIVO` y **no pueden revertirse** bajo ningún escenario, incluyendo cancelación del pedido. | M2/M3 |
-| RN-12 | Los movimientos de inventario generados por pedidos de **Casetón de Lona** o **Casetón de Guadua** (naturaleza `RECUPERABLE`) se registran como `DESCUENTO_PRODUCCION` y **pueden revertirse** si el ADMINISTRADOR cancela el pedido en producción y confirma la reversión. | M2/M3 |
-| RN-13 | La tabla `tipos_caseton` debe contener el campo `naturaleza` con valor `RECUPERABLE` o `PERDIDO`. Este valor es inmutable una vez que el tipo de casetón tiene pedidos asociados. | M2 |
+| RN-11 | Los movimientos de inventario generados por pedidos de cualquiera de los 3 tipos de casetón se registran como `DESCUENTO_PRODUCCION` y **pueden revertirse** si el pedido se cancela mientras está `EN_PRODUCCION` (el motor BOM ejecuta la reversión automáticamente vía `sp_revertir_receta`, sin necesidad de una confirmación aparte del ADMINISTRADOR). No existe distinción de comportamiento por tipo de casetón. | M2/M3 |
 
 ---
 

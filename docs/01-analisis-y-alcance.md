@@ -37,12 +37,7 @@ La sustitución de `tipos_caseton` y `recetas` por cualquier otro catálogo de p
 
 ### 1.2 Caso de Uso Inicial: Fábrica de Casetones
 
-Los casetones son elementos de construcción utilizados en el sector de la edificación, hay muchos tipos de casetones para conformar placas aligeradas de concreto. La fábrica produce dos naturalezas fundamentales de producto, con comportamientos distintos frente al inventario:
-
-| Naturaleza | Tipos | Característica operativa |
-|------------|-------|--------------------------|
-| **Recuperable / Reutilizable** | Casetón de Lona · Casetón de Guadua | El módulo fabricado regresa a la fábrica después de cada uso en obra y puede reutilizarse. Las materias primas se descuentan **una sola vez** al fabricar el módulo. |
-| **Perdido / No Reutilizable** | Casetón de Icopor (EPS) | El bloque de Poliestireno Expandido queda **fundido de forma permanente** en la losa de concreto. Cada pedido implica un descuento **definitivo e irrecuperable** de bloques de EPS del inventario. |
+Los casetones son elementos de construcción utilizados en el sector de la edificación, hay muchos tipos de casetones para conformar placas aligeradas de concreto. CASETECH fabrica actualmente 3 tipos — Casetón de Lona, Casetón de Guadua y Casetón de Icopor (EPS) — y los **vende** al cliente como producto terminado: ninguno de los tres regresa a la fábrica para reutilizarse. Todos se tratan igual frente al inventario: las materias primas de su receta (BOM) se descuentan **una sola vez**, al momento de fabricar el módulo.
 
 Su fabricación requiere el manejo preciso de múltiples materias primas (madera, lona, icopor/EPS, guadua) bajo recetas de producción estandarizadas por tipo de casetón.
 
@@ -258,27 +253,25 @@ PENDIENTE ──► EN_PRODUCCION ──► COMPLETADO
 
 **Tipos de casetón y sus recetas de producción:**
 
-#### 🧵 Casetón de Lona — *Recuperable*
-> Bastidor fabricado con **madera** (listones y tablas que forman el marco estructural) y **lona** tensada sobre el bastidor como superficie de contacto con el concreto. El módulo terminado regresa a la fábrica tras su uso en obra.
+Los 3 tipos se venden como producto terminado y se tratan igual frente al inventario — ninguno regresa a la fábrica y todos descuentan su receta una sola vez, al fabricar el módulo:
+
+#### 🧵 Casetón de Lona
+> Bastidor fabricado con **madera** (listones y tablas que forman el marco estructural) y **lona** tensada sobre el bastidor como superficie de contacto con el concreto.
 - 🌲 **Madera** (listones/tablas) — unidad: metros lineales o unidades según dimensión
 - 🧵 **Lona** — unidad: metros cuadrados
 - Insumos auxiliares: grapas, puntillas (según receta)
 
-**Lógica de inventario:** El descuento ocurre al fabricar el módulo. Como el módulo es reutilizable, **no** se descuenta inventario adicional en cada uso en obra.
-
-#### 🪵 Casetón de Guadua — *Recuperable*
-> Cercha estructural fabricada con **guadua** (culmos y esterilla) reforzada con **madera** y unida mediante **amarres** (alambre, puntillas). El módulo terminado regresa a la fábrica tras su uso en obra.
+#### 🪵 Casetón de Guadua
+> Cercha estructural fabricada con **guadua** (culmos y esterilla) reforzada con **madera** y unida mediante **amarres** (alambre, puntillas).
 - 🪵 **Guadua** (culmos / esterilla) — unidad: metros lineales / culmos
 - 🌲 **Madera** (listones de refuerzo) — unidad: metros lineales
 - Insumos auxiliares: alambre de amarre, puntillas
 
-**Lógica de inventario:** Igual que el Casetón de Lona, el descuento es único al momento de fabricar el módulo reutilizable.
-
-#### 🟡 Casetón de Icopor / EPS — *Perdido (No Reutilizable)*
-> Bloque de **Poliestireno Expandido (EPS)** cortado a la dimensión requerida que se incorpora de forma **permanente e irrecuperable** a la losa de concreto durante el proceso constructivo. No existe retorno a inventario.
+#### 🟡 Casetón de Icopor / EPS
+> Bloque de **Poliestireno Expandido (EPS)** cortado a la dimensión requerida que queda fundido en la losa de concreto durante el proceso constructivo.
 - 🟡 **Icopor / EPS** (bloques o planchas) — unidad: unidades / metros cúbicos
 
-**Lógica de inventario:** Cada pedido genera un descuento **definitivo** del inventario de EPS. Este material **nunca retorna** al inventario: no aplica reversión por cancelación post-producción, y no genera movimiento de devolución al proveedor.
+**Lógica de inventario (igual para los 3 tipos):** el descuento ocurre una sola vez al fabricar el módulo. Si el pedido se cancela *antes* de iniciar producción, no hay inventario comprometido. Si se cancela *durante* la producción, el sistema revierte automáticamente el descuento (`sp_revertir_receta`) — el sobrante físico de un material usado en una producción ya completada (ej. el metro que sobra de una guadua de 7 m si solo se usaron 6) se desecha y no se contabiliza como inventario recuperado; eso es desperdicio de uso, no una reversión de pedido.
 
 ---
 
@@ -287,10 +280,7 @@ PENDIENTE ──► EN_PRODUCCION ──► COMPLETADO
 **Propósito:** Mantener el inventario actualizado en tiempo real y registrar con trazabilidad completa cualquier movimiento manual que afecte los saldos.
 
 **Descripción:**  
-El inventario se actualiza automáticamente en dos momentos: al confirmar la producción (descuento vía Stored Procedure) y al registrar una compra (ingreso). La lógica de descuento difiere según la naturaleza del casetón:
-
-- **Casetones recuperables (Lona, Guadua):** El descuento de materias primas ocurre **una sola vez** al fabricar el módulo. Si un pedido se cancela *antes* de iniciar producción, no hay inventario comprometido. Si se cancela *durante* la producción, se ofrecerá la opción de revertir el descuento (las materias primas como madera, lona y guadua pueden reincorporarse al stock si el material físico no fue consumido).
-- **Casetón de Icopor/EPS (perdido):** El descuento es **definitivo e irrecuperable**. Una vez que el SP ejecuta el descuento de bloques EPS, ese movimiento se registra como `DESCUENTO_PRODUCCION_DEFINITIVO` y **no puede revertirse**, ya que el material queda fundido en la estructura de concreto. La cancelación de un pedido de Icopor en producción **no genera reversión de inventario**.
+El inventario se actualiza automáticamente en dos momentos: al confirmar la producción (descuento vía Stored Procedure) y al registrar una compra (ingreso). La lógica de descuento es la misma para los 3 tipos de casetón — no existe distinción por "naturaleza" del producto: el descuento de materias primas ocurre **una sola vez** al fabricar el módulo. Si un pedido se cancela *antes* de iniciar producción, no hay inventario comprometido. Si se cancela *durante* la producción, el sistema revierte automáticamente el descuento vía `sp_revertir_receta` (las materias primas se reincorporan al stock porque la producción no se completó y el material está intacto).
 
 La realidad operativa también requiere ajustes manuales: mermas por deterioro, devoluciones a proveedores, conteos físicos que difieren del sistema. Todos estos ajustes deben quedar auditados.
 
