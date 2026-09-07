@@ -8,6 +8,7 @@ Convenciones:
 - Todas las funciones son ``async/await`` para compatibilidad con asyncpg.
 """
 
+import re
 from datetime import date, datetime
 
 from fastapi import HTTPException, status
@@ -33,6 +34,15 @@ from app.schemas.product_type import ProductTypeListResponse, ProductTypeRespons
 # ---------------------------------------------------------------------------
 # Helpers internos
 # ---------------------------------------------------------------------------
+
+
+def _clean_pg_error_message(raw_msg: str) -> str:
+    """
+    Quita el prefijo "<class '...'>: " que antepone str(exc.orig) para
+    algunas excepciones de asyncpg, para no mostrarle al usuario detalles
+    de implementación en el mensaje de error.
+    """
+    return re.sub(r"^<class '[\w.]+'>:\s*", "", raw_msg)
 
 
 async def _generate_codigo_pedido(db: AsyncSession) -> str:
@@ -256,7 +266,7 @@ async def update_order_status(
 
         except DBAPIError as exc:
             await db.rollback()
-            raw_msg = str(exc.orig) if exc.orig else str(exc)
+            raw_msg = _clean_pg_error_message(str(exc.orig) if exc.orig else str(exc))
 
             is_stock_error = (
                 "P0001" in raw_msg
@@ -364,7 +374,7 @@ async def update_order_status(
 
         except DBAPIError as exc:
             await db.rollback()
-            raw_msg = str(exc.orig) if exc.orig else str(exc)
+            raw_msg = _clean_pg_error_message(str(exc.orig) if exc.orig else str(exc))
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error al revertir el inventario del pedido: {raw_msg}",
