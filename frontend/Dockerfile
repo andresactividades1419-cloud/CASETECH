@@ -15,7 +15,7 @@ RUN apk add --no-cache libc6-compat curl gcompat && \
 
 # Copiar manifiestos e instalar dependencias completas
 COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 
 # Copiar código fuente
 COPY . .
