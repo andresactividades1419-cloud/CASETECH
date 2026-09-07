@@ -3,6 +3,10 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { primaryButtonStyle } from '../../styles/buttons';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
 
 export function UserModal({ isOpen, onClose, user, onSave, isSubmitting, errorMessage }) {
   const [formData, setFormData] = useState({
@@ -12,8 +16,27 @@ export function UserModal({ isOpen, onClose, user, onSave, isSubmitting, errorMe
     rol_id: 2,
     activo: true,
   });
+  const [errors, setErrors] = useState({});
 
   const isEditing = !!user?.id;
+
+  const getValidationErrors = () => {
+    const errs = {};
+    if (!formData.nombre_completo.trim() || formData.nombre_completo.trim().length < 3) {
+      errs.nombre_completo = 'El nombre completo debe tener al menos 3 caracteres.';
+    }
+    if (!formData.email.trim() || !EMAIL_REGEX.test(formData.email.trim())) {
+      errs.email = 'Ingrese un correo electrónico válido.';
+    }
+    if (!isEditing && !PASSWORD_REGEX.test(formData.password)) {
+      errs.password = 'Mínimo 8 caracteres, 1 mayúscula y 1 número.';
+    } else if (isEditing && formData.password && !PASSWORD_REGEX.test(formData.password)) {
+      errs.password = 'Mínimo 8 caracteres, 1 mayúscula y 1 número.';
+    }
+    return errs;
+  };
+
+  const isFormValid = Object.keys(getValidationErrors()).length === 0;
 
   useEffect(() => {
     if (user) {
@@ -33,6 +56,7 @@ export function UserModal({ isOpen, onClose, user, onSave, isSubmitting, errorMe
         activo: true,
       });
     }
+    setErrors({});
   }, [user, isOpen]);
 
   // Cerrar con Escape
@@ -48,6 +72,11 @@ export function UserModal({ isOpen, onClose, user, onSave, isSubmitting, errorMe
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const errs = getValidationErrors();
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      return;
+    }
     onSave(formData);
   };
 
@@ -127,11 +156,14 @@ export function UserModal({ isOpen, onClose, user, onSave, isSubmitting, errorMe
               required
               placeholder="Ej: Carlos Gómez"
               value={formData.nombre_completo}
-              onChange={(e) => setFormData({ ...formData, nombre_completo: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, nombre_completo: e.target.value });
+                if (errors.nombre_completo) setErrors((prev) => ({ ...prev, nombre_completo: '' }));
+              }}
               style={{
                 width: '100%',
                 backgroundColor: '#0b0f19',
-                border: '1px solid #334155',
+                border: errors.nombre_completo ? '1px solid #ef4444' : '1px solid #334155',
                 borderRadius: '8px',
                 padding: '0.6rem 0.85rem',
                 color: '#f8fafc',
@@ -140,6 +172,9 @@ export function UserModal({ isOpen, onClose, user, onSave, isSubmitting, errorMe
                 boxSizing: 'border-box',
               }}
             />
+            {errors.nombre_completo && (
+              <span style={{ fontSize: '0.75rem', color: '#f87171', marginTop: '0.25rem', display: 'block' }}>{errors.nombre_completo}</span>
+            )}
           </div>
 
           <div>
@@ -151,11 +186,14 @@ export function UserModal({ isOpen, onClose, user, onSave, isSubmitting, errorMe
               required
               placeholder="usuario@casetech.com"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, email: e.target.value });
+                if (errors.email) setErrors((prev) => ({ ...prev, email: '' }));
+              }}
               style={{
                 width: '100%',
                 backgroundColor: '#0b0f19',
-                border: '1px solid #334155',
+                border: errors.email ? '1px solid #ef4444' : '1px solid #334155',
                 borderRadius: '8px',
                 padding: '0.6rem 0.85rem',
                 color: '#f8fafc',
@@ -164,6 +202,9 @@ export function UserModal({ isOpen, onClose, user, onSave, isSubmitting, errorMe
                 boxSizing: 'border-box',
               }}
             />
+            {errors.email && (
+              <span style={{ fontSize: '0.75rem', color: '#f87171', marginTop: '0.25rem', display: 'block' }}>{errors.email}</span>
+            )}
           </div>
 
           <div>
@@ -175,11 +216,14 @@ export function UserModal({ isOpen, onClose, user, onSave, isSubmitting, errorMe
               required={!isEditing}
               placeholder={isEditing ? '•••••••• (dejar en blanco para conservar)' : 'Contraseña segura'}
               value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, password: e.target.value });
+                if (errors.password) setErrors((prev) => ({ ...prev, password: '' }));
+              }}
               style={{
                 width: '100%',
                 backgroundColor: '#0b0f19',
-                border: '1px solid #334155',
+                border: errors.password ? '1px solid #ef4444' : '1px solid #334155',
                 borderRadius: '8px',
                 padding: '0.6rem 0.85rem',
                 color: '#f8fafc',
@@ -188,6 +232,9 @@ export function UserModal({ isOpen, onClose, user, onSave, isSubmitting, errorMe
                 boxSizing: 'border-box',
               }}
             />
+            {errors.password && (
+              <span style={{ fontSize: '0.75rem', color: '#f87171', marginTop: '0.25rem', display: 'block' }}>{errors.password}</span>
+            )}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -260,20 +307,8 @@ export function UserModal({ isOpen, onClose, user, onSave, isSubmitting, errorMe
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
-              style={{
-                padding: '0.6rem 1.5rem',
-                backgroundColor: isSubmitting ? '#0369a1' : '#0284c7',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '0.85rem',
-                fontWeight: '700',
-                cursor: isSubmitting ? 'wait' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-              }}
+              disabled={isSubmitting || !isFormValid}
+              style={primaryButtonStyle(isFormValid, isSubmitting)}
             >
               {isSubmitting ? 'Guardando...' : isEditing ? 'Guardar Cambios' : 'Registrar Usuario'}
             </button>

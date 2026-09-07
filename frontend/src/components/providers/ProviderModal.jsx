@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import providersApi from '../../api/providersApi';
+import { primaryButtonStyle } from '../../styles/buttons';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const NIT_REGEX = /^[\w\-]+$/;
@@ -51,7 +52,7 @@ export function ProviderModal({ isOpen, onClose, onSuccess, providerToEdit = nul
 
   if (!isOpen) return null;
 
-  const validate = () => {
+  const getValidationErrors = () => {
     const newErrors = {};
 
     if (!isEdit) {
@@ -74,6 +75,13 @@ export function ProviderModal({ isOpen, onClose, onSuccess, providerToEdit = nul
       }
     }
 
+    return newErrors;
+  };
+
+  const isFormValid = Object.keys(getValidationErrors()).length === 0;
+
+  const validate = () => {
+    const newErrors = getValidationErrors();
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -394,21 +402,8 @@ export function ProviderModal({ isOpen, onClose, onSuccess, providerToEdit = nul
 
             <button
               type="submit"
-              disabled={loading}
-              style={{
-                padding: '0.65rem 1.5rem',
-                backgroundColor: loading ? '#1d4ed8' : '#2563eb',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '0.9rem',
-                fontWeight: '600',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.4)',
-              }}
+              disabled={loading || !isFormValid}
+              style={primaryButtonStyle(isFormValid, loading)}
             >
               {loading && (
                 <span style={{

@@ -623,7 +623,7 @@ export function DashboardPage() {
                   alignItems: 'center',
                   gap: '0.35rem',
                   padding: '0.4rem 0.85rem',
-                  backgroundColor: '#0284c7',
+                  backgroundColor: '#2563eb',
                   color: '#ffffff',
                   border: 'none',
                   borderRadius: '6px',
@@ -632,8 +632,8 @@ export function DashboardPage() {
                   cursor: exportingKardexCsv ? 'wait' : 'pointer',
                   transition: 'background-color 0.15s ease',
                 }}
-                onMouseEnter={(e) => { if (!exportingKardexCsv) e.currentTarget.style.backgroundColor = '#0369a1'; }}
-                onMouseLeave={(e) => { if (!exportingKardexCsv) e.currentTarget.style.backgroundColor = '#0284c7'; }}
+                onMouseEnter={(e) => { if (!exportingKardexCsv) e.currentTarget.style.backgroundColor = '#1d4ed8'; }}
+                onMouseLeave={(e) => { if (!exportingKardexCsv) e.currentTarget.style.backgroundColor = '#2563eb'; }}
               >
                 <span>📥</span>
                 <span>{exportingKardexCsv ? 'Descargando...' : 'Exportar Kardex CSV'}</span>

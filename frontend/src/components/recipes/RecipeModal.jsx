@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import recipesApi from '../../api/recipesApi';
+import { primaryButtonStyle } from '../../styles/buttons';
 
 export function RecipeModal({ isOpen, onClose, onSuccess, tipoCasetonId, tipoCasetonNombre, materials, recipeToEdit = null }) {
   const isEdit = Boolean(recipeToEdit);
@@ -34,7 +35,7 @@ export function RecipeModal({ isOpen, onClose, onSuccess, tipoCasetonId, tipoCas
 
   const selectedMaterial = materials.find((m) => String(m.id) === String(formData.material_id));
 
-  const validate = () => {
+  const getValidationErrors = () => {
     const newErrors = {};
     if (!isEdit && !formData.material_id) {
       newErrors.material_id = 'Seleccione un material.';
@@ -43,6 +44,13 @@ export function RecipeModal({ isOpen, onClose, onSuccess, tipoCasetonId, tipoCas
     if (!formData.cantidad_por_unidad || isNaN(cantidad) || cantidad <= 0) {
       newErrors.cantidad_por_unidad = 'La cantidad debe ser un número mayor que cero.';
     }
+    return newErrors;
+  };
+
+  const isFormValid = Object.keys(getValidationErrors()).length === 0;
+
+  const validate = () => {
+    const newErrors = getValidationErrors();
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -209,12 +217,8 @@ export function RecipeModal({ isOpen, onClose, onSuccess, tipoCasetonId, tipoCas
             </button>
             <button
               type="submit"
-              disabled={loading}
-              style={{
-                padding: '0.65rem 1.5rem', backgroundColor: loading ? '#1d4ed8' : '#2563eb', color: '#ffffff',
-                border: 'none', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '600',
-                cursor: loading ? 'not-allowed' : 'pointer', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.4)',
-              }}
+              disabled={loading || !isFormValid}
+              style={primaryButtonStyle(isFormValid, loading)}
             >
               {isEdit ? 'Guardar Cambios' : 'Agregar a Receta'}
             </button>

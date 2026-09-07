@@ -181,7 +181,7 @@ export function UsersPage() {
           onClick={handleOpenCreate}
           style={{
             padding: '0.65rem 1.25rem',
-            backgroundColor: '#0284c7',
+            backgroundColor: '#2563eb',
             color: '#ffffff',
             border: 'none',
             borderRadius: '8px',
