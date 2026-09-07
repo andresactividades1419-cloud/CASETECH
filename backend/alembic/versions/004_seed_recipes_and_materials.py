@@ -30,12 +30,19 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     # -------------------------------------------------------------------
-    # 1. Materiales/insumos que todavía no existían
-    #    (icopor ya existe en la mayoría de entornos - se deja fuera)
+    # 1. Materiales/insumos que todavía no existían.
+    #    'icopor' se incluye aquí también: en un entorno YA usado (con
+    #    compras registradas manualmente) probablemente ya existe y
+    #    ON CONFLICT DO NOTHING lo deja intacto, pero en una instalación
+    #    100% nueva (docker compose down -v) nunca se crea solo — sin esta
+    #    fila, la receta del Casetón de Icopor queda vacía en silencio
+    #    (el JOIN de la receta abajo simplemente no encuentra el material).
+    #    Encontrado haciendo el arranque limpio del 2026-09-07.
     # -------------------------------------------------------------------
     op.execute(
         """
         INSERT INTO materiales (nombre, unidad_medida, stock_actual, stock_minimo) VALUES
+          ('icopor', 'm3', 300.000, 50.000),
           ('Madera - Listones', 'm', 150.000, 20.000),
           ('Lona Impermeable', 'm2', 50.000, 10.000),
           ('Guadua - Culmos', 'm', 80.000, 15.000),
