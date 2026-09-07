@@ -30,6 +30,23 @@ export function ProvidersPage() {
     }, 4000);
   };
 
+  // ── Exportación CSV (R05, RF12, Issue #77) ──────────────────────────────
+  const [exportingCsv, setExportingCsv] = useState(false);
+  const handleExportCsv = async () => {
+    setExportingCsv(true);
+    try {
+      await providersApi.exportProvidersCSV({
+        activo: includeInactive ? undefined : true,
+      });
+      showToast('Directorio de proveedores descargado exitosamente en formato CSV.');
+    } catch (err) {
+      console.error('Error al exportar CSV de proveedores:', err);
+      showToast('Error al descargar el directorio de proveedores.', 'error');
+    } finally {
+      setExportingCsv(false);
+    }
+  };
+
   const fetchProviders = useCallback(async () => {
     try {
       setLoading(true);
@@ -282,6 +299,34 @@ export function ProvidersPage() {
               />
               <span>Incluir inactivos (baja lógica)</span>
             </label>
+          )}
+
+          {isAdmin && (
+            <button
+              id="btn-export-providers-csv"
+              onClick={handleExportCsv}
+              disabled={exportingCsv}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.4rem 0.85rem',
+                backgroundColor: '#0284c7',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '0.8rem',
+                fontWeight: '600',
+                cursor: exportingCsv ? 'wait' : 'pointer',
+                transition: 'background-color 0.15s ease',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={(e) => { if (!exportingCsv) e.currentTarget.style.backgroundColor = '#0369a1'; }}
+              onMouseLeave={(e) => { if (!exportingCsv) e.currentTarget.style.backgroundColor = '#0284c7'; }}
+            >
+              <span>📥</span>
+              <span>{exportingCsv ? 'Descargando...' : 'Exportar CSV'}</span>
+            </button>
           )}
 
           <button

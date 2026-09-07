@@ -5,6 +5,7 @@
  */
 
 import apiClient from './client';
+import downloadCsvResponse from '../utils/downloadCsv';
 
 /**
  * Normaliza el payload de proveedor para cumplir con los schemas de Pydantic/SQLAlchemy.
@@ -81,6 +82,28 @@ export const providersApi = {
   async toggleProviderStatus(id) {
     const response = await apiClient.patch(`/providers/${id}/status`);
     return response.data;
+  },
+
+  /**
+   * Descarga el reporte CSV del directorio de Proveedores (R05, RF12, Issue #77).
+   * @param {Object} params - { activo: true|false }
+   */
+  async exportProvidersCSV(params = {}) {
+    const queryParams = {};
+    if (params.activo !== undefined && params.activo !== null) {
+      queryParams.activo = params.activo;
+    }
+
+    const response = await apiClient.get('/reports/providers/export-csv', {
+      params: queryParams,
+      responseType: 'blob',
+    });
+
+    downloadCsvResponse(
+      response,
+      `proveedores_casetech_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.csv`
+    );
+    return true;
   },
 };
 

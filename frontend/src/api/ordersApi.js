@@ -5,6 +5,7 @@
  */
 
 import apiClient from './client';
+import downloadCsvResponse from '../utils/downloadCsv';
 
 export const ordersApi = {
   /**
@@ -69,6 +70,29 @@ export const ordersApi = {
   async getRecipePreview(id) {
     const response = await apiClient.get(`/orders/${id}/recipe-preview`);
     return response.data;
+  },
+
+  /**
+   * Descarga el reporte CSV del historial de Pedidos (R01, RF12, Issue #77).
+   * @param {Object} params - { estado, cliente, fecha_desde, fecha_hasta }
+   */
+  async exportOrdersCSV(params = {}) {
+    const queryParams = {};
+    if (params.estado && params.estado !== 'TODOS') queryParams.estado = params.estado;
+    if (params.cliente?.trim()) queryParams.cliente = params.cliente.trim();
+    if (params.fecha_desde) queryParams.fecha_desde = params.fecha_desde;
+    if (params.fecha_hasta) queryParams.fecha_hasta = params.fecha_hasta;
+
+    const response = await apiClient.get('/reports/orders/export-csv', {
+      params: queryParams,
+      responseType: 'blob',
+    });
+
+    downloadCsvResponse(
+      response,
+      `pedidos_casetech_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.csv`
+    );
+    return true;
   },
 };
 

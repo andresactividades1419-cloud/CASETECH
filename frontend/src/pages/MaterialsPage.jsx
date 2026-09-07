@@ -45,6 +45,21 @@ export function MaterialsPage() {
     }, 4000);
   };
 
+  // ── Exportación CSV (R04, RF12, Issue #77) ──────────────────────────────
+  const [exportingCsv, setExportingCsv] = useState(false);
+  const handleExportCsv = async () => {
+    setExportingCsv(true);
+    try {
+      await materialsApi.exportMaterialsCSV();
+      showToast('Reporte de Stock Actual descargado exitosamente en formato CSV.', 'success');
+    } catch (err) {
+      console.error('Error al exportar CSV de stock actual:', err);
+      showToast('Error al descargar el reporte CSV de Stock Actual.', 'error');
+    } finally {
+      setExportingCsv(false);
+    }
+  };
+
   const fetchMaterials = useCallback(async () => {
     try {
       setLoading(true);
@@ -345,6 +360,34 @@ export function MaterialsPage() {
             />
             <span>Incluir Desactivados</span>
           </label>
+
+          {isAdmin && (
+            <button
+              id="btn-export-materials-csv"
+              onClick={handleExportCsv}
+              disabled={exportingCsv}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.4rem 0.85rem',
+                backgroundColor: '#0284c7',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '0.8rem',
+                fontWeight: '600',
+                cursor: exportingCsv ? 'wait' : 'pointer',
+                transition: 'background-color 0.15s ease',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={(e) => { if (!exportingCsv) e.currentTarget.style.backgroundColor = '#0369a1'; }}
+              onMouseLeave={(e) => { if (!exportingCsv) e.currentTarget.style.backgroundColor = '#0284c7'; }}
+            >
+              <span>📥</span>
+              <span>{exportingCsv ? 'Descargando...' : 'Exportar CSV'}</span>
+            </button>
+          )}
         </div>
       </div>
 
