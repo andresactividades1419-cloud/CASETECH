@@ -49,6 +49,7 @@ router = APIRouter()
 
 REFRESH_COOKIE_NAME = "refresh_token"
 REFRESH_COOKIE_PATH = "/api/v1/auth"
+MAX_LOGIN_ATTEMPTS = 5
 
 
 async def _issue_refresh_cookie(response: Response, db: AsyncSession, usuario_id: int) -> None:
@@ -91,11 +92,15 @@ async def _issue_refresh_cookie(response: Response, db: AsyncSession, usuario_id
     summary="Iniciar sesión",
     description=(
         "Autentica al usuario con email y contraseña. "
-        "Retorna un token JWT Bearer válido para proteger el resto de endpoints."
+        "Retorna un token JWT Bearer válido para proteger el resto de endpoints. "
+        f"La cuenta se bloquea automáticamente (activo=false) tras {MAX_LOGIN_ATTEMPTS} "
+        "intentos fallidos consecutivos; un ADMINISTRADOR debe reactivarla."
     ),
     responses={
         200: {"description": "Autenticación exitosa. Token JWT emitido."},
-        401: {"description": "Credenciales incorrectas o cuenta inactiva."},
+        401: {
+            "description": "Credenciales incorrectas, cuenta inactiva, o cuenta recién bloqueada por intentos fallidos."
+        },
         429: {
             "description": "Límite de intentos excedido (máximo 10 por minuto por IP)."
         },
@@ -119,6 +124,26 @@ async def login(
     user: User | None = result.scalar_one_or_none()
 
     if user is None or not verify_password(form_data.password, user.password_hash):
+        # Issue #80: contar intentos fallidos solo sobre cuentas reales y
+        # activas -- una cuenta inexistente o ya desactivada no acumula
+        # contador (no aporta nada y evita revelar por timing si existe).
+        if user is not None and user.activo:
+            user.intentos_fallidos += 1
+            just_locked = user.intentos_fallidos >= MAX_LOGIN_ATTEMPTS
+            if just_locked:
+                user.activo = False
+            await db.commit()
+
+            if just_locked:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=(
+                        f"Cuenta bloqueada tras {MAX_LOGIN_ATTEMPTS} intentos fallidos. "
+                        "Contacte a un administrador para reactivarla."
+                    ),
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email o contraseña incorrectos.",
@@ -128,9 +153,13 @@ async def login(
     if not user.activo:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="La cuenta de usuario está desactivada.",
+            detail="La cuenta de usuario está desactivada. Contacte a un administrador.",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    # Login exitoso: reiniciar el contador de intentos fallidos
+    user.intentos_fallidos = 0
+    await db.commit()
 
     role_result = await db.execute(select(Role).where(Role.id == user.rol_id))
     role: Role | None = role_result.scalar_one_or_none()
