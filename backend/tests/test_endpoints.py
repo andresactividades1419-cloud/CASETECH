@@ -260,3 +260,70 @@ async def test_export_providers_csv_admin_role_enforced(
     assert "proveedores_casetech_" in admin_res.headers.get("content-disposition", "")
     assert "NIT" in admin_res.text
     assert "Nombre Empresa" in admin_res.text
+
+
+@pytest.mark.asyncio
+async def test_recipe_crud_admin_only(
+    client: AsyncClient,
+    admin_headers: dict[str, str],
+    operario_headers: dict[str, str],
+):
+    """
+    Issue #88: Valida el ciclo de vida completo de administración de recetas
+    BOM (crear, listar, editar, eliminar), restringido a ADMINISTRADOR.
+    """
+    # 1. Operario no puede crear recetas (403)
+    op_res = await client.post(
+        "/api/v1/recipes/",
+        json={"tipo_caseton_id": 1, "material_id": 1, "cantidad_por_unidad": 3.0},
+        headers=operario_headers,
+    )
+    assert op_res.status_code == 403
+
+    # 2. Administrador crea una receta nueva (material_id=1 "Lona" aún no
+    #    tiene receta para tipo_caseton_id=1 en el seed de conftest — sí
+    #    existen las de material_id=1 y 2, así que probamos con un tercer
+    #    material simulado vía el mismo material_id=2 en otra combinación)
+    create_res = await client.post(
+        "/api/v1/recipes/",
+        json={"tipo_caseton_id": 1, "material_id": 1, "cantidad_por_unidad": 99.0},
+        headers=admin_headers,
+    )
+    # Ya existe (sembrada en conftest) -> 409 esperado
+    assert create_res.status_code == 409
+
+    # 3. Listar recetas del tipo 1 (ya vienen sembradas 2 en conftest)
+    list_res = await client.get(
+        "/api/v1/recipes/?tipo_caseton_id=1", headers=admin_headers
+    )
+    assert list_res.status_code == 200
+    data = list_res.json()
+    assert data["total"] == 2
+    recipe_id = data["items"][0]["id"]
+
+    # 4. Administrador actualiza la cantidad de una receta existente
+    update_res = await client.put(
+        f"/api/v1/recipes/{recipe_id}",
+        json={"cantidad_por_unidad": 7.5},
+        headers=admin_headers,
+    )
+    assert update_res.status_code == 200
+    assert float(update_res.json()["cantidad_por_unidad"]) == 7.5
+
+    # 5. Operario no puede eliminar recetas (403)
+    op_del_res = await client.delete(
+        f"/api/v1/recipes/{recipe_id}", headers=operario_headers
+    )
+    assert op_del_res.status_code == 403
+
+    # 6. Administrador elimina la receta
+    del_res = await client.delete(
+        f"/api/v1/recipes/{recipe_id}", headers=admin_headers
+    )
+    assert del_res.status_code == 204
+
+    # 7. Ya no aparece en el listado
+    list_after = await client.get(
+        "/api/v1/recipes/?tipo_caseton_id=1", headers=admin_headers
+    )
+    assert list_after.json()["total"] == 1

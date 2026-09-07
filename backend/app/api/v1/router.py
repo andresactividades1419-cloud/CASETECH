@@ -13,6 +13,7 @@ from app.api.v1.endpoints import (
     materials,
     providers,
     purchases,
+    recipes,
     reports,
     stock_adjustments,
     users,
@@ -111,4 +112,13 @@ api_router.include_router(
     stock_adjustments.router,
     prefix="/stock-adjustments",
     tags=["Ajustes de Inventario"],
+)
+
+# -----------------------------------------------------------------------
+# Administración de Recetas BOM  (Issue #88)
+# -----------------------------------------------------------------------
+api_router.include_router(
+    recipes.router,
+    prefix="/recipes",
+    tags=["Recetas BOM"],
 )

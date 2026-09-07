@@ -48,6 +48,7 @@ export function MainLayout() {
     { to: '/materials', label: 'Control de Inventario', icon: '📦' },
     { to: '/adjustments', label: 'Ajustes de Inventario', icon: '⚖️' },
     { to: '/purchases', label: 'Abastecimiento', icon: '🛒' },
+    ...(isAdmin ? [{ to: '/recipes', label: 'Recetas BOM', icon: '🧾' }] : []),
     ...(isAdmin ? [{ to: '/users', label: 'Usuarios', icon: '👥' }] : []),
   ];
 
@@ -61,6 +62,7 @@ export function MainLayout() {
     if (path === '/purchases') return 'Abastecimiento';
     if (path === '/adjustments') return 'Ajustes de Inventario';
     if (path === '/users') return 'Gestión de Usuarios';
+    if (path === '/recipes') return 'Recetas BOM';
     return 'Producción';
   };
 
