@@ -29,6 +29,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.api.deps import get_db
 from app.core.database import Base
+from app.core.limiter import limiter
 from app.core.security import create_access_token, get_password_hash
 from app.main import app
 from app.models.material import Material
@@ -162,6 +163,12 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
+
+    # El rate limiter (slowapi) guarda sus contadores en memoria a nivel de
+    # proceso, no por test — sin resetearlo, tests que golpean el mismo
+    # endpoint limitado (ej. /auth/login) heredan el conteo de tests
+    # anteriores y fallan con 429 en vez del código que en verdad se prueba.
+    limiter.reset()
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
