@@ -284,6 +284,90 @@ async def update_order_status(
         await db.refresh(order)
         return await _enrich_order(db, order)
 
+    # ─────────────────────────────────────────────────────────────
+    # Transición especial: EN_PRODUCCION → CANCELADO
+    # Revierte el descuento de sp_descontar_receta: la producción no
+    # se completó, así que los materiales ya descontados no se
+    # perdieron y deben volver al inventario.
+    # ─────────────────────────────────────────────────────────────
+    if current_status == "EN_PRODUCCION" and new_status == "CANCELADO":
+        bind = db.get_bind()
+        is_sqlite = bind and bind.dialect.name == "sqlite"
+
+        if is_sqlite:
+            mov_query = (
+                select(
+                    StockMovement.material_id,
+                    func.sum(StockMovement.cantidad).label("total_a_devolver"),
+                )
+                .where(
+                    StockMovement.referencia_id == order_id,
+                    StockMovement.referencia_tipo == "PEDIDO",
+                    StockMovement.tipo_movimiento.in_(
+                        ["DESCUENTO_PRODUCCION", "DESCUENTO_PRODUCCION_DEFINITIVO"]
+                    ),
+                )
+                .group_by(StockMovement.material_id)
+                .order_by(StockMovement.material_id)
+            )
+            mov_rows = (await db.execute(mov_query)).all()
+
+            for material_id, total_a_devolver in mov_rows:
+                material_item = await db.get(Material, material_id)
+                if material_item is None:
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail=(
+                            f"Material {material_id} referenciado en el descuento "
+                            "original ya no existe."
+                        ),
+                    )
+                stock_antes = float(material_item.stock_actual)
+                stock_despues = stock_antes + float(total_a_devolver)
+                material_item.stock_actual = stock_despues
+
+                mov = StockMovement(
+                    material_id=material_id,
+                    tipo_movimiento="DEVOLUCION_CANCELACION",
+                    cantidad=total_a_devolver,
+                    stock_antes=stock_antes,
+                    stock_despues=stock_despues,
+                    referencia_id=order.id,
+                    referencia_tipo="PEDIDO",
+                    ejecutado_por=user_id,
+                )
+                db.add(mov)
+
+            order.estado = "CANCELADO"
+            await db.commit()
+            await db.refresh(order)
+            return await _enrich_order(db, order)
+
+        try:
+            # En PostgreSQL: ejecuta el Stored Procedure transaccional con FOR UPDATE
+            query = text("""
+                CALL sp_revertir_receta(
+                    CAST(:pedido_id AS BIGINT),
+                    CAST(:usuario_id AS BIGINT)
+                )
+            """)
+            await db.execute(
+                query,
+                {"pedido_id": int(order_id), "usuario_id": int(user_id)},
+            )
+            await db.commit()
+
+        except DBAPIError as exc:
+            await db.rollback()
+            raw_msg = str(exc.orig) if exc.orig else str(exc)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error al revertir el inventario del pedido: {raw_msg}",
+            ) from exc
+
+        await db.refresh(order)
+        return await _enrich_order(db, order)
+
     # Otras transiciones directas
     await db.execute(
         update(Order).where(Order.id == order_id).values(estado=new_status)

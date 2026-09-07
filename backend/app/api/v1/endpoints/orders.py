@@ -6,7 +6,8 @@ Rutas expuestas bajo el prefijo ``/api/v1/orders``:
   POST   /                → Registrar nuevo pedido de producción          [autenticado]
   GET    /                → Listar pedidos con filtros y paginación        [autenticado]
   GET    /{id}            → Detalle completo de un pedido                  [autenticado]
-  PATCH  /{id}/status     → Cambiar estado e invocar sp_descontar_receta   [autenticado]
+  PATCH  /{id}/status     → Cambiar estado (invoca sp_descontar_receta o
+                            sp_revertir_receta según la transición)        [autenticado]
   GET    /{id}/recipe-preview → Previsualización de consumo BOM            [autenticado]
 
 Ruta auxiliar expuesta bajo ``/api/v1/product-types``:
@@ -177,7 +178,11 @@ async def get_order(
         "**Transición especial PENDIENTE → EN_PRODUCCION:**\n"
         "Ejecuta el Stored Procedure `sp_descontar_receta` de forma transaccional. "
         "Si el inventario no tiene suficiente stock para cubrir la receta BOM, "
-        "retorna HTTP 422 con el mensaje descriptivo del déficit por material."
+        "retorna HTTP 422 con el mensaje descriptivo del déficit por material.\n\n"
+        "**Transición especial EN_PRODUCCION → CANCELADO:**\n"
+        "Ejecuta el Stored Procedure `sp_revertir_receta`, que devuelve al "
+        "inventario exactamente lo que había descontado `sp_descontar_receta` "
+        "para este pedido, ya que la producción no se completó."
     ),
     responses={
         200: {"description": "Estado actualizado exitosamente."},
