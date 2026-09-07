@@ -5,6 +5,10 @@ HU01 — Login con JWT:
     POST /api/v1/auth/login    → Emite token Bearer tras verificar credenciales.
     GET  /api/v1/auth/me       → Retorna datos del usuario autenticado.
 
+Issue #86 — Renovación de sesión:
+    POST /api/v1/auth/refresh  → Renueva el access token usando la cookie httpOnly.
+    POST /api/v1/auth/logout   → Revoca el refresh token e invalida la sesión.
+
 HU14 / HU02 — Gestión de usuarios (solo ADMINISTRADOR):
     POST /api/v1/auth/register → Crea un nuevo usuario con rol asignado.
     GET  /api/v1/auth/users    → Listar todas las cuentas de usuario.
@@ -12,14 +16,24 @@ HU14 / HU02 — Gestión de usuarios (solo ADMINISTRADOR):
     DELETE /api/v1/auth/users/{id} → Desactivar lógicamente un usuario.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from datetime import UTC, datetime, timedelta
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import AdminUser, CurrentUser, get_db
+from app.core.config import settings
 from app.core.limiter import limiter
-from app.core.security import create_access_token, get_password_hash, verify_password
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    get_password_hash,
+    hash_refresh_token,
+    verify_password,
+)
+from app.models.refresh_token import RefreshToken
 from app.models.role import Role
 from app.models.user import User
 from app.schemas.token import Token
@@ -32,6 +46,38 @@ from app.schemas.user import (
 )
 
 router = APIRouter()
+
+REFRESH_COOKIE_NAME = "refresh_token"
+REFRESH_COOKIE_PATH = "/api/v1/auth"
+
+
+async def _issue_refresh_cookie(response: Response, db: AsyncSession, usuario_id: int) -> None:
+    """
+    Crea una fila nueva en ``refresh_tokens`` y la entrega al navegador como
+    cookie httpOnly. El valor en texto plano solo existe en este momento;
+    en base de datos únicamente se guarda su hash (ver security.py).
+    """
+    raw_token = create_refresh_token()
+    expires_at = datetime.now(tz=UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+
+    db.add(
+        RefreshToken(
+            usuario_id=usuario_id,
+            token_hash=hash_refresh_token(raw_token),
+            expires_at=expires_at,
+        )
+    )
+    await db.commit()
+
+    response.set_cookie(
+        key=REFRESH_COOKIE_NAME,
+        value=raw_token,
+        httponly=True,
+        secure=not settings.DEBUG,
+        samesite="lax",
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        path=REFRESH_COOKIE_PATH,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -58,6 +104,7 @@ router = APIRouter()
 @limiter.limit("10/minute")
 async def login(
     request: Request,
+    response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db),
 ) -> Token:
@@ -90,8 +137,113 @@ async def login(
     role_name: str = role.nombre if role else "DESCONOCIDO"
 
     access_token = create_access_token(data={"sub": user.email, "rol": role_name})
+    await _issue_refresh_cookie(response, db, user.id)
 
     return Token(access_token=access_token, token_type="bearer")
+
+
+# ---------------------------------------------------------------------------
+# POST /refresh — Issue #86: Renovar el access token sin volver a autenticar
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/refresh",
+    response_model=Token,
+    summary="Renovar el access token",
+    description=(
+        "Usa la cookie httpOnly `refresh_token` (emitida en /login) para emitir "
+        "un nuevo access token sin pedir credenciales de nuevo. El refresh token "
+        "rota en cada uso: el anterior queda revocado y se entrega uno nuevo."
+    ),
+    responses={
+        200: {"description": "Access token renovado exitosamente."},
+        401: {"description": "Refresh token ausente, inválido, expirado o revocado."},
+    },
+)
+async def refresh(
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+) -> Token:
+    raw_token = request.cookies.get(REFRESH_COOKIE_NAME)
+    if not raw_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No hay una sesión activa para renovar. Inicie sesión de nuevo.",
+        )
+
+    token_hash = hash_refresh_token(raw_token)
+    result = await db.execute(
+        select(RefreshToken).where(RefreshToken.token_hash == token_hash)
+    )
+    stored_token: RefreshToken | None = result.scalar_one_or_none()
+
+    now = datetime.now(tz=UTC)
+    if (
+        stored_token is None
+        or stored_token.revoked
+        or stored_token.expires_at.replace(tzinfo=UTC) < now
+    ):
+        response.delete_cookie(REFRESH_COOKIE_NAME, path=REFRESH_COOKIE_PATH)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="La sesión expiró o ya no es válida. Inicie sesión de nuevo.",
+        )
+
+    user_result = await db.execute(
+        select(User).where(User.id == stored_token.usuario_id)
+    )
+    user: User | None = user_result.scalar_one_or_none()
+    if user is None or not user.activo:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="La cuenta asociada a esta sesión ya no está disponible.",
+        )
+
+    role_result = await db.execute(select(Role).where(Role.id == user.rol_id))
+    role: Role | None = role_result.scalar_one_or_none()
+    role_name: str = role.nombre if role else "DESCONOCIDO"
+
+    # Rotación: el refresh token usado queda inválido, se emite uno nuevo
+    stored_token.revoked = True
+    await db.commit()
+
+    access_token = create_access_token(data={"sub": user.email, "rol": role_name})
+    await _issue_refresh_cookie(response, db, user.id)
+
+    return Token(access_token=access_token, token_type="bearer")
+
+
+# ---------------------------------------------------------------------------
+# POST /logout — Issue #86: Revocar la sesión activa
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/logout",
+    summary="Cerrar sesión",
+    description="Revoca el refresh token activo en el servidor y limpia la cookie de sesión.",
+    responses={200: {"description": "Sesión cerrada correctamente."}},
+)
+async def logout(
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    raw_token = request.cookies.get(REFRESH_COOKIE_NAME)
+    if raw_token:
+        token_hash = hash_refresh_token(raw_token)
+        result = await db.execute(
+            select(RefreshToken).where(RefreshToken.token_hash == token_hash)
+        )
+        stored_token: RefreshToken | None = result.scalar_one_or_none()
+        if stored_token is not None:
+            stored_token.revoked = True
+            await db.commit()
+
+    response.delete_cookie(REFRESH_COOKIE_NAME, path=REFRESH_COOKIE_PATH)
+    return {"message": "Sesión cerrada correctamente."}
 
 
 # ---------------------------------------------------------------------------
