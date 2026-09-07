@@ -12,6 +12,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import materialsApi from '../../api/materialsApi';
 import adjustmentsApi from '../../api/adjustmentsApi';
+import { primaryButtonStyle } from '../../styles/buttons';
 
 const ADJUSTMENT_TYPES = [
   { value: 'MERMA', label: '📉 Merma / Desperdicio (Resta stock)', impact: 'Resta', color: '#f87171' },
@@ -112,7 +113,7 @@ export function AdjustmentModal({ isOpen, onClose, onSuccess, initialMaterialId 
     if (apiError) setApiError('');
   };
 
-  const validate = () => {
+  const getValidationErrors = () => {
     const newErrors = {};
 
     if (!form.material_id) {
@@ -132,6 +133,13 @@ export function AdjustmentModal({ isOpen, onClose, onSuccess, initialMaterialId 
       newErrors.motivo = 'La justificación del motivo debe tener al menos 10 caracteres.';
     }
 
+    return newErrors;
+  };
+
+  const isFormValid = Object.keys(getValidationErrors()).length === 0;
+
+  const validate = () => {
+    const newErrors = getValidationErrors();
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -425,21 +433,8 @@ export function AdjustmentModal({ isOpen, onClose, onSuccess, initialMaterialId 
             </button>
             <button
               type="submit"
-              disabled={submitting}
-              style={{
-                padding: '0.6rem 1.4rem',
-                backgroundColor: '#0284c7',
-                border: 'none',
-                borderRadius: '8px',
-                color: '#ffffff',
-                fontSize: '0.85rem',
-                fontWeight: '600',
-                cursor: submitting ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)',
-              }}
+              disabled={submitting || !isFormValid}
+              style={primaryButtonStyle(isFormValid, submitting)}
             >
               {submitting ? (
                 <>

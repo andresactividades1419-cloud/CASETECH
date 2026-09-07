@@ -180,7 +180,7 @@ export function PurchasesPage() {
             alignItems: 'center',
             gap: '0.5rem',
             padding: '0.65rem 1.25rem',
-            backgroundColor: '#0284c7',
+            backgroundColor: '#2563eb',
             border: 'none',
             borderRadius: '10px',
             color: '#ffffff',
@@ -190,8 +190,8 @@ export function PurchasesPage() {
             boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
             transition: 'all 0.15s ease',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#0369a1'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#0284c7'; }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#1d4ed8'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#2563eb'; }}
         >
           <span>➕</span>
           <span>Registrar Compra</span>
@@ -598,7 +598,7 @@ export function PurchasesPage() {
                             transition: 'all 0.15s ease',
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#0284c7';
+                            e.currentTarget.style.backgroundColor = '#2563eb';
                             e.currentTarget.style.color = '#ffffff';
                           }}
                           onMouseLeave={(e) => {

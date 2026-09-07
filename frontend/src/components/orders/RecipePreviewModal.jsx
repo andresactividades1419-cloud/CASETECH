@@ -7,6 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import ordersApi from '../../api/ordersApi';
+import { primaryButtonStyle } from '../../styles/buttons';
 
 export function RecipePreviewModal({ order, isOpen, onClose, onConfirmStart, isStarting }) {
   const [preview, setPreview] = useState(null);
@@ -282,20 +283,7 @@ export function RecipePreviewModal({ order, isOpen, onClose, onConfirmStart, isS
             type="button"
             onClick={() => onConfirmStart(order)}
             disabled={isStarting || loading || !(preview?.es_factible ?? preview?.es_viable)}
-            style={{
-              padding: '0.6rem 1.5rem',
-              backgroundColor: !(preview?.es_factible ?? preview?.es_viable) ? '#334155' : isStarting ? '#075985' : '#0284c7',
-              color: !(preview?.es_factible ?? preview?.es_viable) ? '#64748b' : '#ffffff',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '0.88rem',
-              fontWeight: '700',
-              cursor: !(preview?.es_factible ?? preview?.es_viable) || isStarting ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              boxShadow: (preview?.es_factible ?? preview?.es_viable) ? '0 4px 14px rgba(2, 132, 199, 0.35)' : 'none',
-            }}
+            style={primaryButtonStyle(Boolean(preview?.es_factible ?? preview?.es_viable), isStarting)}
           >
             {isStarting ? (
               <>
