@@ -20,12 +20,7 @@
 
 **CASETECH** es una solución ERP especializada en la industria de la construcción para la manufactura, ensamblaje y control de inventario de **casetones de concreto**.
 
-El núcleo del sistema es un **Motor BOM (Bill of Materials)** transaccional que procesa dos naturalezas de materias primas:
-
-| Naturaleza | Materiales de Ejemplo | Comportamiento en Inventario |
-|---|---|---|
-| **Recuperable** | Lona de alta resistencia, Guadua tratada | Se reutiliza en múltiples ciclos de vaciado; descuento parcial por desgaste o mantenimiento. |
-| **Material Perdido** | Icopor EPS, cemento, acero, malla | Se consume íntegramente en cada orden de producción. |
+El núcleo del sistema es un **Motor BOM (Bill of Materials)** transaccional: cada tipo de casetón (Lona, Guadua, Icopor/EPS) tiene una receta de materias primas (madera, lona, guadua, icopor, alambre, puntillas, etc.) que se descuenta automáticamente del inventario al confirmar el inicio de producción de un pedido. Los 3 tipos de casetón se venden como producto terminado — ninguno regresa a la fábrica — y se tratan igual frente al inventario: no existe ninguna categoría de "material recuperable", todo insumo se descuenta una sola vez al fabricar.
 
 ---
 
@@ -55,7 +50,7 @@ El proyecto está completamente contenerizado y listo para desplegarse localment
 
 ### Paso 1: Clonar y configurar variables de entorno
 ```bash
-git clone https://github.com/andres1419/CASETECH.git
+git clone https://github.com/andresactividades1419-cloud/CASETECH.git
 cd CASETECH
 
 # Copiar plantilla de variables de entorno
@@ -104,11 +99,13 @@ CASETECH delega la lógica crítica de concurrencia y descuento de inventario di
 
 1. **`sp_descontar_receta(pedido_id, usuario_id)`**:
    - Valida existencias en tiempo real de la receta BOM asociada al tipo de casetón.
-   - Aplica descuento diferenciado de materias primas recuperables vs. perdidas.
+   - Descuenta cada materia prima de la receta una sola vez, sin distinción por tipo de casetón (los 3 tipos se tratan igual).
    - Si existe déficit de stock, cancela la transacción atómicamente y emite excepción con código `P0001` detallando el insumo faltante.
-2. **`sp_crear_proveedor(...)`**:
+2. **`sp_revertir_receta(pedido_id, usuario_id)`**:
+   - Se ejecuta al cancelar un pedido que está `EN_PRODUCCION`: devuelve al inventario las materias primas ya descontadas, porque la producción no se completó y el material está intacto.
+3. **`sp_crear_proveedor(...)`**:
    - Inserta proveedores garantizando unicidad de NIT/RUC.
-3. **`sp_ajuste_inventario(ajuste_id, revisor_id, aprobado)`**:
+4. **`sp_ajuste_inventario(ajuste_id, revisor_id, aprobado)`**:
    - Aplica ajustes de inventario con doble firma y registro inmutable en el Kardex.
 
 ---
@@ -117,17 +114,21 @@ CASETECH delega la lógica crítica de concurrencia y descuento de inventario di
 
 ### Pruebas Unitarias e Integración
 ```bash
-# Backend (Pytest async)
-docker compose exec backend pytest -v tests/
+# Backend (Pytest async) — usar "uv run", no "pytest" directo:
+# la imagen de producción solo instala dependencias de producción
+# (uv sync --no-dev); "uv run" sincroniza el grupo "dev" al vuelo.
+docker compose exec backend uv run pytest -v tests/
 
 # Frontend (Vitest)
-docker compose exec frontend pnpm run test -- --run
+docker compose exec frontend pnpm run test:run
 ```
 
 ### Auditorías de Vulnerabilidades (CVE)
 ```bash
-# Backend (pip-audit estricto)
-docker compose exec backend uv run pip-audit -r req.txt --strict
+# Backend (pip-audit estricto) — primero exportar los requisitos de
+# producción (--no-emit-project excluye el propio paquete editable,
+# que no se puede verificar por hash), luego auditar:
+docker compose exec backend sh -c "uv export --no-dev --no-emit-project --format requirements-txt > req.txt && uv run pip-audit -r req.txt --strict"
 
 # Frontend (PNPM audit)
 docker compose exec frontend pnpm audit --audit-level=moderate
