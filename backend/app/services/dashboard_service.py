@@ -3,7 +3,7 @@ services/dashboard_service.py — Servicio analítico para el Dashboard, Auditor
 
 Provee consultas agregadas optimizadas sobre:
 - KPIs globales de producción, compras, inventario y alertas.
-- Distribución de demanda BOM por naturaleza de casetón.
+- Distribución de demanda BOM por tipo de casetón.
 - Log inmutable de movimientos de inventario (Kardex).
 - Log inmutable de auditoría de acciones del sistema.
 """
@@ -94,16 +94,15 @@ async def get_dashboard_metrics(db: AsyncSession) -> DashboardMetricsResponse:
         ajustes_pendientes=ajustes_pendientes,
     )
 
-    # 6. Desglose de producción por tipo de casetón y naturaleza
+    # 6. Desglose de producción por tipo de casetón
     query_prod = (
         select(
             ProductType.nombre.label("tipo_caseton"),
-            ProductType.naturaleza.label("naturaleza"),
             func.count(Order.id).label("total_pedidos"),
             func.coalesce(func.sum(Order.cantidad), 0).label("total_unidades"),
         )
         .join(Order, Order.tipo_caseton_id == ProductType.id, isouter=True)
-        .group_by(ProductType.id, ProductType.nombre, ProductType.naturaleza)
+        .group_by(ProductType.id, ProductType.nombre)
         .order_by(func.coalesce(func.sum(Order.cantidad), 0).desc())
     )
     res_prod = await db.execute(query_prod)
@@ -112,7 +111,6 @@ async def get_dashboard_metrics(db: AsyncSession) -> DashboardMetricsResponse:
     produccion_list = [
         ProductionByType(
             tipo_caseton=row.tipo_caseton,
-            naturaleza=row.naturaleza,
             total_pedidos=row.total_pedidos or 0,
             total_unidades=Decimal(str(row.total_unidades or 0)),
         )

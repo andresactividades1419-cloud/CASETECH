@@ -157,13 +157,6 @@ export function RecipesPage() {
               }}
             >
               {tipo.nombre}
-              <span style={{
-                marginLeft: '0.5rem', fontSize: '0.7rem', padding: '0.1rem 0.45rem', borderRadius: '9999px',
-                backgroundColor: tipo.naturaleza === 'PERDIDO' ? 'rgba(251,191,36,0.15)' : 'rgba(52,211,153,0.15)',
-                color: tipo.naturaleza === 'PERDIDO' ? '#fbbf24' : '#34d399',
-              }}>
-                {tipo.naturaleza}
-              </span>
             </button>
           );
         })}

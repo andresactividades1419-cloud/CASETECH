@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (
     BigInteger,
     Boolean,
-    CheckConstraint,
     DateTime,
     String,
     Text,
@@ -22,24 +21,19 @@ if TYPE_CHECKING:
 class ProductType(Base):
     """
     Catálogo de tipos de producto / casetón (BOM).
-    Define la naturaleza (RECUPERABLE o PERDIDO).
     Tabla: tipos_caseton
+
+    No existe distinción RECUPERABLE/PERDIDO: los casetones se venden, no se
+    alquilan, así que ninguno vuelve a la fábrica (Issue #78).
     """
 
     __tablename__ = "tipos_caseton"
-    __table_args__ = (
-        CheckConstraint(
-            "naturaleza IN ('RECUPERABLE', 'PERDIDO')",
-            name="ck_tipos_caseton_naturaleza",
-        ),
-    )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     nombre: Mapped[str] = mapped_column(
         String(255), nullable=False, unique=True, index=True
     )
     descripcion: Mapped[str | None] = mapped_column(Text, nullable=True)
-    naturaleza: Mapped[str] = mapped_column(String(20), nullable=False)
     activo: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default="true"
     )
@@ -56,4 +50,4 @@ class ProductType(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<ProductType(id={self.id}, nombre='{self.nombre}', naturaleza='{self.naturaleza}')>"
+        return f"<ProductType(id={self.id}, nombre='{self.nombre}')>"
