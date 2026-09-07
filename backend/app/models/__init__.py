@@ -7,6 +7,7 @@ from app.models.provider import Provider
 from app.models.purchase import Purchase
 from app.models.purchase_detail import PurchaseDetail
 from app.models.recipe import Recipe
+from app.models.refresh_token import RefreshToken
 from app.models.role import Role
 from app.models.stock_adjustment import StockAdjustment
 from app.models.stock_movement import StockMovement
@@ -26,4 +27,5 @@ __all__ = [
     "StockMovement",
     "StockAdjustment",
     "AuditLog",
+    "RefreshToken",
 ]
