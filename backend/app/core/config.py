@@ -3,6 +3,7 @@ core/config.py — Configuración global de CASETECH ERP (Pydantic Settings v2).
 
 Principios de seguridad aplicados:
 - SecretStr / validación de JWT_SECRET (mínimo 32 bytes y rechazo de claves inseguras).
+- Rechazo de credenciales de ejemplo (.env.example) fuera de development (fail-fast).
 - Derivación automática de DEBUG según ENVIRONMENT.
 - Parsing estricto de CORS_ORIGINS.
 - Soporte para variables PostgreSQL y SQLite en pruebas.
@@ -10,7 +11,7 @@ Principios de seguridad aplicados:
 
 from typing import Any
 
-from pydantic import SecretStr, computed_field, field_validator
+from pydantic import SecretStr, computed_field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 INSECURE_SECRET_KEYS = {
@@ -20,6 +21,15 @@ INSECURE_SECRET_KEYS = {
     "secret",
     "password",
     "12345678901234567890123456789012",
+}
+
+# Valores literales de .env.example: sirven para que cualquiera pueda probar
+# el proyecto en development sin fricción, pero NUNCA deben llegar a un
+# entorno real (staging/production) — ver validate_no_placeholder_credentials.
+PLACEHOLDER_CREDENTIALS = {
+    "CAMBIA_ESTA_CONTRASENA",
+    "CAMBIA_ESTA_CONTRASENA_ADMIN",
+    "CAMBIA_ESTA_CONTRASENA_OPERARIO",
 }
 
 
@@ -136,6 +146,41 @@ class Settings(BaseSettings):
             "http://localhost:5173",
             "http://127.0.0.1:5173",
         ]
+
+    @model_validator(mode="after")
+    def validate_no_placeholder_credentials(self) -> "Settings":
+        """
+        Fail-fast: fuera de "development", ninguna contraseña puede ser el
+        texto literal de .env.example (CAMBIA_ESTA_CONTRASENA...).
+
+        Por qué: docker-compose solo exige que estas variables no estén
+        vacías, no que tengan un valor real — así que si alguien copia
+        .env.example a .env sin editarlo y despliega con ENVIRONMENT
+        distinto de "development", el sistema arrancaría con credenciales
+        de administrador públicas y conocidas (visibles en el propio
+        repositorio). En development se permiten a propósito: son las
+        que la documentación (README) usa para que cualquiera pruebe el
+        proyecto sin fricción.
+        """
+        if self.ENVIRONMENT == "development":
+            return self
+
+        campos_con_placeholder = []
+        for nombre_campo, valor in (
+            ("POSTGRES_PASSWORD", self.POSTGRES_PASSWORD),
+            ("ADMIN_INITIAL_PASSWORD", self.ADMIN_INITIAL_PASSWORD),
+            ("OPERARIO_INITIAL_PASSWORD", self.OPERARIO_INITIAL_PASSWORD),
+        ):
+            if valor.get_secret_value().strip() in PLACEHOLDER_CREDENTIALS:
+                campos_con_placeholder.append(nombre_campo)
+
+        if campos_con_placeholder:
+            raise ValueError(
+                f"ENVIRONMENT='{self.ENVIRONMENT}' pero {', '.join(campos_con_placeholder)} "
+                "todavía tiene el valor de ejemplo de .env.example. Configura una "
+                "contraseña real en .env antes de desplegar fuera de development."
+            )
+        return self
 
     @computed_field  # type: ignore[misc]
     @property
