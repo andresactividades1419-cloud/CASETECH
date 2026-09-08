@@ -106,8 +106,9 @@ git checkout -b feature/<modulo>-<tarea>
 ```bash
 # Backend
 cd backend
-uv pip audit                  # Auditoría CVE
-uv run pytest                 # Tests unitarios
+uv export --no-dev --no-emit-project --format requirements-txt > req.txt
+uv run pip-audit -r req.txt --strict   # Auditoría CVE ("uv pip audit" no existe como subcomando)
+uv run pytest                          # Tests unitarios
 
 # Frontend
 cd frontend

@@ -17,6 +17,8 @@ Cubre:
      registrado el movimiento DEVOLUCION_CANCELACION por cada material.
 """
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
@@ -237,3 +239,43 @@ async def test_cancel_order_in_production_reverts_inventory(
     )
     assert len(movimientos) == 2
     assert {m.material_id for m in movimientos} == {1, 2}
+
+
+@pytest.mark.asyncio
+async def test_create_order_retries_on_codigo_pedido_collision(
+    client: AsyncClient,
+    admin_headers: dict[str, str],
+):
+    """
+    Test 5: Reintento ante colisión del código consecutivo (RN concurrencia).
+
+    _generate_codigo_pedido calcula el código con un COUNT, así que dos
+    pedidos creados casi al mismo tiempo pueden calcular el mismo valor.
+    Simula esa colisión forzando que el generador devuelva primero un
+    código ya usado y confirma que create_order reintenta con el
+    siguiente código en vez de fallar con un error de base de datos.
+    """
+    create_payload = {
+        "cliente": "Constructora Prueba Concurrencia",
+        "tipo_caseton_id": 1,
+        "cantidad": 5,
+        "fecha_entrega_estimada": "2026-12-31",
+    }
+
+    primer_res = await client.post(
+        "/api/v1/orders/", json=create_payload, headers=admin_headers
+    )
+    assert primer_res.status_code == 201, primer_res.text
+    codigo_existente = primer_res.json()["codigo_pedido"]
+
+    with patch(
+        "app.services.order_service._generate_codigo_pedido",
+        new_callable=AsyncMock,
+        side_effect=[codigo_existente, "PED-9999-99999"],
+    ):
+        segundo_res = await client.post(
+            "/api/v1/orders/", json=create_payload, headers=admin_headers
+        )
+
+    assert segundo_res.status_code == 201, segundo_res.text
+    assert segundo_res.json()["codigo_pedido"] == "PED-9999-99999"

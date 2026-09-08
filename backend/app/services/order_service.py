@@ -4,7 +4,10 @@ services/order_service.py — Lógica de negocio del módulo de Pedidos de Produ
 Convenciones:
 - El Stored Procedure `sp_descontar_receta` se invoca con ``text()`` de SQLAlchemy.
 - Los errores P0001 (stock insuficiente) del SP se capturan y se retornan como HTTP 422.
-- La generación del código consecutivo usa un COUNT anual para evitar gaps visibles.
+- La generación del código consecutivo usa un COUNT anual para evitar gaps
+  visibles; si dos pedidos colisionan en el mismo código (condición de
+  carrera bajo concurrencia), create_order reintenta con un código nuevo
+  en vez de fallar directo (ver MAX_INTENTOS_CODIGO_PEDIDO).
 - Todas las funciones son ``async/await`` para compatibilidad con asyncpg.
 """
 
@@ -13,7 +16,7 @@ from datetime import date, datetime
 
 from fastapi import HTTPException, status
 from sqlalchemy import and_, func, select, text, update
-from sqlalchemy.exc import DBAPIError
+from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.material import Material
@@ -34,6 +37,16 @@ from app.schemas.product_type import ProductTypeListResponse, ProductTypeRespons
 # ---------------------------------------------------------------------------
 # Helpers internos
 # ---------------------------------------------------------------------------
+
+
+# ¿Qué? Máximo de reintentos al generar el código consecutivo del pedido.
+# ¿Para qué? _generate_codigo_pedido calcula el código con un COUNT, así que
+# dos peticiones concurrentes pueden calcular el mismo valor antes de que
+# cualquiera de las dos lo inserte. El índice único de codigo_pedido detecta
+# la colisión (IntegrityError) y create_order reintenta con un código nuevo.
+# ¿Impacto? Sin este reintento, la segunda petición fallaría con un error
+# de base de datos poco claro en vez de completarse con el siguiente código.
+MAX_INTENTOS_CODIGO_PEDIDO = 5
 
 
 def _clean_pg_error_message(raw_msg: str) -> str:
@@ -117,24 +130,37 @@ async def create_order(
             detail=f"El tipo de casetón con ID {order_in.tipo_caseton_id} no existe o está inactivo.",
         )
 
-    # 2. Generar código consecutivo único
-    codigo_pedido = await _generate_codigo_pedido(db)
+    # 2-3. Generar código consecutivo y crear el pedido, reintentando si
+    # el código colisiona con uno generado por una petición concurrente.
+    for intento in range(MAX_INTENTOS_CODIGO_PEDIDO):
+        codigo_pedido = await _generate_codigo_pedido(db)
+        order = Order(
+            codigo_pedido=codigo_pedido,
+            cliente=order_in.cliente,
+            tipo_caseton_id=order_in.tipo_caseton_id,
+            cantidad=order_in.cantidad,
+            fecha_entrega_estimada=order_in.fecha_entrega_estimada,
+            observaciones=order_in.observaciones,
+            estado="PENDIENTE",
+            creado_por=user_id,
+        )
+        db.add(order)
+        try:
+            await db.commit()
+        except IntegrityError as exc:
+            await db.rollback()
+            if "codigo_pedido" not in str(exc.orig):
+                raise
+            if intento == MAX_INTENTOS_CODIGO_PEDIDO - 1:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="No se pudo generar un código de pedido único tras varios intentos. Intenta de nuevo.",
+                ) from exc
+            continue
+        else:
+            break
 
-    # 3. Crear pedido en estado PENDIENTE
-    order = Order(
-        codigo_pedido=codigo_pedido,
-        cliente=order_in.cliente,
-        tipo_caseton_id=order_in.tipo_caseton_id,
-        cantidad=order_in.cantidad,
-        fecha_entrega_estimada=order_in.fecha_entrega_estimada,
-        observaciones=order_in.observaciones,
-        estado="PENDIENTE",
-        creado_por=user_id,
-    )
-    db.add(order)
-    await db.commit()
     await db.refresh(order)
-
     return await _enrich_order(db, order)
 
 
