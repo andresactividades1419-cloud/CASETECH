@@ -1,8 +1,8 @@
-# Matriz de rotación de capas
+﻿# Matriz de rotación de capas
 
 > Copia este archivo en tu repo como `docs/matriz-rotacion.md` y llénalo al inicio de cada semana.
 
-**Grupo**: _nombre del proyecto_ · **Ficha**: _número_ · **Stack**: React + _backend_ + _BD_
+**Grupo**: CASETECH · **Ficha**: ADSO · **Stack**: React + FastAPI + PostgreSQL
 
 Capas: **Front** (React) · **API** (backend) · **BD** (integración) · **E2E** (Playwright)
 
@@ -14,11 +14,9 @@ Reglas:
 
 | Integrante (usuario GitHub) | S1 | S2 | S3 | S4 | S5 | S6 | S7 | S8 | S9 |
 |---|---|---|---|---|---|---|---|---|---|
-| @integrante-1 | E2E | Front | | | | | | | |
-| @integrante-2 | E2E | API | | | | | | | |
-| @integrante-3 | E2E | BD | | | | | | | |
-| @integrante-4 | E2E | | | | | | | | |
-| @integrante-5 | E2E | | | | | | | | |
+| @andres141918-prog | E2E | | | | | | | | |
+| @javieburgossepul-cpu | E2E | | | | | | | | |
+| @oscark2209 | E2E | | | | | | | | |
 
 ## Cobertura semanal
 
@@ -26,7 +24,7 @@ Anota la cobertura real al cerrar cada semana. El umbral de la semana siguiente 
 
 | Semana | Frontend (%) | Backend (%) | Umbral configurado para la semana siguiente |
 |---|---|---|---|
-| S1 (línea base) | | | |
+| S1 (línea base) | 1% | 56% | Front: 1% · Back: 56% |
 
 ## Registro de vocero aleatorio
 
