@@ -10,6 +10,10 @@ export default defineConfig({
     strictPort: true,
     watch: {
       usePolling: true,
+      // ¿Qué? El servidor de desarrollo no vigila la carpeta del reporte de cobertura.
+      // ¿Para qué? Cada `pnpm run test:run` regenera coverage/ y eso recargaba la página.
+      // ¿Impacto? Sin esto, correr tests unitarios durante un E2E puede romper el E2E.
+      ignored: ['**/coverage/**'],
     },
   },
   // ¿Qué? Medición de cobertura de Vitest con un umbral mínimo (bootcamp de testing, semana 1).
