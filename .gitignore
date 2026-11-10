@@ -90,3 +90,16 @@ CLAUDE.md
 CLAUDE.local.md
 .claude/
 Claude outputs/
+
+# Playwright
+e2e/test-results/
+e2e/playwright-report/
+e2e/blob-report/
+e2e/playwright/.cache/
+
+# Coverage reports
+coverage/
+frontend/coverage/
+backend/.coverage
+backend/coverage.xml
+backend/htmlcov/
