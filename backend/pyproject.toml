@@ -59,7 +59,8 @@ dev = [
     "ruff>=0.5.0",
     # Type checking
     "mypy>=1.10.0",
-    "pytest-cov>=7.1.0",
+    # Medición de cobertura de tests (bootcamp de testing, semana 1)
+    "pytest-cov==7.1.0",
 ]
 
 # ============================================================
@@ -94,6 +95,22 @@ indent-style = "space"
 asyncio_mode = "auto"
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
+# ¿Qué? Cada corrida de pytest mide la cobertura del código de app/.
+# ¿Para qué? Que nadie pueda "olvidar" medirla (bootcamp de testing, semana 1).
+# ¿Impacto? pytest imprime el % por archivo y las líneas sin cubrir al final.
+addopts = ["--cov", "--cov-report=term-missing"]
+
+# ============================================================
+# Coverage — cobertura de tests (pytest-cov)
+# ============================================================
+[tool.coverage.run]
+source = ["app"]
+
+[tool.coverage.report]
+# ¿Qué? Umbral mínimo de cobertura del backend.
+# ¿Para qué? Línea base del 2026-11-09 (semana 1): desde hoy el número solo puede subir.
+# ¿Impacto? Si la cobertura baja de este valor, pytest (local y en CI) falla.
+fail_under = 56
 
 # ============================================================
 # MyPy — Type checking
