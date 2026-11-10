@@ -10,10 +10,14 @@ export default defineConfig({
     strictPort: true,
     watch: {
       usePolling: true,
-      // ¿Qué? El servidor de desarrollo no vigila la carpeta del reporte de cobertura.
-      // ¿Para qué? Cada `pnpm run test:run` regenera coverage/ y eso recargaba la página.
-      // ¿Impacto? Sin esto, correr tests unitarios durante un E2E puede romper el E2E.
-      ignored: ['**/coverage/**'],
+      // ¿Qué? Carpetas que el servidor de desarrollo NO vigila.
+      // ¿Para qué?
+      //   - coverage/: cada `pnpm run test:run` la regenera y eso recargaba la página.
+      //   - .pnpm-store/: caché de pnpm (miles de archivos) que aparece aquí cuando se
+      //     corre `pnpm install` dentro del contenedor. Con usePolling, revisarla hacía
+      //     que cada página tardara ~20 s en Docker sobre Windows.
+      // ¿Impacto? Sin esto, el frontend en Docker es tan lento que los E2E fallan por timeout.
+      ignored: ['**/coverage/**', '**/.pnpm-store/**'],
     },
   },
   // ¿Qué? Medición de cobertura de Vitest con un umbral mínimo (bootcamp de testing, semana 1).
