@@ -35,7 +35,7 @@ export default defineConfig({
       // Línea base medida en CI el 2026-11-09: 0.57 % de líneas. Solo puede subir.
       // Ojo: en Windows (archivos con fin de línea CRLF) la misma suite marca un % más
       // alto que en CI (LF). El número oficial es siempre el del CI.
-      thresholds: { lines: 0.5, statements: 0.5, functions: 0, branches: 0 },
+      thresholds: { lines: 99, statements: 99, functions: 0, branches: 0 },
     },
   },
 });
