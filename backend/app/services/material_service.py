@@ -64,7 +64,7 @@ async def create_material(
     except IntegrityError as exc:
         await db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Error de integridad al guardar el material en la base de datos.",
         ) from exc
 
