@@ -1,6 +1,6 @@
 [project]
 name = "casetech-backend"
-version = "0.1.0"
+version = "1.6.3"
 description = "Backend FastAPI para CASETECH — ERP de Gestión de Casetones"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -105,12 +105,20 @@ addopts = ["--cov", "--cov-report=term-missing"]
 # ============================================================
 [tool.coverage.run]
 source = ["app"]
+# ¿Qué? Le dice a coverage que siga también el código que corre dentro de "greenlets".
+# ¿Para qué? SQLAlchemy asíncrono ejecuta los servicios dentro de greenlets; sin esta línea
+# coverage no cuenta esas líneas aunque los tests sí pasen por ellas. Se midió 57 % cuando
+# la cobertura real era 69 % (ej.: order_service.py 17 % -> 67 %, auth.py 37 % -> 90 %).
+# ¿Impacto? El % sube a su valor real; los tests no cambian.
+concurrency = ["greenlet", "thread"]
 
 [tool.coverage.report]
 # ¿Qué? Umbral mínimo de cobertura del backend.
 # ¿Para qué? Línea base del 2026-11-09 (semana 1): desde hoy el número solo puede subir.
+# 2026-11-20: al corregir la medición (concurrency = greenlet) la cobertura real es 69 %;
+# se fija 68 % (un punto de margen por diferencias entre máquinas). Antes: 56 %.
 # ¿Impacto? Si la cobertura baja de este valor, pytest (local y en CI) falla.
-fail_under = 56
+fail_under = 68
 
 # ============================================================
 # MyPy — Type checking
