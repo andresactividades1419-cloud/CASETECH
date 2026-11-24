@@ -1,4 +1,4 @@
-name: CI Pipeline â€” CASETECH ERP
+name: CI Pipeline - CASETECH ERP
 
 on:
   push:
