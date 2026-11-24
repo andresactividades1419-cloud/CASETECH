@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import materialsApi from '../../api/materialsApi';
 import { primaryButtonStyle } from '../../styles/buttons';
+import { validateMaterialForm } from '../../utils/validateMaterialForm';
 
 const UNITS_OPTIONS = [
   { value: 'm2', label: 'Metros cuadrados (m²) — Ej: Lonas, láminas' },
@@ -60,31 +61,8 @@ export function MaterialModal({ isOpen, onClose, onSuccess, materialToEdit = nul
 
   // Validación pura (sin efectos secundarios) — se usa tanto para decidir
   // si el botón de guardar debe estar habilitado como para el submit real.
-  const getValidationErrors = () => {
-    const newErrors = {};
-
-    if (!formData.nombre.trim()) {
-      newErrors.nombre = 'El nombre del insumo es obligatorio.';
-    } else if (formData.nombre.trim().length < 3) {
-      newErrors.nombre = 'Debe tener al menos 3 caracteres.';
-    }
-
-    if (!formData.unidad_medida) {
-      newErrors.unidad_medida = 'Seleccione una unidad de medida válida.';
-    }
-
-    const stockMin = Number(formData.stock_minimo);
-    if (formData.stock_minimo === '' || isNaN(stockMin) || stockMin < 0) {
-      newErrors.stock_minimo = 'El stock mínimo no puede ser negativo.';
-    }
-
-    const stockAct = Number(formData.stock_actual);
-    if (formData.stock_actual === '' || isNaN(stockAct) || stockAct < 0) {
-      newErrors.stock_actual = 'El stock actual no puede ser negativo.';
-    }
-
-    return newErrors;
-  };
+  // La regla vive en utils/validateMaterialForm.js para poder probarla como unidad.
+  const getValidationErrors = () => validateMaterialForm(formData);
 
   const isFormValid = Object.keys(getValidationErrors()).length === 0;
 
