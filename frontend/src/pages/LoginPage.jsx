@@ -145,7 +145,7 @@ export function LoginPage() {
 
             {/* Alerta de Error */}
             {error && (
-              <div style={{
+              <div role="alert" style={{
                 padding: '0.85rem 1rem',
                 backgroundColor: 'rgba(239, 68, 68, 0.12)',
                 border: '1px solid rgba(239, 68, 68, 0.3)',
@@ -197,6 +197,7 @@ export function LoginPage() {
                     required
                     autoFocus
                     placeholder="Correo electrónico (dominio de la empresa)"
+                    aria-label="Correo electrónico"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={loading}
@@ -251,6 +252,7 @@ export function LoginPage() {
                     type={showPassword ? 'text' : 'password'}
                     required
                     placeholder="Contraseña"
+                    aria-label="Contraseña"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={loading}
