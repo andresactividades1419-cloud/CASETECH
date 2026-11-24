@@ -1,4 +1,4 @@
-﻿# Matriz de rotación de capas
+# Matriz de rotación de capas
 
 > Copia este archivo en tu repo como `docs/matriz-rotacion.md` y llénalo al inicio de cada semana.
 
@@ -14,9 +14,19 @@ Reglas:
 
 | Integrante (usuario GitHub) | S1 | S2 | S3 | S4 | S5 | S6 | S7 | S8 | S9 |
 |---|---|---|---|---|---|---|---|---|---|
-| @andres141918-prog | E2E | | | | | | | | |
-| @javieburgossepul-cpu | E2E | | | | | | | | |
-| @oscark2209 | E2E | | | | | | | | |
+| @andres141918-prog | E2E | API | | | | | | | |
+| @javieburgossepul-cpu | E2E | Front | | | | | | | |
+| @oscark2209 | E2E | E2E (CI con umbral) | | | | | | | |
+
+> **Excepción S2**: en S1 los tres integrantes trabajaron en E2E. Con un grupo de 3 (Front, API y E2E) es inevitable que una persona repita E2E en S2. La asume @oscark2209 con el montaje del CI con umbral (`.github/workflows/tests.yml`), que es un entregable distinto al test Playwright de S1. Según la regla de rotación, en S3–S5 debe pasar por Front, API y BD antes de volver a E2E.
+
+### Ramas de trabajo S2 (desde `develop`)
+
+| Integrante | Capa | Rama | Entregable |
+|---|---|---|---|
+| @andres141918-prog | API | `test/week-02-api-<unidad>` | ≥ 3 tests unitarios (pytest parametrizado) sobre una regla de servicio o validación del backend + mutante |
+| @javieburgossepul-cpu | Front | `test/week-02-front-order-validation` (ya existe en GitHub) | ≥ 3 tests unitarios (Vitest) sobre `src/utils/validateOrderForm.js` + mutante |
+| @oscark2209 | E2E | `ci/week-02-tests-workflow` | `tests.yml` con lint, tests con cobertura y build; prueba de umbral en rojo/verde; regla de rama |
 
 ## Cobertura semanal
 

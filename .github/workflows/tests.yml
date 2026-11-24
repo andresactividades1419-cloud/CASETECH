@@ -1,4 +1,4 @@
-name: CI Pipeline — CASETECH ERP
+name: CI Pipeline - CASETECH ERP
 
 on:
   push:
@@ -78,8 +78,11 @@ jobs:
           uv export --no-dev --no-emit-project --format requirements-txt > req.txt
           uv run pip-audit -r req.txt --desc || echo "pip-audit completed with non-critical warnings"
 
-      - name: Run Pytest Integration Suite
+      - name: Run Pytest Integration Suite (coverage, fail_under en pyproject.toml)
         run: uv run pytest -v tests/
+
+      - name: Build check (compila todo el paquete app)
+        run: uv run python -m compileall -q app
 
   # ============================================================
   # Job 2: Frontend CI (Node 20 + PNPM + React 18 + Vitest)
@@ -116,8 +119,33 @@ jobs:
       - name: Security Audit (pnpm audit)
         run: pnpm audit --audit-level=high || echo "pnpm audit completed with non-critical warnings"
 
-      - name: Run Unit & Component Tests (Vitest)
-        run: pnpm run test run
+      - name: Run Unit & Component Tests (Vitest + coverage thresholds en vite.config.js)
+        run: pnpm run test:run
 
       - name: Run Production Bundle Build
         run: pnpm run build
+
+  # ============================================================
+  # Job 3: Evidencia individual (commits de test por autor)
+  # ============================================================
+  evidencia-individual:
+    name: Evidencia individual (commits de test)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository (historial completo)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Commits de test por autor desde el lunes
+        run: |
+          {
+            echo "## Commits de test por autor (desde el lunes)"
+            echo ""
+            echo '```'
+            git shortlog -sn --since="last Monday" HEAD -- '*tests/*' '*.test.*' '*e2e/*'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          git shortlog -sn --since="last Monday" HEAD -- '*tests/*' '*.test.*' '*e2e/*'
+
