@@ -2,7 +2,7 @@
 
 > **Versión:** 1.0.0  
 > **Fecha:** Agosto 2026  
-> **Equipo:** Andrés Fernández · Oscar Ruiz · Javier Sepúlveda · Angélica Arregoces  
+> **Equipo:** Andrés Fernández · Oscar Ruiz · Javier Sepúlveda  
 > **Clasificación:** Documento Técnico — Arquitectura de Base de Datos  
 > **Motor:** PostgreSQL 16 (imagen Docker `postgres:16-alpine`)  
 > **Patrón:** ERP Web Modular BOM (Bill of Materials) · Esquema genérico y parametrizable
@@ -39,8 +39,18 @@ erDiagram
         VARCHAR password_hash
         BIGINT rol_id FK
         BOOLEAN activo
+        INTEGER intentos_fallidos
         TIMESTAMPTZ created_at
         TIMESTAMPTZ updated_at
+    }
+
+    refresh_tokens {
+        BIGSERIAL id PK
+        BIGINT usuario_id FK
+        VARCHAR token_hash UK
+        TIMESTAMPTZ expires_at
+        BOOLEAN revoked
+        TIMESTAMPTZ created_at
     }
 
     proveedores {
@@ -71,7 +81,6 @@ erDiagram
         BIGSERIAL id PK
         VARCHAR nombre UK
         TEXT descripcion
-        VARCHAR naturaleza
         BOOLEAN activo
         TIMESTAMPTZ created_at
     }
@@ -159,6 +168,7 @@ erDiagram
     }
 
     roles         ||--o{ usuarios               : "tiene"
+    usuarios      ||--o{ refresh_tokens         : "renueva_sesion"
     usuarios      ||--o{ pedidos                : "crea"
     usuarios      ||--o{ compras                : "registra"
     usuarios      ||--o{ ajustes_inventario     : "solicita"
@@ -219,6 +229,7 @@ Usuarios autenticados mediante JWT. Contraseñas almacenadas como hash bcrypt (1
 | `password_hash` | `VARCHAR(255)` | `NOT NULL` | Hash bcrypt de la contraseña (rounds=12) |
 | `rol_id` | `BIGINT` | `NOT NULL, FK → roles(id) ON DELETE RESTRICT` | Rol asignado al usuario |
 | `activo` | `BOOLEAN` | `NOT NULL, DEFAULT TRUE` | Borrado lógico: `FALSE` bloquea el acceso sin eliminar historial |
+| `intentos_fallidos` | `INTEGER` | `NOT NULL, DEFAULT 0` | Contador de logins fallidos consecutivos; al llegar a 5 la cuenta se bloquea (`activo = FALSE`); se reinicia a 0 en un login exitoso (Issue #80) |
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT NOW()` | Fecha y hora de creación |
 | `updated_at` | `TIMESTAMPTZ` | `NULL` | Fecha y hora de última modificación |
 
@@ -439,6 +450,21 @@ Log de auditoría de acciones significativas. Tabla **append-only**; ningún reg
 | `payload_despues` | `JSONB` | `NULL` | Snapshot JSON del estado **después** de la acción |
 | `ip_origen` | `VARCHAR(45)` | `NULL` | Dirección IP del cliente (soporta IPv6) |
 | `created_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT NOW()` | Timestamp inmutable de la acción |
+
+---
+
+### 2.13 `refresh_tokens`
+
+Tokens de renovación de sesión (Issue #86). Solo se guarda el **hash SHA-256** del token; el valor real viaja únicamente en una cookie `httpOnly` y nunca se almacena en texto plano. Cada uso rota el token (el anterior queda `revoked = TRUE`).
+
+| Columna | Tipo PostgreSQL | Restricciones | Descripción |
+|---------|----------------|---------------|-------------|
+| `id` | `BIGSERIAL` | `PK` | Identificador autoincremental |
+| `usuario_id` | `BIGINT` | `NOT NULL, FK → usuarios(id) ON DELETE CASCADE` | Dueño del token (si se borra el usuario, se borran sus tokens) |
+| `token_hash` | `VARCHAR(64)` | `NOT NULL, UNIQUE` | Hash SHA-256 (hex) del token de renovación |
+| `expires_at` | `TIMESTAMPTZ` | `NOT NULL` | Vencimiento (7 días desde su emisión) |
+| `revoked` | `BOOLEAN` | `NOT NULL, DEFAULT FALSE` | `TRUE` si ya se usó (rotación) o se cerró sesión |
+| `created_at` | `TIMESTAMPTZ` | `NOT NULL, DEFAULT NOW()` | Fecha y hora de emisión |
 
 ---
 

@@ -85,3 +85,33 @@ def test_empty_initial_passwords_allowed_in_production():
         OPERARIO_INITIAL_PASSWORD="",
     )
     assert settings.ADMIN_INITIAL_PASSWORD.get_secret_value() == ""
+
+
+# ¿Qué? Pruebas del JWT_SECRET de ejemplo de .env.example.
+# ¿Para qué? Ese texto es público y tiene más de 32 bytes, así que el validador de longitud
+# lo aceptaba: con él en producción, cualquiera podría firmar un token de administrador.
+# ¿Impacto? Si estas pruebas se rompen, un despliegue podría firmar sesiones con una clave
+# que está publicada en el repositorio.
+EXAMPLE_JWT_SECRET = "GENERA_UNA_CLAVE_ALEATORIA_DE_256_BITS_MINIMO"
+
+
+def test_example_jwt_secret_allowed_in_development():
+    """En development el secreto de ejemplo no bloquea el arranque (inicio rápido del README)."""
+    settings = _build_settings(ENVIRONMENT="development", JWT_SECRET=EXAMPLE_JWT_SECRET)
+    assert settings.JWT_SECRET.get_secret_value() == EXAMPLE_JWT_SECRET
+
+
+@pytest.mark.parametrize("environment", ["production", "staging", "test"])
+def test_example_jwt_secret_rejected_outside_development(environment: str):
+    """Fuera de development, el JWT_SECRET de ejemplo debe fallar rápido y nombrar la variable."""
+    with pytest.raises(ValidationError, match="JWT_SECRET"):
+        _build_settings(ENVIRONMENT=environment, JWT_SECRET=EXAMPLE_JWT_SECRET)
+
+
+def test_real_jwt_secret_allowed_in_production():
+    """Un secreto aleatorio real sí se acepta en producción."""
+    settings = _build_settings(
+        ENVIRONMENT="production",
+        JWT_SECRET="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    )
+    assert settings.ENVIRONMENT == "production"
