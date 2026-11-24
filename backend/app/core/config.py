@@ -9,9 +9,16 @@ Principios de seguridad aplicados:
 - Soporte para variables PostgreSQL y SQLite en pruebas.
 """
 
+import sys
 from typing import Any
 
-from pydantic import SecretStr, computed_field, field_validator, model_validator
+from pydantic import (
+    SecretStr,
+    ValidationError,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 INSECURE_SECRET_KEYS = {
@@ -30,6 +37,11 @@ PLACEHOLDER_CREDENTIALS = {
     "CAMBIA_ESTA_CONTRASENA",
     "CAMBIA_ESTA_CONTRASENA_ADMIN",
     "CAMBIA_ESTA_CONTRASENA_OPERARIO",
+    # ¿Qué? El texto de ejemplo de JWT_SECRET en .env.example.
+    # ¿Para qué? Es público (está en el repositorio) y supera el mínimo de 32 bytes, así que
+    # el validador de longitud lo dejaba pasar: con él, cualquiera podría falsificar un token.
+    # ¿Impacto? Fuera de development el backend se niega a arrancar con este valor.
+    "GENERA_UNA_CLAVE_ALEATORIA_DE_256_BITS_MINIMO",
 }
 
 
@@ -50,9 +62,16 @@ class Settings(BaseSettings):
     # Identificación y Entorno
     # --------------------------------------------------------------------------
     PROJECT_NAME: str = "CASETECH ERP"
-    VERSION: str = "1.0.0"
+    # Debe coincidir con la versión de backend/pyproject.toml y con la etiqueta
+    # de release de GitHub (se muestra en /health y en la documentación OpenAPI).
+    VERSION: str = "1.6.3"
     API_V1_STR: str = "/api/v1"
     ENVIRONMENT: str = "development"
+    # ¿Qué? Imprime en el log cada sentencia SQL que ejecuta SQLAlchemy.
+    # ¿Para qué? Depurar consultas puntuales. Está APAGADO por defecto porque
+    # llena el log de miles de líneas y entierra los errores reales.
+    # ¿Impacto? Actívalo solo un rato con SQL_ECHO=true en .env.
+    SQL_ECHO: bool = False
 
     # --------------------------------------------------------------------------
     # Seguridad y JWT
@@ -167,6 +186,7 @@ class Settings(BaseSettings):
 
         campos_con_placeholder = []
         for nombre_campo, valor in (
+            ("JWT_SECRET", self.JWT_SECRET),
             ("POSTGRES_PASSWORD", self.POSTGRES_PASSWORD),
             ("ADMIN_INITIAL_PASSWORD", self.ADMIN_INITIAL_PASSWORD),
             ("OPERARIO_INITIAL_PASSWORD", self.OPERARIO_INITIAL_PASSWORD),
@@ -177,8 +197,8 @@ class Settings(BaseSettings):
         if campos_con_placeholder:
             raise ValueError(
                 f"ENVIRONMENT='{self.ENVIRONMENT}' pero {', '.join(campos_con_placeholder)} "
-                "todavía tiene el valor de ejemplo de .env.example. Configura una "
-                "contraseña real en .env antes de desplegar fuera de development."
+                "todavía tiene el valor de ejemplo de .env.example. Configura un "
+                "valor real en .env antes de desplegar fuera de development."
             )
         return self
 
@@ -221,4 +241,35 @@ class Settings(BaseSettings):
         )
 
 
-settings = Settings()  # type: ignore[call-arg]  # Los campos obligatorios se leen desde .env
+def load_settings() -> Settings:
+    """
+    ¿Qué? Carga la configuración y, si falta o es inválida alguna variable de
+    entorno, termina el arranque con un mensaje claro en español.
+    ¿Para qué? Sin esto, una variable faltante muestra un traceback largo de
+    Pydantic que un principiante no sabe interpretar.
+    ¿Impacto? El backend no arranca con configuración insegura o incompleta
+    (fail-fast), y dice exactamente qué variable corregir y dónde.
+    """
+    try:
+        return Settings()  # type: ignore[call-arg]  # Los campos obligatorios se leen desde .env
+    except ValidationError as exc:
+        lineas = []
+        for error in exc.errors():
+            variable = ".".join(str(parte) for parte in error["loc"])
+            if error["type"] == "missing":
+                detalle = "falta definirla (agrégala en el archivo .env)."
+            else:
+                detalle = str(error["msg"]).removeprefix("Value error, ")
+            lineas.append(f"  • {variable}: {detalle}" if variable else f"  • {detalle}")
+
+        print(
+            "\n❌ CASETECH no pudo arrancar: la configuración de entorno es inválida.\n"
+            + "\n".join(lineas)
+            + "\n\nQué hacer: copia .env.example a .env, reemplaza los valores de "
+            "ejemplo (CAMBIA_ESTA_...) y vuelve a iniciar.\n",
+            file=sys.stderr,
+        )
+        raise SystemExit(1) from None
+
+
+settings = load_settings()

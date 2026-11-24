@@ -2,7 +2,7 @@
 
 > **Versión:** 1.0.0  
 > **Fecha:** Agosto 2026  
-> **Equipo:** Andrés Fernández · Oscar Ruiz · Javier Sepúlveda · Angélica Arregoces  
+> **Equipo:** Andrés Fernández · Oscar Ruiz · Javier Sepúlveda  
 > **Clasificación:** Documento Interno — Product Backlog  
 > **Patrón:** ERP Web Modular de Producción por Recetas (BOM) · Caso de uso inicial: fábrica de casetones
 
@@ -39,6 +39,12 @@
 | HU13 | Recibir alertas de stock mínimo | **Must Have** | Sprint 3 |
 | HU14 | Visualizar dashboard con KPIs operativos | **Must Have** | Sprint 1 |
 | HU15 | Consultar log de auditoría de acciones | **Should Have** | Sprint 4 |
+| HU16 | Registrar compra a proveedor e ingresar stock | **Must Have** | Sprint 5 |
+| HU17 | Consultar compras y su detalle | **Should Have** | Sprint 5 |
+| HU18 | Gestionar materias primas (crear, editar, desactivar) | **Must Have** | Sprint 5 |
+| HU19 | Administrar recetas BOM de cada tipo de casetón | **Must Have** | Sprint 5 |
+| HU20 | Mantener y cerrar la sesión de forma segura | **Should Have** | Sprint 5 |
+| HU21 | Bloquear la cuenta tras intentos fallidos de acceso | **Should Have** | Sprint 5 |
 
 ---
 
@@ -100,6 +106,27 @@
 | **Total** | | **18 puntos** |
 
 **Criterio de éxito del Sprint 4:** El ADMINISTRADOR puede generar y exportar todos los reportes. El sistema completo pasa las pruebas de aceptación con el cliente.
+
+---
+
+### Sprint 5 — Consolidación: Abastecimiento, Catálogos y Seguridad de Sesión
+**Objetivo:** Completar el ciclo de abastecimiento (compras que alimentan el inventario), los catálogos que el motor BOM necesita (materias primas y recetas) y endurecer la seguridad de la sesión. Estas funcionalidades se construyeron durante el desarrollo (incrementos v1.3.0 a v1.6.0) y se incorporaron al backlog de forma retroactiva para que cada módulo del sistema tenga su historia de usuario.
+
+| HU | Historia | Puntos estimados* |
+|----|----------|-----------------|
+| HU16 | Registrar compra a proveedor e ingresar stock | 8 |
+| HU17 | Consultar compras y su detalle | 3 |
+| HU18 | Gestionar materias primas (crear, editar, desactivar) | 5 |
+| HU19 | Administrar recetas BOM de cada tipo de casetón | 5 |
+| HU20 | Mantener y cerrar la sesión de forma segura | 5 |
+| HU21 | Bloquear la cuenta tras intentos fallidos de acceso | 3 |
+| **Total** | | **29 puntos** |
+
+\* Estimación inicial por analogía con las historias ya puntuadas (ver [`scrum/planning-poker.md`](./scrum/planning-poker.md)); se confirma con el equipo en la sesión de planning poker.
+
+**Criterio de éxito del Sprint 5:** Una compra registrada aumenta el stock y queda en el Kardex; el ADMINISTRADOR puede mantener el catálogo de materias primas y las recetas; la sesión se renueva sola y una cuenta con 5 intentos fallidos queda bloqueada.
+
+**Total del producto (HU01 a HU21):** 99 + 29 = **128 puntos**.
 
 ---
 
@@ -191,7 +218,7 @@ Entonces el backend retorna HTTP 401 con el mensaje "Token expirado"
 > **Para** controlar quién tiene acceso y con qué permisos.
 
 **Sprint:** 1 | **MoSCoW:** Must Have | **Puntos:** 5  
-**RF relacionados:** RF02 | **Responsable:** Angélica Arregoces
+**RF relacionados:** RF02 | **Responsable:** Oscar Ruiz
 
 ---
 
@@ -403,7 +430,7 @@ Entonces el sistema actualiza stock_actual a 250
 > **Para** analizar el desempeño productivo, el consumo de materiales y auditar los movimientos de inventario.
 
 **Sprint:** 4 | **MoSCoW:** Should Have | **Puntos:** 8  
-**RF relacionados:** RF12 | **Responsable:** Angélica Arregoces
+**RF relacionados:** RF12 | **Responsable:** Javier Sepúlveda
 
 ---
 
@@ -842,7 +869,7 @@ Entonces la fila de "Madera" tiene el indicador 🟢 y no aparece en el widget d
 > **Para** tener visibilidad inmediata del estado de los pedidos y el inventario sin necesidad de navegar por cada sección.
 
 **Sprint:** 1 | **MoSCoW:** Must Have | **Puntos:** 8  
-**RF relacionados:** RF14 | **Responsable:** Angélica Arregoces
+**RF relacionados:** RF14 | **Responsable:** Andrés Fernández
 
 ---
 
@@ -924,6 +951,354 @@ Dado que soy OPERARIO autenticado
 Cuando intento acceder a la URL "/auditoria" directamente en el navegador
 Entonces el sistema retorna HTTP 403 Forbidden
   Y el frontend redirige al dashboard con el mensaje: "No tienes permisos para acceder a esta sección."
+```
+
+---
+
+### HU16 — Registrar Compra a Proveedor e Ingresar Stock
+
+> **Como** usuario del sistema (ADMINISTRADOR u OPERARIO),  
+> **Quiero** registrar una orden de compra a un proveedor con las materias primas recibidas y sus precios,  
+> **Para** que el inventario se actualice al instante y quede constancia del gasto de abastecimiento.
+
+**Sprint:** 5 | **MoSCoW:** Must Have | **Puntos:** 8 (estimación inicial)  
+**RF relacionados:** RF16 | **Responsable (autor principal del backend):** Javier Sepúlveda
+
+---
+
+#### Criterios de Aceptación
+
+**Escenario 1 — Registro exitoso de una compra con varios materiales**
+
+```gherkin
+Dado que existe el proveedor activo "Guaduas del Valle S.A.S."
+  Y existen las materias primas activas "Guadua - Culmos" y "Alambre de Amarre"
+Cuando registro una compra con fecha de hoy y dos ítems:
+  | Material          | Cantidad | Precio unitario |
+  | Guadua - Culmos   | 100      | 12000           |
+  | Alambre de Amarre | 100      | 3500            |
+Entonces el sistema crea la compra con un código consecutivo "CMP-AAAA-XXXXX"
+  Y calcula el subtotal de cada línea y el total de la compra (1.550.000)
+  Y suma 100 al stock de cada material en la misma transacción
+  Y registra un movimiento INGRESO_COMPRA en el Kardex por cada línea, con el stock antes y después
+  Y responde HTTP 201 con la compra y sus detalles
+```
+
+**Escenario 2 — Proveedor inactivo**
+
+```gherkin
+Dado que el proveedor "Maderas del Sur" está desactivado
+Cuando intento registrar una compra a ese proveedor
+Entonces el sistema responde HTTP 422 con el mensaje:
+  "El proveedor 'Maderas del Sur' está inactivo. No se pueden registrar compras."
+  Y el stock no cambia
+```
+
+**Escenario 3 — Materia prima inactiva o inexistente (la compra completa se cancela)**
+
+```gherkin
+Dado que una compra incluye dos ítems y el segundo material está inactivo
+Cuando envío la compra
+Entonces el sistema responde HTTP 422 con el mensaje:
+  "La materia prima '<nombre>' está inactiva. No se puede abastecer."
+  Y ninguno de los dos materiales suma stock (la transacción se revierte completa)
+```
+
+**Escenario 4 — Validación de datos de entrada**
+
+```gherkin
+Dado que estoy en el formulario "Registrar Orden de Compra"
+Cuando dejo sin proveedor, o con una cantidad menor o igual a 0, o con un precio negativo
+Entonces el botón "Confirmar Compra" permanece deshabilitado
+  Y si se envía por la API, responde HTTP 422 (cantidad > 0, precio >= 0, al menos 1 ítem)
+```
+
+---
+
+### HU17 — Consultar Compras y su Detalle
+
+> **Como** usuario del sistema,  
+> **Quiero** ver el historial de compras y filtrarlo por código, proveedor o rango de fechas,  
+> **Para** revisar cuánto se compró, a quién y cuándo, y verificar el detalle de cada orden.
+
+**Sprint:** 5 | **MoSCoW:** Should Have | **Puntos:** 3 (estimación inicial)  
+**RF relacionados:** RF16 | **Responsable (autor principal del backend):** Javier Sepúlveda
+
+---
+
+#### Criterios de Aceptación
+
+**Escenario 1 — Listado paginado con filtros**
+
+```gherkin
+Dado que existen varias compras registradas
+Cuando abro la sección "Abastecimiento"
+Entonces veo las compras ordenadas de la más reciente a la más antigua, con código, proveedor, fecha y total en COP
+  Y puedo filtrar por código (ej. "CMP-2026"), por proveedor y por rango de fechas desde/hasta
+  Y la lista se pagina (20 por página por defecto, máximo 100)
+```
+
+**Escenario 2 — Detalle de una compra**
+
+```gherkin
+Dado que selecciono la compra "CMP-2026-00001"
+Cuando abro su detalle
+Entonces veo cada material comprado con su cantidad, precio unitario y subtotal
+  Y las observaciones registradas (por ejemplo, el número de factura)
+```
+
+**Escenario 3 — Compra inexistente**
+
+```gherkin
+Dado que consulto una compra con un ID que no existe
+Cuando el sistema la busca
+Entonces responde HTTP 404
+```
+
+---
+
+### HU18 — Gestionar Materias Primas (Crear, Editar, Desactivar)
+
+> **Como** ADMINISTRADOR,  
+> **Quiero** crear, editar y desactivar las materias primas del inventario,  
+> **Para** mantener actualizado el catálogo de insumos que usan las recetas y las compras.
+
+**Sprint:** 5 | **MoSCoW:** Must Have | **Puntos:** 5 (estimación inicial)  
+**RF relacionados:** RF09, RF17 | **Responsable (autor principal del backend):** Javier Sepúlveda
+
+---
+
+#### Criterios de Aceptación
+
+**Escenario 1 — Crear una materia prima**
+
+```gherkin
+Dado que soy ADMINISTRADOR en "Control de Inventario" > "Nuevo Material"
+Cuando completo nombre "Clavo de Acero 3 pulgadas", unidad de medida, stock inicial y stock mínimo
+  Y confirmo
+Entonces el sistema crea el material activo con ese stock inicial
+  Y el botón "Registrar Insumo" estuvo deshabilitado hasta que el formulario fue válido
+```
+
+**Escenario 2 — Nombre duplicado**
+
+```gherkin
+Dado que ya existe el material "Grapas"
+Cuando intento crear o renombrar otro material con el nombre "Grapas"
+Entonces el sistema responde HTTP 409 con el mensaje:
+  "Ya existe un material con el nombre 'Grapas'."
+```
+
+**Escenario 3 — Validaciones de campos**
+
+```gherkin
+Dado que estoy creando un material
+Cuando el nombre tiene menos de 3 caracteres, o el stock mínimo o el stock inicial son negativos
+Entonces el sistema rechaza los datos (HTTP 422) y el formulario no permite enviarlos
+```
+
+**Escenario 4 — Desactivar un material (borrado lógico)**
+
+```gherkin
+Dado que el material "Puntillas" está activo
+Cuando el ADMINISTRADOR lo desactiva
+Entonces el material deja de aparecer para nuevas compras y recetas
+  Y su historial (Kardex, compras anteriores) se conserva intacto
+```
+
+**Escenario 5 — Control de acceso**
+
+```gherkin
+Dado que soy OPERARIO
+Cuando intento crear, editar o desactivar un material
+Entonces el sistema responde HTTP 403 Forbidden
+  Y puedo seguir consultando el inventario
+```
+
+---
+
+### HU19 — Administrar Recetas BOM de cada Tipo de Casetón
+
+> **Como** ADMINISTRADOR,  
+> **Quiero** definir qué materiales y en qué cantidad lleva cada tipo de casetón,  
+> **Para** que el motor de producción descuente del inventario las cantidades correctas sin tocar la base de datos a mano.
+
+**Sprint:** 5 | **MoSCoW:** Must Have | **Puntos:** 5 (estimación inicial)  
+**RF relacionados:** RF07, RF18 | **Responsable (autor principal):** Andrés Fernández
+
+---
+
+#### Criterios de Aceptación
+
+**Escenario 1 — Ver la receta de un tipo de casetón**
+
+```gherkin
+Dado que soy ADMINISTRADOR en "Recetas BOM"
+Cuando selecciono la pestaña "Casetón de Guadua 60x60"
+Entonces veo cada material con su cantidad por unidad y su unidad de medida
+```
+
+**Escenario 2 — Agregar un material a la receta**
+
+```gherkin
+Dado que el material "Clavo de Acero" no está en la receta del casetón de Guadua
+Cuando elijo el material, escribo la cantidad por unidad (mayor que 0) y confirmo
+Entonces el material queda en la receta
+  Y el selector solo ofrece materiales que todavía no están en esa receta
+  Y el botón "Agregar a Receta" estuvo deshabilitado hasta tener material y cantidad válidos
+```
+
+**Escenario 3 — Material duplicado en la misma receta**
+
+```gherkin
+Dado que "Madera - Listones" ya está en la receta del casetón de Lona
+Cuando intento agregarlo otra vez por la API
+Entonces el sistema responde HTTP 409 con el mensaje:
+  "Ya existe una receta para 'Madera - Listones' en 'Casetón de Lona 60x60'. Edita la cantidad existente en vez de duplicarla."
+```
+
+**Escenario 4 — Editar la cantidad o quitar un material**
+
+```gherkin
+Dado que la receta incluye "Puntillas" con cantidad 10
+Cuando edito la cantidad a 12, o quito el material de la receta
+Entonces el cambio se aplica
+  Y los pedidos nuevos usan la receta actualizada en su previsualización BOM y en el descuento de inventario
+```
+
+**Escenario 5 — Control de acceso**
+
+```gherkin
+Dado que soy OPERARIO
+Cuando intento crear, editar o eliminar una receta
+Entonces el sistema responde HTTP 403 Forbidden
+  Y la opción "Recetas BOM" no aparece en mi menú
+```
+
+---
+
+### HU20 — Mantener y Cerrar la Sesión de Forma Segura
+
+> **Como** usuario del sistema,  
+> **Quiero** que mi sesión se renueve automáticamente mientras trabajo y que se cierre de verdad al salir,  
+> **Para** no tener que iniciar sesión cada pocos minutos y que nadie pueda reutilizar mi sesión después de salir.
+
+**Sprint:** 5 | **MoSCoW:** Should Have | **Puntos:** 5 (estimación inicial)  
+**RF relacionados:** RF01, RF19 | **Responsable (autor principal):** Andrés Fernández
+
+---
+
+#### Criterios de Aceptación
+
+**Escenario 1 — Renovación silenciosa de la sesión**
+
+```gherkin
+Dado que inicié sesión y mi token de acceso (30 minutos) venció
+Cuando hago una acción en el sistema
+Entonces el frontend renueva la sesión sin pedirme credenciales, usando la cookie de renovación (válida 7 días)
+  Y la acción se completa con normalidad
+```
+
+**Escenario 2 — Recargar la página no cierra la sesión**
+
+```gherkin
+Dado que estoy dentro del sistema
+Cuando recargo la página (F5)
+Entonces sigo con la sesión iniciada
+  Y el token de acceso nunca se guardó en localStorage (vive solo en memoria)
+```
+
+**Escenario 3 — Rotación del token de renovación**
+
+```gherkin
+Dado que renové mi sesión y el sistema me entregó un token de renovación nuevo
+Cuando alguien intenta reutilizar el token de renovación anterior
+Entonces el sistema responde HTTP 401: "La sesión expiró o ya no es válida. Inicie sesión de nuevo."
+  Y borra la cookie
+```
+
+**Escenario 4 — Cerrar sesión**
+
+```gherkin
+Dado que estoy dentro del sistema
+Cuando pulso "Salir"
+Entonces el sistema revoca mi token de renovación y borra la cookie
+  Y responde: "Sesión cerrada correctamente."
+  Y no puedo renovar la sesión sin volver a iniciar sesión
+```
+
+**Escenario 5 — Sin sesión activa**
+
+```gherkin
+Dado que no tengo cookie de renovación
+Cuando el frontend intenta renovar la sesión
+Entonces el sistema responde HTTP 401: "No hay una sesión activa para renovar. Inicie sesión de nuevo."
+  Y el frontend me lleva a la pantalla de inicio de sesión
+```
+
+---
+
+### HU21 — Bloquear la Cuenta tras Intentos Fallidos de Acceso
+
+> **Como** ADMINISTRADOR del sistema,  
+> **Quiero** que una cuenta se bloquee tras 5 contraseñas incorrectas seguidas,  
+> **Para** frenar los ataques de fuerza bruta contra las cuentas de la fábrica.
+
+**Sprint:** 5 | **MoSCoW:** Should Have | **Puntos:** 3 (estimación inicial)  
+**RF relacionados:** RF01, RF19 | **Responsable (autor principal):** Andrés Fernández
+
+---
+
+#### Criterios de Aceptación
+
+**Escenario 1 — Contraseña incorrecta (menos de 5 intentos)**
+
+```gherkin
+Dado que mi cuenta está activa
+Cuando escribo una contraseña incorrecta
+Entonces el sistema responde HTTP 401: "Email o contraseña incorrectos."
+  Y suma 1 a mi contador de intentos fallidos
+```
+
+**Escenario 2 — Bloqueo al quinto intento**
+
+```gherkin
+Dado que llevo 4 intentos fallidos seguidos
+Cuando fallo por quinta vez
+Entonces el sistema desactiva mi cuenta (activo = falso)
+  Y responde HTTP 401: "Cuenta bloqueada tras 5 intentos fallidos. Contacte a un administrador para reactivarla."
+```
+
+**Escenario 3 — Login exitoso reinicia el contador**
+
+```gherkin
+Dado que llevo 3 intentos fallidos
+Cuando inicio sesión con la contraseña correcta
+Entonces entro al sistema y mi contador de intentos fallidos vuelve a 0
+```
+
+**Escenario 4 — Cuenta bloqueada no entra aunque use la contraseña correcta**
+
+```gherkin
+Dado que mi cuenta fue bloqueada
+Cuando inicio sesión con la contraseña correcta
+Entonces el sistema responde HTTP 401: "La cuenta de usuario está desactivada. Contacte a un administrador."
+```
+
+**Escenario 5 — Reactivación por un ADMINISTRADOR**
+
+```gherkin
+Dado que una cuenta está bloqueada
+Cuando un ADMINISTRADOR la reactiva desde "Usuarios"
+Entonces la persona puede iniciar sesión de nuevo
+```
+
+**Escenario 6 — Límite por dirección IP**
+
+```gherkin
+Dado que una misma IP intenta iniciar sesión más de 10 veces por minuto
+Cuando envía el intento número 11
+Entonces el sistema responde HTTP 429 (demasiadas peticiones)
 ```
 
 ---

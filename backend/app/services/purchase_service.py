@@ -132,7 +132,7 @@ async def create_purchase(
 
     if not proveedor.activo:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"El proveedor '{proveedor.nombre_empresa}' está inactivo. No se pueden registrar compras.",
         )
 
@@ -172,7 +172,7 @@ async def create_purchase(
         if not material.activo:
             await db.rollback()
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=f"La materia prima '{material.nombre}' está inactiva. No se puede abastecer.",
             )
 

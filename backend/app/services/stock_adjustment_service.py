@@ -94,7 +94,7 @@ async def create_adjustment(
 
     if not material.activo:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"La materia prima '{material.nombre}' se encuentra inactiva. No se pueden solicitar ajustes.",
         )
 
@@ -291,7 +291,7 @@ async def review_adjustment(
 
     if adj.estado != "PENDIENTE_APROBACION":
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"El ajuste #{adjustment_id} ya fue procesado con estado '{adj.estado}' y no puede modificarse.",
         )
 
@@ -327,7 +327,7 @@ async def review_adjustment(
             nuevo_stock = curr_stock + adj_qty
             if nuevo_stock < 0:
                 raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                     detail=f"No se pudo aplicar el ajuste: El ajuste dejaría el stock en {nuevo_stock} (negativo).",
                 )
             mat.stock_actual = nuevo_stock
@@ -381,7 +381,7 @@ async def review_adjustment(
         ):
             detail_clean = raw_msg.split("CONTEXT:")[0].split("DETAIL:")[0].strip()
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=f"No se pudo aplicar el ajuste de inventario: {detail_clean}",
             ) from exc
 

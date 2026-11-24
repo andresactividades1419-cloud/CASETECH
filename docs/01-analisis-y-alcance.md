@@ -2,7 +2,7 @@
 
 > **Versión:** 1.0.0  
 > **Fecha:** Agosto 2026  
-> **Equipo:** Andrés Fernández · Oscar Ruiz · Javier Sepúlveda · Angélica Arregoces  
+> **Equipo:** Andrés Fernández · Oscar Ruiz · Javier Sepúlveda  
 > **Clasificación:** Documento Interno — Requisitos de Negocio  
 > **Enfoque arquitectónico:** ERP Web Modular de Producción y Manufactura por Recetas (BOM — Bill of Materials)
 
@@ -17,7 +17,7 @@
 5. [Objetivos Específicos](#5-objetivos-específicos)
 6. [Alcance del Sistema](#6-alcance-del-sistema)
 7. [Módulos del Sistema](#7-módulos-del-sistema)
-8. [Fuera del Alcance](#8-fuera-del-alcance)
+8. [Fuera del Alcance](#8-fuera-del-alcance-v10)
 9. [Supuestos y Restricciones](#9-supuestos-y-restricciones)
 10. [Partes Interesadas (Stakeholders)](#10-partes-interesadas-stakeholders)
 

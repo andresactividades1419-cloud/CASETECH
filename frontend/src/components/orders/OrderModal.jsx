@@ -14,6 +14,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import productTypesApi from '../../api/productTypesApi';
 import ordersApi from '../../api/ordersApi';
 import { primaryButtonStyle } from '../../styles/buttons';
+import { validateOrderForm } from '../../utils/validateOrderForm';
 
 /* ─── Helpers de estilo ─────────────────────────────────────────────────── */
 
@@ -115,26 +116,8 @@ export function OrderModal({ isOpen, onClose, onSuccess }) {
     setApiError('');
   };
 
-  // ── Validación cliente (función pura, sin efectos secundarios) ─────────
-  const getValidationErrors = () => {
-    const errs = {};
-    if (!form.cliente.trim() || form.cliente.trim().length < 3) {
-      errs.cliente = 'El nombre del cliente debe tener al menos 3 caracteres.';
-    }
-    if (!form.tipo_caseton_id) {
-      errs.tipo_caseton_id = 'Seleccione un tipo de casetón.';
-    }
-    const qty = parseInt(form.cantidad, 10);
-    if (!form.cantidad || isNaN(qty) || qty < 1) {
-      errs.cantidad = 'La cantidad debe ser un número entero mayor a 0.';
-    }
-    if (!form.fecha_entrega_estimada) {
-      errs.fecha_entrega_estimada = 'Ingrese la fecha estimada de entrega.';
-    } else if (form.fecha_entrega_estimada < today()) {
-      errs.fecha_entrega_estimada = 'La fecha de entrega no puede ser pasada.';
-    }
-    return errs;
-  };
+  // La regla vive en utils/validateOrderForm.js para poder probarla como unidad.
+  const getValidationErrors = () => validateOrderForm(form, today());
 
   const validate = getValidationErrors;
   const isFormValid = Object.keys(getValidationErrors()).length === 0;
