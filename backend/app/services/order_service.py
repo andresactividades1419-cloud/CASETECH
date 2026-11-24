@@ -176,6 +176,32 @@ VALID_TRANSITIONS: dict[str, set[str]] = {
 }
 
 
+def validate_status_transition(
+    current_status: str, new_status: str, codigo_pedido: str
+) -> None:
+    # ¿Qué? Verifica si un pedido puede pasar de current_status a new_status.
+    # ¿Para qué? Separar la regla de negocio de la BD para probarla como unidad.
+    # ¿Impacto? Si falla, un pedido COMPLETADO o CANCELADO podría reabrirse.
+    allowed = VALID_TRANSITIONS.get(current_status, set())
+    if new_status in allowed:
+        return
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=(
+                f"El pedido '{codigo_pedido}' se encuentra en estado terminal '{current_status}'. "
+                "No puede modificarse."
+            ),
+        )
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        detail=(
+            f"Transición de estado no válida: '{current_status}' → '{new_status}'. "
+            f"Transiciones permitidas desde '{current_status}': {sorted(allowed)}."
+        ),
+    )
+
+
 async def update_order_status(
     db: AsyncSession,
     order_id: int,
@@ -199,23 +225,7 @@ async def update_order_status(
     if current_status == new_status:
         return await _enrich_order(db, order)
 
-    allowed = VALID_TRANSITIONS.get(current_status, set())
-    if new_status not in allowed:
-        if not allowed:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=(
-                    f"El pedido '{codigo_pedido}' se encuentra en estado terminal '{current_status}'. "
-                    "No puede modificarse."
-                ),
-            )
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=(
-                f"Transición de estado no válida: '{current_status}' → '{new_status}'. "
-                f"Transiciones permitidas desde '{current_status}': {sorted(allowed)}."
-            ),
-        )
+    validate_status_transition(current_status, new_status, codigo_pedido)
 
     # ─────────────────────────────────────────────────────────────
     # Transición especial: PENDIENTE → EN_PRODUCCION
