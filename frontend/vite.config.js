@@ -24,6 +24,11 @@ export default defineConfig({
   // ¿Para qué? Que cada corrida de tests mida la cobertura y falle si baja de la línea base.
   // ¿Impacto? Si alguien borra tests o agrega código sin probar, `pnpm run test:run` falla.
   test: {
+    // ¿Qué? Navegador simulado (jsdom) y archivo de preparación común (semana 3).
+    // ¿Para qué? Poder dibujar componentes React en los tests sin abrir un navegador real.
+    // ¿Impacto? Sin jsdom, render() falla con "document is not defined".
+    environment: 'jsdom',
+    setupFiles: ['./src/tests/setup.js'],
     coverage: {
       enabled: true,
       provider: 'v8',
@@ -31,6 +36,7 @@ export default defineConfig({
       exclude: [
         'src/main.jsx', // arranque: solo monta <App />, no tiene lógica de negocio
         'src/**/*.test.{js,jsx}', // los propios archivos de test no se miden a sí mismos
+        'src/tests/**', // ayudas de test (setup, renderWithProviders), no código de la app
       ],
       // Línea base medida en CI el 2026-11-09: 0.57 % de líneas. Solo puede subir.
       // Ojo: en Windows (archivos con fin de línea CRLF) la misma suite marca un % más
