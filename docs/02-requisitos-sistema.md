@@ -2,7 +2,7 @@
 
 > **Versión:** 1.0.0  
 > **Fecha:** Agosto 2026  
-> **Equipo:** Andrés Fernández · Oscar Ruiz · Javier Sepúlveda · Angélica Arregoces  
+> **Equipo:** Andrés Fernández · Oscar Ruiz · Javier Sepúlveda  
 > **Clasificación:** Documento Interno — Especificación de Requisitos de Software (SRS)  
 > **Patrón arquitectónico:** ERP Web Modular de Producción por Recetas (BOM — Bill of Materials) · Caso de uso inicial: fábrica de casetones
 
@@ -476,6 +476,81 @@ El sistema debe registrar automáticamente un log de auditoría de las acciones 
 
 ---
 
+### RF16 — Registro de Compras a Proveedores e Ingreso de Stock
+
+**Módulo:** 3 — Inventario y Abastecimiento  
+**Prioridad:** Must Have  
+**Actor principal:** ADMINISTRADOR, OPERARIO
+
+**Descripción:**  
+El sistema debe permitir registrar órdenes de compra a proveedores activos con una o más líneas (material, cantidad, precio unitario). Al confirmarse, el sistema suma el stock de cada material y registra un movimiento `INGRESO_COMPRA` en el Kardex, todo en una sola transacción: si cualquier línea falla, no se aplica ninguna.
+
+**Reglas:**
+- El proveedor debe existir y estar activo; cada material debe existir y estar activo.
+- Cantidad mayor que 0, precio unitario mayor o igual a 0 y al menos una línea.
+- Código consecutivo anual `CMP-AAAA-XXXXX`; subtotal por línea y total de la compra calculados por el sistema.
+- Consulta paginada del historial con filtros por código, proveedor y rango de fechas, y detalle de cada compra.
+
+**Endpoints:** `POST /api/v1/purchases`, `GET /api/v1/purchases`, `GET /api/v1/purchases/{id}`  
+**Tablas:** `compras`, `detalle_compras`, `movimientos_inventario`, `materiales`
+
+---
+
+### RF17 — Gestión de Materias Primas
+
+**Módulo:** 3 — Inventario  
+**Prioridad:** Must Have  
+**Actor principal:** ADMINISTRADOR
+
+**Descripción:**  
+El ADMINISTRADOR debe poder crear, editar y desactivar (borrado lógico) las materias primas del catálogo. Los usuarios autenticados solo pueden consultarlas.
+
+**Reglas:**
+- Nombre único (mínimo 3 caracteres); duplicado responde `HTTP 409`.
+- Stock inicial y stock mínimo mayores o iguales a 0.
+- Un material desactivado no puede usarse en compras nuevas ni ofrecerse en recetas, pero conserva su historial.
+
+**Endpoints:** `POST /api/v1/materials`, `PUT /api/v1/materials/{id}`, `PATCH /api/v1/materials/{id}/status` (solo ADMINISTRADOR); `GET /api/v1/materials` (cualquier usuario autenticado)
+
+---
+
+### RF18 — Administración de Recetas BOM
+
+**Módulo:** 2 — Pedidos y Producción  
+**Prioridad:** Must Have  
+**Actor principal:** ADMINISTRADOR
+
+**Descripción:**  
+El ADMINISTRADOR debe poder definir, para cada tipo de casetón, qué materiales lleva y en qué cantidad por unidad (la receta o BOM), sin modificar la base de datos manualmente. Los pedidos nuevos usan la receta vigente tanto en la previsualización como en el descuento de inventario.
+
+**Reglas:**
+- Un material solo puede aparecer una vez por tipo de casetón; duplicarlo responde `HTTP 409`.
+- La cantidad por unidad debe ser mayor que 0.
+- Consultar recetas está permitido a cualquier usuario autenticado; crear, editar y eliminar solo al ADMINISTRADOR.
+
+**Endpoints:** `GET /api/v1/recipes`; `POST`, `PUT /{id}` y `DELETE /{id}` bajo `/api/v1/recipes` (solo ADMINISTRADOR)
+
+---
+
+### RF19 — Renovación de Sesión y Bloqueo por Intentos Fallidos
+
+**Módulo:** 0 — Seguridad  
+**Prioridad:** Should Have  
+**Actor principal:** Todos los usuarios
+
+**Descripción:**  
+Además del inicio de sesión (RF01), el sistema debe mantener la sesión de forma segura y proteger las cuentas contra la fuerza bruta.
+
+**Reglas:**
+- **Sesión:** el token de acceso dura 30 minutos y vive solo en memoria del navegador; el token de renovación dura 7 días, viaja en una cookie `httpOnly`, se guarda en la base de datos solo como hash SHA-256 y se rota en cada uso (el anterior queda revocado). Cerrar sesión revoca el token y borra la cookie.
+- **Bloqueo:** 5 contraseñas incorrectas seguidas desactivan la cuenta (`activo = FALSE`); un login exitoso reinicia el contador.
+- **Límite por IP:** máximo 10 intentos de login por minuto.
+
+**Endpoints:** `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`  
+**Tablas:** `usuarios` (`intentos_fallidos`, `activo`), `refresh_tokens`
+
+---
+
 ## 2. Requisitos No Funcionales
 
 ### RNF-SEG — Seguridad
@@ -791,6 +866,10 @@ settings = Settings()
 | RF13 | HU12 — Historial de movimientos | M3 | Sprint 4 |
 | RF14 | HU14 — Dashboard KPIs | Transversal | Sprint 1 |
 | RF15 | HU15 — Auditoría de acciones | M0 | Sprint 4 |
+| RF16 | HU16 — Registrar compra e ingresar stock · HU17 — Consultar compras | M3 | Sprint 5 |
+| RF17 | HU18 — Gestionar materias primas | M3 | Sprint 5 |
+| RF18 | HU19 — Administrar recetas BOM | M2 | Sprint 5 |
+| RF19 | HU20 — Mantener y cerrar sesión · HU21 — Bloqueo de cuenta | M0 | Sprint 5 |
 
 ---
 

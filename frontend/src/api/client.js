@@ -13,7 +13,11 @@ import axios from 'axios';
 import { getToken, setToken, clearToken } from './tokenStore';
 
 // Determinar la Base URL asegurando sufijo /api/v1
-const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// ¿Qué? Usa "??" (y no "||") para respetar un VITE_API_URL vacío.
+// ¿Para qué? En producción VITE_API_URL se compila como "" y las llamadas van a la
+// MISMA dirección del sitio (/api/v1/...), que Nginx reenvía al backend. Sin URLs fijas ni CORS.
+// ¿Impacto? Si la variable no existe (undefined) sigue usando http://localhost:8000 como antes.
+const rawApiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 const baseURL = rawApiUrl.endsWith('/api/v1')
   ? rawApiUrl
   : `${rawApiUrl.replace(/\/+$/, '')}/api/v1`;

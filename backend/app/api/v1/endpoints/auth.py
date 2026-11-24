@@ -313,7 +313,7 @@ async def register(
     role: Role | None = role_result.scalar_one_or_none()
     if role is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"El rol con id={user_in.rol_id} no existe.",
         )
 
@@ -445,7 +445,7 @@ async def update_user(
         role_res = await db.execute(select(Role).where(Role.id == user_update.rol_id))
         if role_res.scalar_one_or_none() is None:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=f"El rol con ID {user_update.rol_id} no existe.",
             )
         user.rol_id = user_update.rol_id
@@ -453,7 +453,7 @@ async def update_user(
     if user_update.activo is not None:
         if user.id == _admin.id and not user_update.activo:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="No puede desactivar su propia cuenta de Administrador en sesión.",
             )
         user.activo = user_update.activo
@@ -497,7 +497,7 @@ async def deactivate_user(
 ) -> dict[str, str]:
     if user_id == _admin.id:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="No puede desactivar su propia cuenta de Administrador en sesión.",
         )
 

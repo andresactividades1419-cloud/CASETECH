@@ -203,14 +203,14 @@ async def update_order_status(
     if new_status not in allowed:
         if not allowed:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=(
                     f"El pedido '{codigo_pedido}' se encuentra en estado terminal '{current_status}'. "
                     "No puede modificarse."
                 ),
             )
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=(
                 f"Transición de estado no válida: '{current_status}' → '{new_status}'. "
                 f"Transiciones permitidas desde '{current_status}': {sorted(allowed)}."
@@ -242,7 +242,7 @@ async def update_order_status(
                 if stock_act < consumo_total:
                     deficit = consumo_total - stock_act
                     raise HTTPException(
-                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                         detail=(
                             f"No se puede iniciar la producción del pedido '{codigo_pedido}'. "
                             f"Stock insuficiente en inventario: Para '{material_item.nombre}' se requieren "
@@ -304,7 +304,7 @@ async def update_order_status(
             if is_stock_error:
                 detail_msg = raw_msg.split("DETAIL:")[0].strip()
                 raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                     detail=(
                         f"No se puede iniciar la producción del pedido '{codigo_pedido}'. "
                         f"Stock insuficiente en inventario: {detail_msg}"
@@ -313,7 +313,7 @@ async def update_order_status(
 
             if "no puede iniciar producción" in raw_msg.lower() or "P0001" in raw_msg:
                 raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                     detail=raw_msg.split("DETAIL:")[0].strip(),
                 ) from exc
 

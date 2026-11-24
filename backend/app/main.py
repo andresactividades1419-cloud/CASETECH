@@ -9,19 +9,26 @@ Responsabilidades:
 - Health-check accesible sin autenticación.
 """
 
+import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import get_db
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.init_db import init_db
 from app.core.limiter import limiter
+
+logger = logging.getLogger("casetech.api")
 
 # ---------------------------------------------------------------------------
 # Ciclo de vida de la aplicación (lifespan handler — FastAPI 0.110+)
@@ -67,6 +74,27 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 app.add_middleware(SlowAPIMiddleware)
 
+
+# ---------------------------------------------------------------------------
+# Manejo global de errores no controlados
+# ---------------------------------------------------------------------------
+# ¿Qué? Atrapa cualquier excepción que ningún endpoint haya manejado.
+# ¿Para qué? Que el cliente reciba siempre JSON con el mismo formato
+# ({"detail": "..."}) en vez de texto plano, sin filtrar detalles internos
+# (rutas, consultas SQL, nombres de tablas), y que el error real quede en el log.
+# ¿Impacto? Los errores esperados (404, 409, 422...) siguen funcionando igual:
+# ya los lanzan los servicios como HTTPException; esto solo cubre los imprevistos.
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    logger.exception("Error no controlado en %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Error interno del servidor. Intenta de nuevo; si el problema "
+            "persiste, contacta al administrador."
+        },
+    )
+
 # ---------------------------------------------------------------------------
 # Middleware CORS — Issue #48
 # ---------------------------------------------------------------------------
@@ -105,16 +133,31 @@ app.include_router(
     tags=["Infraestructura"],
     summary="Estado del servicio",
     description="Endpoint de comprobación de salud para load balancers y orquestadores.",
-    response_description="Objeto con status y versión del servicio.",
+    response_description="Estado del servicio y de la conexión a la base de datos.",
+    response_model=None,
 )
-async def health_check() -> dict[str, str]:
+async def health_check(db: AsyncSession = Depends(get_db)) -> JSONResponse:
     """
-    Responde con HTTP 200 y un payload mínimo que indica que el servicio
-    está levantado y la versión activa.
+    ¿Qué? Informa si el servicio está vivo y si puede hablar con PostgreSQL.
+    ¿Para qué? Lo usan Docker (healthcheck) y los orquestadores para saber si
+    el backend está realmente listo, no solo encendido.
+    ¿Impacto? HTTP 200 si todo está bien; HTTP 503 si la base de datos no
+    responde (así Docker lo marca "unhealthy" en vez de "healthy").
     """
-    return {
-        "status": "ok",
-        "service": settings.PROJECT_NAME,
-        "version": settings.VERSION,
-        "environment": settings.ENVIRONMENT,
-    }
+    database = "ok"
+    try:
+        await db.execute(text("SELECT 1"))
+    except Exception:
+        logger.exception("Health-check: no hay conexión con la base de datos")
+        database = "error"
+
+    return JSONResponse(
+        status_code=200 if database == "ok" else 503,
+        content={
+            "status": "ok" if database == "ok" else "degraded",
+            "service": settings.PROJECT_NAME,
+            "version": settings.VERSION,
+            "environment": settings.ENVIRONMENT,
+            "database": database,
+        },
+    )
