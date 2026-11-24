@@ -93,7 +93,7 @@ async def create_provider(
                 detail=f"El NIT '{provider_in.nit}' ya está registrado en el sistema.",
             ) from exc
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Error de integridad al registrar el proveedor.",
         ) from exc
 
@@ -116,7 +116,7 @@ async def create_provider(
         if "P0001" in orig_msg or "EXCEPTION" in orig_msg:
             clean_msg = orig_msg.split("\n")[0] if "\n" in orig_msg else orig_msg
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=f"Error de validación en la base de datos: {clean_msg}",
             ) from exc
 

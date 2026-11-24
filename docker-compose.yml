@@ -41,6 +41,12 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:3000","http://127.0.0.1:3000"]}
       ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-}
       OPERARIO_INITIAL_PASSWORD: ${OPERARIO_INITIAL_PASSWORD:-}
+      # Log de SQL apagado por defecto (miles de líneas); SQL_ECHO=true en .env lo activa.
+      SQL_ECHO: ${SQL_ECHO:-false}
+      # En Windows/macOS la carpeta ./backend se comparte con el contenedor y el
+      # vigilante de archivos de uvicorn --reload falla con "Input/output error"
+      # y tumba el contenedor. Con "polling" revisa los archivos periódicamente.
+      WATCHFILES_FORCE_POLLING: "true"
     volumes:
       - ./backend:/app
       # Excluir .venv del volumen para preservar las dependencias del contenedor
@@ -53,6 +59,13 @@ services:
       db:
         condition: service_healthy
     command: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/app"]
+    # /health responde 200 solo si el backend está arriba Y conecta con PostgreSQL.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=4)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
 
   # ============================================================
   # Servicio: Frontend React 18 (Node 20 LTS + PNPM)

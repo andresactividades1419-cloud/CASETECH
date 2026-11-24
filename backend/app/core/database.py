@@ -39,7 +39,7 @@ class Base(DeclarativeBase):
 # Creación del engine asíncrono con pool pre-ping para estabilidad en Docker
 engine: AsyncEngine = create_async_engine(
     settings.SQLALCHEMY_DATABASE_URI,
-    echo=settings.DEBUG,
+    echo=settings.SQL_ECHO,
     future=True,
     pool_pre_ping=True,
     pool_size=10,

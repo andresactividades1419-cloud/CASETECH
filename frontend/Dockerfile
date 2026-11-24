@@ -27,6 +27,13 @@ CMD ["pnpm", "run", "dev"]
 FROM development AS builder
 
 ENV NODE_ENV=production
+
+# ¿Qué? Recibe la URL de la API como argumento de construcción.
+# ¿Para qué? Vite "hornea" VITE_API_URL dentro del JavaScript al compilar: cambiarla después
+# en el contenedor no sirve. Vacía ("") = misma dirección del sitio, vía el proxy de Nginx.
+# ¿Impacto? Si se omite el argumento, el bundle de producción usa la ruta relativa /api/v1.
+ARG VITE_API_URL=""
+ENV VITE_API_URL=$VITE_API_URL
 RUN pnpm run build
 
 # --- Stage 3: Servidor Web Nginx de Producción (Runner) ---
