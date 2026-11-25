@@ -39,9 +39,11 @@ export default defineConfig({
         'src/tests/**', // ayudas de test (setup, renderWithProviders), no código de la app
       ],
       // Línea base medida en CI el 2026-11-09: 0.57 % de líneas. Solo puede subir.
+      // Cierre semana 3 (2026-11-25): el CI midió 44.83 % de líneas → umbral 44
+      // (el mayor entre el piso de la semana, 40, y la cobertura real redondeada hacia abajo).
       // Ojo: en Windows (archivos con fin de línea CRLF) la misma suite marca un % más
       // alto que en CI (LF). El número oficial es siempre el del CI.
-      thresholds: { lines: 0.5, statements: 0.5, functions: 0, branches: 0 },
+      thresholds: { lines: 44, statements: 44, functions: 0, branches: 0 },
     },
   },
 });
