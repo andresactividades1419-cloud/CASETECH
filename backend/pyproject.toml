@@ -117,8 +117,10 @@ concurrency = ["greenlet", "thread"]
 # ¿Para qué? Línea base del 2026-11-09 (semana 1): desde hoy el número solo puede subir.
 # 2026-11-20: al corregir la medición (concurrency = greenlet) la cobertura real es 69 %;
 # se fija 68 % (un punto de margen por diferencias entre máquinas). Antes: 56 %.
+# Cierre semana 3 (2026-11-25): el CI midió 69.15 % → umbral 69 (el mayor entre el
+# piso de la semana, 40, y la cobertura real redondeada hacia abajo).
 # ¿Impacto? Si la cobertura baja de este valor, pytest (local y en CI) falla.
-fail_under = 68
+fail_under = 69
 
 # ============================================================
 # MyPy — Type checking
