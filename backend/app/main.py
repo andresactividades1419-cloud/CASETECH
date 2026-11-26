@@ -14,6 +14,8 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Request
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
@@ -94,6 +96,29 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
             "persiste, contacta al administrador."
         },
     )
+
+
+# ---------------------------------------------------------------------------
+# JSON mal formado (hallazgo bootcamp semana 4)
+# ---------------------------------------------------------------------------
+# ¿Qué? Si el cuerpo de la petición no es un JSON válido, responde 400 con el
+# formato del contrato {"detail": "..."}. Los demás errores de validación
+# (tipos o campos incorrectos) siguen con el 422 que da FastAPI por defecto.
+# ¿Para qué? Antes respondía 422 con una lista interna de Pydantic
+# ("json_invalid", "JSON decode error", posición del error), distinta al
+# formato que el frontend espera para mostrar el mensaje.
+# ¿Impacto? El frontend recibe siempre un "detail" legible ante un JSON roto.
+@app.exception_handler(RequestValidationError)
+async def request_validation_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    if any(error["type"] == "json_invalid" for error in exc.errors()):
+        return JSONResponse(
+            status_code=400,
+            content={"detail": "El cuerpo de la petición no es un JSON válido."},
+        )
+    return await request_validation_exception_handler(request, exc)
+
 
 # ---------------------------------------------------------------------------
 # Middleware CORS — Issue #48
