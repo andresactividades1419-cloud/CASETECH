@@ -575,8 +575,12 @@ export function PurchasesPage() {
                       )}
 
                       {/* Registrado Por */}
+                      {/* ¿Qué? Usa los campos que de verdad envía el backend (PurchaseResponse).
+                          ¿Para qué? Antes leía usuario_nombre/usuario_id, que no existen, y cada
+                          fila mostraba "Usuario #undefined" (hallazgo bootcamp semana 4).
+                          ¿Impacto? La tabla muestra el nombre de quien registró la compra. */}
                       <td style={{ padding: '0.85rem 1.25rem', fontSize: '0.8rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>
-                        👤 {p.usuario_nombre || `Usuario #${p.usuario_id}`}
+                        👤 {p.registrado_por_nombre || `Usuario #${p.registrado_por}`}
                       </td>
 
                       {/* Botón Ver Detalle */}
