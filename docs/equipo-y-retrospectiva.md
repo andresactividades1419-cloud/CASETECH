@@ -20,15 +20,15 @@ Roles confirmados el 2026-11-20. Andrés ya cumplía de hecho el rol de dueño d
 ### 2.1 Lo acordado
 
 - **División técnica** (guía interna del proyecto): Andrés lleva base de datos y backend; Javier y Oscar se dividen el frontend por módulos.
-- **Responsables por historia de usuario** (`docs/03-historias-de-usuario.md`), sobre 21 historias y 128 puntos:
+- **Responsables por historia de usuario** (`docs/03-historias-de-usuario.md`), sobre 30 historias y 166 puntos (27 implementadas y 3 pendientes):
 
 | Integrante | Historias | Puntos | Historias a su cargo |
 |---|---|---|---|
-| Andrés Fernández | 8 | 58 | HU01, HU07, HU08, HU10, HU14, HU19, HU20, HU21 |
-| Javier Sepúlveda | 8 | 47 | HU05, HU06, HU09, HU12, HU13, HU16, HU17, HU18 |
-| Oscar Ruiz | 5 | 23 | HU02, HU03, HU04, HU11, HU15 |
+| Andrés Fernández | 14 | 80 | HU01, HU07, HU08, HU10, HU14, HU19, HU20, HU21, HU22, HU23, HU24, HU25, HU26, HU27 |
+| Javier Sepúlveda | 9 | 55 | HU05, HU06, HU09, HU12, HU13, HU16, HU17, HU18, HU28 *(pendiente)* |
+| Oscar Ruiz | 7 | 31 | HU02, HU03, HU04, HU11, HU15, HU29 *(pendiente)*, HU30 *(pendiente)* |
 
-HU02, HU06 y HU14 se reasignaron el 2026-11-23, una por integrante, porque su responsable original ya no hace parte del equipo.
+HU02, HU06 y HU14 se reasignaron el 2026-11-23, una por integrante, porque su responsable original ya no hace parte del equipo. HU22 a HU27 son funciones ya construidas que no tenían historia (se asignaron al autor principal según git, Andrés Fernández) y HU28 a HU30 están pendientes: su responsable es una propuesta para equilibrar la carga y la confirma el Product Owner.
 
 ### 2.2 Lo real (repositorio)
 
@@ -56,7 +56,7 @@ HU02, HU06 y HU14 se reasignaron el 2026-11-23, una por integrante, porque su re
 | Lo acordado | Lo real |
 |---|---|
 | Andrés lleva BD y backend; Javier y Oscar el frontend | Andrés modificó más frontend (14.737 líneas) que backend (11.351). Javier trabajó casi por igual en ambos (2.486 y 2.469); Oscar no tiene líneas en ninguno de los dos. |
-| Reparto de historias 8 / 8 / 5 | El código de las historias originales de Oscar (HU03, HU04, HU11, HU15) no aparece en commits suyos. HU02, HU06 y HU14 (reasignadas el 2026-11-23) las programaron Andrés y Javier. |
+| Reparto de historias 14 / 9 / 7 (80 / 55 / 31 puntos) | El código de las historias originales de Oscar (HU03, HU04, HU11, HU15) no aparece en commits suyos. HU02, HU06 y HU14 (reasignadas el 2026-11-23) las programaron Andrés y Javier. |
 | Rotación de capa cada semana (`matriz-rotacion.md`) | Solo existe la semana 1, con los tres integrantes de la matriz en E2E. |
 
 ## 3. Proceso de revisión de código

@@ -8,11 +8,11 @@
 
 | Indicador | Valor |
 |---|---|
-| Historias de usuario | 21 (HU01 a HU21) |
-| Puntos de historia | 128 |
-| Historias Must Have / Should Have | 15 / 6 |
-| Sprints | 5 (4 planificados + 1 de consolidación) |
-| Estado de las historias | 21 de 21 implementadas |
+| Historias de usuario | 30 (HU01 a HU30) |
+| Puntos de historia | 166 (150 entregados · 16 pendientes) |
+| Historias Must Have / Should Have | 18 / 12 |
+| Sprints | 7 (4 planificados, 1 de consolidación, 1 de despliegue y 1 siguiente sin iniciar) |
+| Estado de las historias | 27 de 30 implementadas · 3 pendientes (HU28 a HU30) |
 | Issues en GitHub | 69 (51 cerrados · 18 abiertos) |
 
 ## 2. Roles Scrum
@@ -27,7 +27,7 @@ Responsabilidades, reparto del trabajo y retrospectiva del equipo: [equipo-y-ret
 
 ## 3. Product Backlog (todas las historias, priorizadas)
 
-El orden es por prioridad MoSCoW y luego por sprint. Los puntos de HU16 a HU21 son una estimación inicial pendiente de confirmar en planning poker.
+El orden es por prioridad MoSCoW y luego por sprint. Los puntos de HU16 a HU30 son una estimación inicial pendiente de confirmar en planning poker. HU28 a HU30 **no están implementadas**: son el siguiente trabajo propuesto (el responsable es una propuesta que el Product Owner debe confirmar). HU28 corresponde al issue [#99](https://github.com/andresactividades1419-cloud/CASETECH/issues/99); HU29 y HU30 todavía no tienen issue y se crean al planificar el Sprint 7.
 
 | ID | Historia | MoSCoW | Puntos | Sprint | Estado | Responsable |
 |---|---|---|---|---|---|---|
@@ -46,12 +46,21 @@ El orden es por prioridad MoSCoW y luego por sprint. Los puntos de HU16 a HU21 s
 | HU16 | Registrar compra a proveedor e ingresar stock | Must Have | 8 | 5 | Hecha | Javier Sepúlveda |
 | HU18 | Gestionar materias primas | Must Have | 5 | 5 | Hecha | Javier Sepúlveda |
 | HU19 | Administrar recetas BOM | Must Have | 5 | 5 | Hecha | Andrés Fernández |
+| HU26 | Crear el primer administrador al desplegar en producción | Must Have | 3 | 6 | Hecha | Andrés Fernández |
+| HU27 | Arrancar el sistema de forma segura y verificar su estado | Must Have | 5 | 6 | Hecha | Andrés Fernández |
+| HU30 | Publicar el sistema con HTTPS | Must Have | 5 | 7 | Pendiente | Oscar Ruiz (propuesto) |
 | HU06 | Generar reportes operativos | Should Have | 8 | 4 | Hecha | Javier Sepúlveda |
 | HU12 | Consultar historial de movimientos de inventario | Should Have | 5 | 4 | Hecha | Javier Sepúlveda |
 | HU15 | Consultar log de auditoría de acciones | Should Have | 5 | 4 | Hecha | Oscar Ruiz |
 | HU17 | Consultar compras y su detalle | Should Have | 3 | 5 | Hecha | Javier Sepúlveda |
 | HU20 | Mantener y cerrar la sesión de forma segura | Should Have | 5 | 5 | Hecha | Andrés Fernández |
 | HU21 | Bloquear la cuenta tras intentos fallidos | Should Have | 3 | 5 | Hecha | Andrés Fernández |
+| HU22 | Editar los datos de un proveedor | Should Have | 3 | 5 | Hecha | Andrés Fernández |
+| HU23 | Buscar y filtrar pedidos | Should Have | 3 | 5 | Hecha | Andrés Fernández |
+| HU24 | Editar, buscar y filtrar cuentas de usuario | Should Have | 5 | 5 | Hecha | Andrés Fernández |
+| HU25 | Consultar y filtrar solicitudes de ajuste de inventario | Should Have | 3 | 5 | Hecha | Andrés Fernández |
+| HU28 | Crear una nueva receta (producto) desde la interfaz | Should Have | 8 | 7 | Pendiente | Javier Sepúlveda (propuesto) |
+| HU29 | Cambiar mi propia contraseña | Should Have | 3 | 7 | Pendiente | Oscar Ruiz (propuesto) |
 
 ## 4. Sprint Backlog
 
@@ -104,19 +113,40 @@ El orden es por prioridad MoSCoW y luego por sprint. Los puntos de HU16 a HU21 s
 | HU19 | Administrar recetas BOM | 5 | Andrés Fernández |
 | HU20 | Mantener y cerrar la sesión de forma segura | 5 | Andrés Fernández |
 | HU21 | Bloquear la cuenta tras intentos fallidos | 3 | Andrés Fernández |
-| | **Total del sprint** | **29** | |
+| HU22 | Editar los datos de un proveedor | 3 | Andrés Fernández |
+| HU23 | Buscar y filtrar pedidos | 3 | Andrés Fernández |
+| HU24 | Editar, buscar y filtrar cuentas de usuario | 5 | Andrés Fernández |
+| HU25 | Consultar y filtrar solicitudes de ajuste de inventario | 3 | Andrés Fernández |
+| | **Total del sprint** | **43** | |
 
-**Velocidad por sprint (puntos entregados):** S1 = 26 · S2 = 21 · S3 = 34 · S4 = 18 · S5 = 29.
+### Sprint 6 — Despliegue y operación segura
+
+| HU | Historia | Puntos | Responsable |
+|---|---|---|---|
+| HU26 | Crear el primer administrador al desplegar en producción | 3 | Andrés Fernández |
+| HU27 | Arrancar el sistema de forma segura y verificar su estado | 5 | Andrés Fernández |
+| | **Total del sprint** | **8** | |
+
+### Sprint 7 — Siguiente: recetas nuevas, credenciales propias y HTTPS (planificado, sin iniciar)
+
+| HU | Historia | Puntos | Responsable |
+|---|---|---|---|
+| HU28 | Crear una nueva receta (producto) desde la interfaz | 8 | Javier Sepúlveda (propuesto) |
+| HU29 | Cambiar mi propia contraseña | 3 | Oscar Ruiz (propuesto) |
+| HU30 | Publicar el sistema con HTTPS | 5 | Oscar Ruiz (propuesto) |
+| | **Total del sprint** | **16** | |
+
+**Velocidad por sprint (puntos entregados):** S1 = 26 · S2 = 21 · S3 = 34 · S4 = 18 · S5 = 43 · S6 = 8. El Sprint 7 (16 puntos) está planificado y aún no se inicia.
 
 ## 5. Distribución de la carga por historia (según el plan)
 
 | Integrante | Historias | Puntos |
 |---|---|---|
-| Andrés Fernández | 8 | 58 |
-| Javier Sepúlveda | 8 | 47 |
-| Oscar Ruiz | 5 | 23 |
+| Andrés Fernández | 14 | 80 |
+| Javier Sepúlveda | 9 | 55 |
+| Oscar Ruiz | 7 | 31 |
 
-> La columna "Responsable" de las historias HU01 a HU15 viene del plan original (`docs/03`), salvo HU02, HU06 y HU14, que se reasignaron el 2026-11-23 (una por integrante) porque su responsable original ya no hace parte del equipo. En HU16 a HU21 es el autor principal del código según el historial de git. La distribución no es pareja: Oscar Ruiz concentra la menor carga. Se recomienda rebalancearla en el siguiente planning (ver retrospectiva).
+> La columna "Responsable" de las historias HU01 a HU15 viene del plan original (`docs/03`), salvo HU02, HU06 y HU14, que se reasignaron el 2026-11-23 (una por integrante) porque su responsable original ya no hace parte del equipo. En HU16 a HU27 es el autor principal del código según el historial de git (HU22 a HU27 se escribieron casi por completo en commits de Andrés Fernández). Para HU28 a HU30, que aún no se construyen, el responsable es una **propuesta** que busca equilibrar la carga: Oscar Ruiz es quien menos puntos tiene. La distribución sigue sin ser pareja: Andrés Fernández concentra la mayor carga. Se recomienda rebalancearla en el siguiente planning (ver [retrospectiva](../equipo-y-retrospectiva.md)).
 
 ## 6. Tareas asignadas en GitHub (issues)
 

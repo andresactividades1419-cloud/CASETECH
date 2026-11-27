@@ -4,7 +4,7 @@
 > **Equipo:** Andrés Fernández · Oscar Ruiz · Javier Sepúlveda
 > **Propósito:** explicar de qué piezas está hecho CASETECH, cómo se comunican y por qué se decidió así.
 > **Cómo se ve:** los diagramas están en [Mermaid](https://mermaid.js.org/); GitHub los dibuja al abrir este archivo.
-> **Fuente de verdad:** se construyó leyendo el código real (`docker-compose*.yml`, `backend/app`, `frontend/src`, `.github/workflows/ci.yml`). Las versiones son las instaladas, no las del `pyproject.toml`.
+> **Fuente de verdad:** se construyó leyendo el código real (`docker-compose*.yml`, `backend/app`, `frontend/src`, `.github/workflows/tests.yml`). Las versiones son las instaladas, no las del `pyproject.toml`.
 
 ## Tabla de contenidos
 
@@ -207,7 +207,7 @@ Guía paso a paso, variables de entorno y problemas conocidos: [`07-despliegue.m
 
 ## 6. Integración continua (CI)
 
-El archivo `.github/workflows/ci.yml` corre en cada *push* y *pull request* hacia `main` o `develop`, con dos trabajos independientes:
+El archivo `.github/workflows/tests.yml` corre en cada *push* y *pull request* hacia `main` o `develop`, con dos trabajos de verificación independientes (más un tercero informativo, "Evidencia individual", que solo resume en el panel del CI los commits de prueba por autor):
 
 ```mermaid
 flowchart LR
@@ -245,7 +245,7 @@ flowchart LR
 | Autorización | Roles ADMINISTRADOR y OPERARIO; `require_admin` en el backend y `ProtectedRoute` en el frontend | `api/deps.py`, `routes/` |
 | Datos | Schemas Pydantic validan toda entrada; SQLAlchemy usa consultas parametrizadas | `schemas/`, `services/` |
 | Errores | Los errores imprevistos no filtran SQL ni rutas internas al cliente | `app/main.py` |
-| Dependencias | `pip-audit` y `pnpm audit` en el CI; `uv.lock` y `pnpm-lock.yaml` versionados | `.github/workflows/ci.yml` |
+| Dependencias | `pip-audit` y `pnpm audit` en el CI; `uv.lock` y `pnpm-lock.yaml` versionados | `.github/workflows/tests.yml` |
 
 ---
 

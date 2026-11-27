@@ -4,6 +4,7 @@
 > **Fecha:** Agosto 2026  
 > **Equipo:** Andrés Fernández · Oscar Ruiz · Javier Sepúlveda  
 > **Clasificación:** Documento Interno — Product Backlog  
+> **Actualización 2026-11-26:** se agregaron HU22 a HU30 (6 funciones ya construidas que no tenían historia y 3 pendientes por construir). Total: 30 historias.  
 > **Patrón:** ERP Web Modular de Producción por Recetas (BOM) · Caso de uso inicial: fábrica de casetones
 
 ---
@@ -45,6 +46,15 @@
 | HU19 | Administrar recetas BOM de cada tipo de casetón | **Must Have** | Sprint 5 |
 | HU20 | Mantener y cerrar la sesión de forma segura | **Should Have** | Sprint 5 |
 | HU21 | Bloquear la cuenta tras intentos fallidos de acceso | **Should Have** | Sprint 5 |
+| HU22 | Editar los datos de un proveedor | **Should Have** | Sprint 5 |
+| HU23 | Buscar y filtrar pedidos | **Should Have** | Sprint 5 |
+| HU24 | Editar, buscar y filtrar cuentas de usuario | **Should Have** | Sprint 5 |
+| HU25 | Consultar y filtrar solicitudes de ajuste de inventario | **Should Have** | Sprint 5 |
+| HU26 | Crear el primer administrador al desplegar en producción | **Must Have** | Sprint 6 |
+| HU27 | Arrancar el sistema de forma segura y verificar su estado | **Must Have** | Sprint 6 |
+| HU28 | Crear una nueva receta (producto) desde la interfaz | **Should Have** | Sprint 7 (pendiente) |
+| HU29 | Cambiar mi propia contraseña | **Should Have** | Sprint 7 (pendiente) |
+| HU30 | Publicar el sistema con HTTPS | **Must Have** | Sprint 7 (pendiente) |
 
 ---
 
@@ -110,7 +120,7 @@
 ---
 
 ### Sprint 5 — Consolidación: Abastecimiento, Catálogos y Seguridad de Sesión
-**Objetivo:** Completar el ciclo de abastecimiento (compras que alimentan el inventario), los catálogos que el motor BOM necesita (materias primas y recetas) y endurecer la seguridad de la sesión. Estas funcionalidades se construyeron durante el desarrollo (incrementos v1.3.0 a v1.6.0) y se incorporaron al backlog de forma retroactiva para que cada módulo del sistema tenga su historia de usuario.
+**Objetivo:** Completar el ciclo de abastecimiento (compras que alimentan el inventario), los catálogos que el motor BOM necesita (materias primas y recetas) y endurecer la seguridad de la sesión. Estas funcionalidades se construyeron durante el desarrollo (incrementos v1.3.0 a v1.6.0) y se incorporaron al backlog de forma retroactiva para que cada módulo del sistema tenga su historia de usuario. HU22 a HU25 documentan además funciones de gestión que también ya estaban construidas y no tenían historia: editar proveedores y usuarios, y buscar y filtrar pedidos y ajustes.
 
 | HU | Historia | Puntos estimados* |
 |----|----------|-----------------|
@@ -120,13 +130,44 @@
 | HU19 | Administrar recetas BOM de cada tipo de casetón | 5 |
 | HU20 | Mantener y cerrar la sesión de forma segura | 5 |
 | HU21 | Bloquear la cuenta tras intentos fallidos de acceso | 3 |
-| **Total** | | **29 puntos** |
+| HU22 | Editar los datos de un proveedor | 3 |
+| HU23 | Buscar y filtrar pedidos | 3 |
+| HU24 | Editar, buscar y filtrar cuentas de usuario | 5 |
+| HU25 | Consultar y filtrar solicitudes de ajuste de inventario | 3 |
+| **Total** | | **43 puntos** |
 
 \* Estimación inicial por analogía con las historias ya puntuadas (ver [`scrum/planning-poker.md`](./scrum/planning-poker.md)); se confirma con el equipo en la sesión de planning poker.
 
-**Criterio de éxito del Sprint 5:** Una compra registrada aumenta el stock y queda en el Kardex; el ADMINISTRADOR puede mantener el catálogo de materias primas y las recetas; la sesión se renueva sola y una cuenta con 5 intentos fallidos queda bloqueada.
+**Criterio de éxito del Sprint 5:** Una compra registrada aumenta el stock y queda en el Kardex; el ADMINISTRADOR puede mantener el catálogo de materias primas y las recetas; la sesión se renueva sola y una cuenta con 5 intentos fallidos queda bloqueada; el ADMINISTRADOR puede editar proveedores y usuarios, y los listados de pedidos y de ajustes se pueden buscar y filtrar.
 
-**Total del producto (HU01 a HU21):** 99 + 29 = **128 puntos**.
+---
+
+### Sprint 6 — Despliegue y Operación Segura
+**Duración:** noviembre de 2026 (documentado de forma retroactiva) | **Objetivo:** Poder publicar el sistema en un servidor sin dejar credenciales conocidas y saber si está sano. Se construyó al preparar el despliegue de producción (Docker Compose con Nginx) y se incorporó al backlog para que esa parte del producto tenga historia.
+
+| HU | Historia | Puntos estimados* |
+|----|----------|-----------------|
+| HU26 | Crear el primer administrador al desplegar en producción | 3 |
+| HU27 | Arrancar el sistema de forma segura y verificar su estado | 5 |
+| **Total** | | **8 puntos** |
+
+**Criterio de éxito del Sprint 6:** En una base de datos nueva se crea el primer administrador con un solo comando; el backend se niega a arrancar con configuración incompleta o de ejemplo; `/health` informa si la base de datos responde.
+
+---
+
+### Sprint 7 — Siguiente: Recetas Nuevas, Credenciales Propias y HTTPS *(planificado, sin iniciar)*
+**Objetivo:** Cerrar las brechas funcionales y de despliegue detectadas en la revisión de calidad de noviembre de 2026. **Estas historias no están implementadas**: sus escenarios son una propuesta que el Product Owner debe confirmar antes de empezar.
+
+| HU | Historia | Puntos estimados* | Responsable (propuesto) |
+|----|----------|-----------------|------------------------|
+| HU28 | Crear una nueva receta (producto) desde la interfaz | 8 | Javier Sepúlveda |
+| HU29 | Cambiar mi propia contraseña | 3 | Oscar Ruiz |
+| HU30 | Publicar el sistema con HTTPS | 5 | Oscar Ruiz |
+| **Total** | | **16 puntos** | |
+
+**Criterio de éxito del Sprint 7:** El ADMINISTRADOR crea un producto con su receta desde la interfaz; cualquier usuario cambia su propia contraseña; el sistema se publica por HTTPS y la sesión se renueva fuera de `localhost`.
+
+**Total del producto (HU01 a HU30):** 99 + 43 + 8 + 16 = **166 puntos** (150 entregados y 16 pendientes).
 
 ---
 
@@ -1303,12 +1344,637 @@ Entonces el sistema responde HTTP 429 (demasiadas peticiones)
 
 ---
 
+### HU22 — Editar los Datos de un Proveedor
+
+> **Como** ADMINISTRADOR,  
+> **Quiero** corregir los datos de contacto de un proveedor ya registrado,  
+> **Para** mantener actualizado el directorio de compras sin crear proveedores duplicados.
+
+**Sprint:** 5 | **MoSCoW:** Should Have | **Puntos:** 3 (estimación inicial) | **Estado:** Hecha  
+**RF relacionados:** RF03 | **Responsable (autor principal):** Andrés Fernández
+
+---
+
+#### Criterios de Aceptación
+
+**Escenario 1 — Actualización exitosa**
+
+```gherkin
+Dado que existe un proveedor registrado
+Cuando abro "Editar Proveedor", cambio el nombre de la empresa o los datos de contacto y guardo
+Entonces el sistema muestra "Proveedor actualizado con éxito."
+  Y la lista de proveedores muestra los datos nuevos
+```
+
+**Escenario 2 — El NIT no se puede modificar**
+
+```gherkin
+Dado que abro "Editar Proveedor"
+Entonces el campo NIT aparece deshabilitado y la ventana indica "NIT Inmutable"
+  Y la API no acepta cambios de NIT: es la llave de negocio que identifica al proveedor
+```
+
+**Escenario 3 — Datos inválidos**
+
+```gherkin
+Dado que edito un proveedor
+Cuando escribo un correo con formato inválido o un nombre de empresa de menos de 2 caracteres
+Entonces el sistema rechaza el cambio con HTTP 422
+  Y no se modifica ningún dato
+```
+
+**Escenario 4 — Guardar sin cambios**
+
+```gherkin
+Dado que abro "Editar Proveedor" y no modifico ningún campo
+Cuando guardo
+Entonces el sistema devuelve el proveedor tal como estaba, sin escribir en la base de datos
+```
+
+**Escenario 5 — Proveedor inexistente**
+
+```gherkin
+Dado que un proveedor fue consultado por un identificador que no existe
+Cuando se intenta actualizar
+Entonces el sistema responde HTTP 404: "Proveedor con id=<id> no encontrado."
+```
+
+**Escenario 6 — Control de acceso**
+
+```gherkin
+Dado que inicio sesión como OPERARIO
+Cuando intento actualizar un proveedor
+Entonces el sistema responde HTTP 403: "Acceso denegado: se requiere el rol ADMINISTRADOR."
+```
+
+---
+
+### HU23 — Buscar y Filtrar Pedidos
+
+> **Como** ADMINISTRADOR u OPERARIO,  
+> **Quiero** buscar pedidos por cliente y filtrarlos por estado,  
+> **Para** encontrar rápido el pedido que debo atender o consultar.
+
+**Sprint:** 5 | **MoSCoW:** Should Have | **Puntos:** 3 (estimación inicial) | **Estado:** Hecha  
+**RF relacionados:** RF05, RF06 | **Responsable (autor principal):** Andrés Fernández
+
+---
+
+#### Criterios de Aceptación
+
+**Escenario 1 — Resumen por estado**
+
+```gherkin
+Dado que existen pedidos en distintos estados
+Cuando abro "Pedidos"
+Entonces veo las tarjetas "Total Pedidos", "Pendientes", "En Producción" y "Completados" con su cantidad
+```
+
+**Escenario 2 — Filtrar por estado**
+
+```gherkin
+Dado que existen pedidos en varios estados
+Cuando elijo el filtro "En Producción"
+Entonces la lista muestra solo los pedidos EN_PRODUCCION
+  Y las opciones disponibles son: Todos, Pendiente, En Producción, Completado y Cancelado
+```
+
+**Escenario 3 — Buscar por cliente**
+
+```gherkin
+Dado que existe un pedido del cliente "Constructora Los Andes S.A.S."
+Cuando escribo "andes" en "Buscar por cliente..."
+Entonces la lista muestra ese pedido
+  Y la búsqueda es parcial y no distingue mayúsculas de minúsculas
+```
+
+**Escenario 4 — Combinar filtros**
+
+```gherkin
+Dado que he buscado un cliente
+Cuando además elijo un estado
+Entonces la lista muestra solo los pedidos de ese cliente que están en ese estado
+```
+
+**Escenario 5 — Sin resultados**
+
+```gherkin
+Dado que ningún pedido cumple los filtros
+Cuando consulto la lista
+Entonces el sistema muestra la lista vacía, sin error
+```
+
+**Escenario 6 — Filtros adicionales y orden en la API**
+
+```gherkin
+Dado que consulto GET /api/v1/orders/
+Entonces puedo filtrar también por tipo de casetón y por rango de fechas (fecha_inicio, fecha_fin)
+  Y el resultado viene paginado y ordenado del pedido más reciente al más antiguo
+  (la pantalla actual aún no expone el filtro por tipo ni por fechas)
+```
+
+---
+
+### HU24 — Editar, Buscar y Filtrar Cuentas de Usuario
+
+> **Como** ADMINISTRADOR,  
+> **Quiero** editar una cuenta (nombre, rol, contraseña) y encontrar usuarios por nombre, correo o rol,  
+> **Para** corregir datos, cambiar el rol de una persona o recuperarle el acceso si olvidó su contraseña.
+
+**Sprint:** 5 | **MoSCoW:** Should Have | **Puntos:** 5 (estimación inicial) | **Estado:** Hecha  
+**RF relacionados:** RF02 · RNF-SEG-01 | **Responsable (autor principal):** Andrés Fernández
+
+---
+
+#### Criterios de Aceptación
+
+**Escenario 1 — Editar nombre y rol**
+
+```gherkin
+Dado que existe una cuenta de usuario
+Cuando abro "Editar Usuario: <correo>", cambio el nombre o el rol y guardo con "Guardar Cambios"
+Entonces la cuenta queda actualizada y la lista muestra los datos nuevos
+```
+
+**Escenario 2 — Contraseña nueva opcional**
+
+```gherkin
+Dado que edito una cuenta
+Cuando dejo en blanco "Nueva Contraseña (opcional)"
+Entonces la contraseña actual se conserva
+
+Cuando escribo una contraseña válida
+Entonces se guarda cifrada con bcrypt y la persona entra con la nueva contraseña
+```
+
+**Escenario 3 — Contraseña nueva que no cumple la política**
+
+```gherkin
+Dado que escribo una contraseña nueva inválida
+Entonces el sistema responde HTTP 422 con el motivo:
+  "La contraseña debe tener al menos 8 caracteres."
+  "La contraseña debe contener al menos una letra mayúscula."
+  "La contraseña debe contener al menos un dígito numérico."
+  Y la contraseña anterior no cambia
+```
+
+**Escenario 4 — Correo ya usado por otra cuenta**
+
+```gherkin
+Dado que cambio el correo de una cuenta por uno que ya pertenece a otra
+Cuando guardo
+Entonces el sistema responde HTTP 409: "El correo '<correo>' ya está en uso por otro usuario."
+```
+
+**Escenario 5 — Rol inexistente o auto-desactivación**
+
+```gherkin
+Dado que asigno un rol que no existe
+Entonces el sistema responde HTTP 422: "El rol con ID <id> no existe."
+
+Dado que intento desactivar mi propia cuenta de ADMINISTRADOR mientras tengo la sesión abierta
+Entonces el sistema responde HTTP 422: "No puede desactivar su propia cuenta de Administrador en sesión."
+```
+
+**Escenario 6 — Buscar y filtrar la lista**
+
+```gherkin
+Dado que existen varios usuarios
+Cuando escribo parte del nombre o del correo en "Buscar por nombre o correo electrónico..."
+  O elijo "Administradores" u "Operarios" (la opción por defecto es "Todos los roles")
+Entonces la lista muestra solo los usuarios que cumplen el criterio
+  Y si ninguno cumple, muestra "No se encontraron usuarios con los criterios actuales."
+```
+
+**Escenario 7 — Control de acceso**
+
+```gherkin
+Dado que inicio sesión como OPERARIO
+Cuando intento editar o listar usuarios
+Entonces el sistema responde HTTP 403: "Acceso denegado: se requiere el rol ADMINISTRADOR."
+  Y la opción "Usuarios" no aparece en mi menú
+```
+
+---
+
+### HU25 — Consultar y Filtrar Solicitudes de Ajuste de Inventario
+
+> **Como** ADMINISTRADOR u OPERARIO,  
+> **Quiero** ver las solicitudes de ajuste de inventario y filtrarlas por estado, tipo y material,  
+> **Para** dar seguimiento a lo que falta por aprobar y a lo que ya se resolvió.
+
+**Sprint:** 5 | **MoSCoW:** Should Have | **Puntos:** 3 (estimación inicial) | **Estado:** Hecha  
+**RF relacionados:** RF10 | **Responsable (autor principal):** Andrés Fernández
+
+---
+
+#### Criterios de Aceptación
+
+**Escenario 1 — Listado paginado**
+
+```gherkin
+Dado que existen solicitudes de ajuste
+Cuando abro "Ajustes de Inventario"
+Entonces veo el listado paginado con el material, el tipo, la cantidad, el estado, el solicitante y el revisor
+  Y los contadores de pendientes y de ajustes aprobados
+```
+
+**Escenario 2 — Filtrar por estado**
+
+```gherkin
+Dado que existen ajustes pendientes, aprobados y rechazados
+Cuando elijo la pestaña "Pendientes", "Aprobados" o "Rechazados"
+Entonces la lista muestra solo los ajustes de ese estado
+```
+
+**Escenario 3 — Filtrar por tipo**
+
+```gherkin
+Dado que existen ajustes de distintos tipos
+Cuando elijo "Merma / Desperdicio", "Material Dañado", "Sobrante / Excedente" o "Conteo Físico"
+  (la opción por defecto es "Todos los tipos")
+Entonces la lista muestra solo los ajustes de ese tipo
+```
+
+**Escenario 4 — Buscar por material o solicitante**
+
+```gherkin
+Dado que escribo parte de un nombre en "Buscar por material, solicitante..."
+Entonces la lista muestra solo las solicitudes que coinciden
+```
+
+**Escenario 5 — Sin resultados**
+
+```gherkin
+Dado que ningún ajuste cumple los filtros
+Entonces el sistema muestra "No se encontraron solicitudes de ajuste"
+```
+
+**Escenario 6 — Acción de revisión solo para el ADMINISTRADOR**
+
+```gherkin
+Dado que hay un ajuste pendiente
+Cuando lo veo como ADMINISTRADOR
+Entonces aparece el botón "Revisar" para aprobarlo o rechazarlo (ver HU09)
+
+Cuando lo veo como OPERARIO
+Entonces puedo consultarlo, pero no puedo revisarlo
+```
+
+**Escenario 7 — Filtros de la API**
+
+```gherkin
+Dado que consulto GET /api/v1/stock-adjustments/
+Entonces puedo filtrar por estado (PENDIENTE, APROBADO, RECHAZADO), por tipo y por material
+  Y paginar con los parámetros page y limit
+```
+
+---
+
+### HU26 — Crear el Primer Administrador al Desplegar en Producción
+
+> **Como** RESPONSABLE DEL DESPLIEGUE,  
+> **Quiero** crear el primer administrador con un comando seguro,  
+> **Para** poder entrar a un sistema recién desplegado sin dejar credenciales conocidas ni cuentas sembradas.
+
+**Sprint:** 6 | **MoSCoW:** Must Have | **Puntos:** 3 (estimación inicial) | **Estado:** Hecha  
+**RF relacionados:** RF02 · RNF-SEG-01 · RNF-CONT-02 | **Responsable (autor principal):** Andrés Fernández
+
+---
+
+#### Criterios de Aceptación
+
+**Escenario 1 — En producción no se siembran usuarios**
+
+```gherkin
+Dado que despliego el sistema con ENVIRONMENT=production sobre una base de datos nueva
+Cuando el backend arranca
+Entonces no se crea ningún usuario automáticamente
+  Y la tabla de usuarios queda vacía hasta que se ejecute el comando de creación
+```
+
+**Escenario 2 — Crear el administrador**
+
+```gherkin
+Dado que el sistema está desplegado
+Cuando ejecuto "python -m app.scripts.create_admin --email admin@tuempresa.com" dentro del contenedor del backend
+  Y escribo la contraseña dos veces (no queda en el historial de la terminal)
+Entonces el sistema muestra "Administrador creado: admin@tuempresa.com"
+  Y esa persona puede iniciar sesión con el rol ADMINISTRADOR
+```
+
+**Escenario 3 — Las contraseñas no coinciden**
+
+```gherkin
+Dado que escribo dos contraseñas distintas
+Entonces el comando termina con "Las contraseñas no coinciden. No se creó nada."
+```
+
+**Escenario 4 — Contraseña que no cumple la política**
+
+```gherkin
+Dado que escribo una contraseña de menos de 8 caracteres, sin mayúscula o sin dígito
+Entonces el comando termina con "Datos inválidos: <motivo>" y no crea el usuario
+  (es la misma política de HU02: se reutiliza el mismo esquema de validación)
+```
+
+**Escenario 5 — El comando es seguro de repetir**
+
+```gherkin
+Dado que ya existe un usuario con ese correo
+Cuando vuelvo a ejecutar el comando
+Entonces muestra "Ya existe un usuario con el correo <correo>; no se modificó."
+  Y sugiere usar --reset-password si se quiere cambiar la contraseña
+```
+
+**Escenario 6 — Restablecer y desbloquear**
+
+```gherkin
+Dado que el único administrador olvidó su contraseña o su cuenta quedó bloqueada
+Cuando ejecuto el comando con --reset-password
+Entonces muestra "Contraseña restablecida y cuenta activada: <correo>"
+  Y la cuenta queda activa, con rol ADMINISTRADOR y con el contador de intentos fallidos en 0
+```
+
+---
+
+### HU27 — Arrancar el Sistema de Forma Segura y Verificar su Estado
+
+> **Como** RESPONSABLE DEL DESPLIEGUE,  
+> **Quiero** que el sistema se niegue a arrancar con una configuración incompleta o insegura y que informe si está sano,  
+> **Para** no publicar un sistema vulnerable y detectar a tiempo si la base de datos dejó de responder.
+
+**Sprint:** 6 | **MoSCoW:** Must Have | **Puntos:** 5 (estimación inicial) | **Estado:** Hecha  
+**RF relacionados:** RNF-CONT-02 · RNF-SEG-02 · RNF-BD-03 | **Responsable (autor principal):** Andrés Fernández
+
+---
+
+#### Criterios de Aceptación
+
+**Escenario 1 — Falta una variable obligatoria**
+
+```gherkin
+Dado que el archivo .env no define JWT_SECRET
+Cuando el backend intenta arrancar
+Entonces se detiene con "CASETECH no pudo arrancar: la configuración de entorno es inválida."
+  Y nombra la variable: "JWT_SECRET: falta definirla (agrégala en el archivo .env)"
+  Y no muestra un traceback ilegible
+```
+
+**Escenario 2 — Valores de ejemplo fuera de desarrollo**
+
+```gherkin
+Dado que ENVIRONMENT no es "development"
+Cuando POSTGRES_PASSWORD, JWT_SECRET o las contraseñas iniciales tienen el valor de ejemplo de .env.example
+Entonces el backend se niega a arrancar con
+  "<VARIABLE> todavía tiene el valor de ejemplo de .env.example. Configura un valor real en .env antes de desplegar fuera de development."
+```
+
+**Escenario 3 — En desarrollo se permiten los valores de ejemplo**
+
+```gherkin
+Dado que ENVIRONMENT es "development"
+Cuando copio .env.example a .env sin editarlo y levanto el sistema
+Entonces el sistema arranca, para que cualquiera pueda probar el proyecto sin fricción
+```
+
+**Escenario 4 — Estado del servicio**
+
+```gherkin
+Dado que el backend está arriba y conecta con PostgreSQL
+Cuando consulto GET /health
+Entonces recibo HTTP 200 con el estado "ok", la versión del sistema y "database": "ok"
+```
+
+**Escenario 5 — Base de datos caída**
+
+```gherkin
+Dado que el backend no puede conectar con PostgreSQL
+Cuando consulto GET /health
+Entonces recibo HTTP 503 con "status": "degraded" y "database": "error"
+  Y Docker marca el backend como "unhealthy", así que el frontend no arranca sobre un backend roto
+```
+
+**Escenario 6 — Migraciones automáticas**
+
+```gherkin
+Dado que levanto el contenedor del backend
+Cuando arranca
+Entonces aplica las migraciones pendientes de Alembic (incluidos los Stored Procedures) antes de atender peticiones
+```
+
+**Escenario 7 — Los errores imprevistos no filtran detalles**
+
+```gherkin
+Dado que ocurre un error no controlado en el servidor
+Entonces el cliente recibe HTTP 500 con "Error interno del servidor. Intenta de nuevo; si el problema persiste, contacta al administrador."
+  Y el detalle técnico (consultas, rutas internas) queda solo en el registro del servidor
+```
+
+---
+
+### HU28 — Crear una Nueva Receta (Producto) desde la Interfaz
+
+> **Como** ADMINISTRADOR,  
+> **Quiero** crear un producto nuevo junto con su receta de materiales desde una sola pantalla,  
+> **Para** fabricar un producto distinto a Lona, Guadua e Icopor sin pedirle al equipo técnico que lo agregue directamente en la base de datos.
+
+**Sprint:** 7 (planificado, sin iniciar) | **MoSCoW:** Should Have | **Puntos:** 8 (estimación inicial) | **Estado:** Pendiente  
+**RF relacionados:** RF18 · RNF-ARQ-03 | **Responsable (propuesto):** Javier Sepúlveda | **Issue:** [#99](https://github.com/andresactividades1419-cloud/CASETECH/issues/99)
+
+> **Situación actual:** la pantalla "Recetas BOM" solo permite agregar y editar materiales de los tres tipos de casetón que ya existen. El endpoint `GET /api/v1/product-types` existe, pero `POST` nunca se construyó, así que un producto nuevo solo se puede crear insertándolo en la base de datos. El PO pidió que se llame **"Nueva Receta"** (no "Nuevo Tipo de Casetón", porque el producto no siempre será un casetón).
+
+---
+
+#### Criterios de Aceptación (propuestos, sujetos a confirmación del Product Owner)
+
+**Escenario 1 — Formulario combinado**
+
+```gherkin
+Dado que estoy en "Recetas BOM" como ADMINISTRADOR
+Cuando pulso "Nueva Receta"
+Entonces veo un formulario con el nombre del producto, su descripción y una lista de materiales
+  donde agrego uno por uno cada material con su cantidad por unidad
+```
+
+**Escenario 2 — Creación exitosa**
+
+```gherkin
+Dado que escribo un nombre nuevo y agrego al menos un material con cantidad mayor que cero
+Cuando guardo
+Entonces el sistema crea el producto y todas las líneas de su receta en una sola operación
+  Y el producto aparece en la lista de "Recetas BOM"
+```
+
+**Escenario 3 — Nombre duplicado**
+
+```gherkin
+Dado que ya existe un producto con ese nombre
+Cuando intento guardar
+Entonces el sistema responde HTTP 409 y no crea nada (el nombre es único)
+```
+
+**Escenario 4 — Receta sin materiales o con un material repetido**
+
+```gherkin
+Dado que intento guardar una receta sin ningún material
+Entonces el sistema no la guarda y explica que la receta debe tener al menos un material
+
+Dado que agrego el mismo material dos veces
+Entonces el sistema lo rechaza con el mismo criterio de HU19
+```
+
+**Escenario 5 — Todo o nada**
+
+```gherkin
+Dado que una de las líneas de la receta es inválida
+Cuando guardo
+Entonces no se crea ni el producto ni ninguna de sus líneas
+```
+
+**Escenario 6 — Disponible para pedidos** *(decisión pendiente del PO)*
+
+```gherkin
+Dado que el producto nuevo está activo y tiene receta
+Cuando registro un pedido (HU07)
+Entonces el producto aparece en la lista de tipos y el motor BOM usa su receta tanto en la previsualización (HU11) como en el descuento de inventario (HU08)
+```
+
+**Escenario 7 — Control de acceso**
+
+```gherkin
+Dado que inicio sesión como OPERARIO
+Cuando intento crear una receta
+Entonces el sistema responde HTTP 403 y la opción no aparece en mi menú
+```
+
+---
+
+### HU29 — Cambiar mi Propia Contraseña
+
+> **Como** usuario del sistema (ADMINISTRADOR u OPERARIO),  
+> **Quiero** cambiar mi propia contraseña,  
+> **Para** mantener mi cuenta segura sin depender de que un administrador lo haga por mí.
+
+**Sprint:** 7 (planificado, sin iniciar) | **MoSCoW:** Should Have | **Puntos:** 3 (estimación inicial) | **Estado:** Pendiente  
+**RF relacionados:** RF01, RF02 · RNF-SEG-01 | **Responsable (propuesto):** Oscar Ruiz
+
+> **Situación actual:** la contraseña solo la puede cambiar un ADMINISTRADOR editando la cuenta (HU24) o quien despliega con `--reset-password` (HU26). No existe un cambio de contraseña hecho por la propia persona.
+
+---
+
+#### Criterios de Aceptación (propuestos, sujetos a confirmación del Product Owner)
+
+**Escenario 1 — Cambio exitoso**
+
+```gherkin
+Dado que inicié sesión
+Cuando escribo mi contraseña actual, una contraseña nueva válida y su confirmación
+Entonces el sistema actualiza mi contraseña (cifrada con bcrypt)
+  Y cierra mis demás sesiones abiertas, revocando sus tokens de renovación
+```
+
+**Escenario 2 — Contraseña actual incorrecta**
+
+```gherkin
+Dado que escribo mal mi contraseña actual
+Cuando intento el cambio
+Entonces el sistema lo rechaza y no modifica nada
+```
+
+**Escenario 3 — La contraseña nueva no cumple la política**
+
+```gherkin
+Dado que la contraseña nueva tiene menos de 8 caracteres, no tiene mayúscula o no tiene un dígito
+Entonces el sistema la rechaza con el mismo mensaje de HU02
+```
+
+**Escenario 4 — La nueva es igual a la actual o la confirmación no coincide**
+
+```gherkin
+Dado que la contraseña nueva es igual a la actual, o la confirmación no coincide
+Entonces el sistema lo rechaza explicando el motivo
+```
+
+**Escenario 5 — Sin sesión**
+
+```gherkin
+Dado que no tengo una sesión activa
+Cuando intento cambiar la contraseña
+Entonces el sistema responde HTTP 401
+```
+
+---
+
+### HU30 — Publicar el Sistema con HTTPS
+
+> **Como** RESPONSABLE DEL DESPLIEGUE,  
+> **Quiero** publicar el sistema detrás de HTTPS,  
+> **Para** que el tráfico (contraseñas y tokens) viaje cifrado y la sesión se pueda renovar fuera de `localhost`.
+
+**Sprint:** 7 (planificado, sin iniciar) | **MoSCoW:** Must Have | **Puntos:** 5 (estimación inicial) | **Estado:** Pendiente  
+**RF relacionados:** RNF-SEG-02 · RNF-CONT-01 | **Responsable (propuesto):** Oscar Ruiz
+
+> **Situación actual:** el contenedor Nginx del proyecto solo habla HTTP (puerto 80). La cookie de renovación de sesión se marca `Secure`, así que en un servidor real sin HTTPS el inicio de sesión funciona pero la sesión se pierde al recargar la página o a los 30 minutos. El certificado no está en el repositorio porque depende del dominio de cada despliegue (ver [`07-despliegue.md`](./07-despliegue.md)). El backend y Nginx ya respetan `X-Forwarded-Proto`, así que no hay que cambiarlos para recibir HTTPS desde un proxy.
+
+---
+
+#### Criterios de Aceptación (propuestos, sujetos a confirmación del Product Owner)
+
+**Escenario 1 — Acceso cifrado**
+
+```gherkin
+Dado que el sistema está publicado con un dominio y un certificado válido
+Cuando abro https://<dominio>
+Entonces el navegador muestra la conexión como segura y la aplicación carga normalmente
+```
+
+**Escenario 2 — Redirección automática**
+
+```gherkin
+Dado que escribo http://<dominio>
+Entonces el sistema me redirige a https://<dominio> (HTTP 301)
+```
+
+**Escenario 3 — La sesión se renueva**
+
+```gherkin
+Dado que inicié sesión por HTTPS
+Cuando recargo la página o pasan más de 30 minutos
+Entonces la sesión se renueva sola, porque el navegador sí guarda la cookie Secure de renovación
+```
+
+**Escenario 4 — Cabecera de seguridad**
+
+```gherkin
+Dado que consulto cualquier página del sitio
+Entonces la respuesta incluye la cabecera Strict-Transport-Security para que el navegador use siempre HTTPS
+```
+
+**Escenario 5 — Redirecciones de la API con https**
+
+```gherkin
+Dado que el sistema está detrás del proxy con TLS
+Cuando la API redirige una ruta (por ejemplo /materials a /materials/)
+Entonces la dirección de destino usa https y no http
+```
+
+**Escenario 6 — Renovación del certificado**
+
+```gherkin
+Dado que el certificado está próximo a vencer
+Entonces se renueva automáticamente, sin intervención manual ni caída del servicio
+```
+
+---
+
 ## 4. Glosario de Roles
 
 | Rol | Descripción | Capacidades en el sistema |
 |-----|-------------|--------------------------|
 | **ADMINISTRADOR** | Usuario con acceso completo al sistema. Generalmente el jefe de producción o responsable de compras. | CRUD completo de usuarios, proveedores, pedidos, materiales y ajustes. Aprobación de ajustes de inventario. Acceso a reportes y auditoría. |
 | **OPERARIO** | Usuario con acceso restringido a las funciones operativas del día a día. | Consulta de pedidos, visualización de inventario, registro de avance de producción. Sin acceso a gestión de usuarios, proveedores ni aprobación de ajustes. |
+| **RESPONSABLE DEL DESPLIEGUE** | Persona técnica del equipo que instala, configura y opera el sistema en un servidor. No es un rol dentro de la aplicación: usa la terminal, Docker y los comandos de administración. | Configura las variables de entorno, levanta el sistema, crea el primer administrador (HU26) y verifica el estado del servicio (HU27). |
 
 ---
 

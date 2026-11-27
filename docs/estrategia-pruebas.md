@@ -48,7 +48,7 @@ CASETECH es un ERP de producción e inventario para la fabricación de casetones
 
 ## 5. CI y umbrales
 
-- Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml). Último run en verde de `main`: [PR #116, 2026-09-08](https://github.com/andresactividades1419-cloud/CASETECH/actions/runs/34177133352).
+- Workflow: [`.github/workflows/tests.yml`](../.github/workflows/tests.yml). Último run en verde de `main`: [PR #116, 2026-09-08](https://github.com/andresactividades1419-cloud/CASETECH/actions/runs/34177133352).
 - Jobs obligatorios en la protección de `main`: **Backend CI (Lint, Typecheck, Audit, Tests)** y **Frontend CI (Lint, Security Audit, Vitest, Build)**, con la rama al día y 1 aprobación.
 - El CI solo se dispara con *push* o *pull request* hacia `main` o `develop`: la rama `test/semana-01`, donde están los umbrales de cobertura y los E2E, **todavía no ha corrido en el CI**. Se verá en el primer PR.
 

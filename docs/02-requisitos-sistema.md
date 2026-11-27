@@ -851,16 +851,16 @@ settings = Settings()
 
 | Requisito Funcional | Historia de Usuario | Módulo | Sprint |
 |---------------------|---------------------|--------|--------|
-| RF01 | HU01 — Login seguro | M0 | Sprint 1 |
-| RF02 | HU02 — Gestión de usuarios | M0 | Sprint 1 |
-| RF03 | HU03 — Registro de proveedor | M1 | Sprint 1 |
+| RF01 | HU01 — Login seguro · HU29 — Cambiar mi contraseña *(pendiente)* | M0 | Sprint 1 · Sprint 7 |
+| RF02 | HU02 — Gestión de usuarios · HU24 — Editar, buscar y filtrar cuentas · HU26 — Primer administrador en producción · HU29 — Cambiar mi contraseña *(pendiente)* | M0 | Sprint 1 · 5 · 6 · 7 |
+| RF03 | HU03 — Registro de proveedor · HU22 — Editar proveedor | M1 | Sprint 1 · 5 |
 | RF04 | HU04 — Búsqueda de proveedores | M1 | Sprint 3 |
-| RF05 | HU07 — Registro de pedido | M2 | Sprint 2 |
-| RF06 | HU10 — Control de estados | M2 | Sprint 2 |
+| RF05 | HU07 — Registro de pedido · HU23 — Buscar y filtrar pedidos | M2 | Sprint 2 · 5 |
+| RF06 | HU10 — Control de estados · HU23 — Buscar y filtrar pedidos | M2 | Sprint 2 · 5 |
 | RF07 | HU11 — Cálculo de receta | M2 | Sprint 2 |
 | RF08 | HU08 — Descuento automático SP | M2 | Sprint 3 |
 | RF09 | HU05 — Ver inventario | M3 | Sprint 3 |
-| RF10 | HU09 — Ajustes de inventario | M3 | Sprint 3 |
+| RF10 | HU09 — Ajustes de inventario · HU25 — Consultar y filtrar ajustes | M3 | Sprint 3 · 5 |
 | RF11 | HU13 — Alertas de stock | M3 | Sprint 3 |
 | RF12 | HU06 — Reportes operativos | Transversal | Sprint 4 |
 | RF13 | HU12 — Historial de movimientos | M3 | Sprint 4 |
@@ -868,8 +868,11 @@ settings = Settings()
 | RF15 | HU15 — Auditoría de acciones | M0 | Sprint 4 |
 | RF16 | HU16 — Registrar compra e ingresar stock · HU17 — Consultar compras | M3 | Sprint 5 |
 | RF17 | HU18 — Gestionar materias primas | M3 | Sprint 5 |
-| RF18 | HU19 — Administrar recetas BOM | M2 | Sprint 5 |
+| RF18 | HU19 — Administrar recetas BOM · HU28 — Nueva receta desde la interfaz *(pendiente)* | M2 | Sprint 5 · 7 |
 | RF19 | HU20 — Mantener y cerrar sesión · HU21 — Bloqueo de cuenta | M0 | Sprint 5 |
+| RNF-CONT-02 | HU26 — Primer administrador en producción · HU27 — Arranque seguro y estado del sistema | Operación | Sprint 6 |
+| RNF-SEG-02 | HU27 — Arranque seguro y estado del sistema · HU30 — Publicar con HTTPS *(pendiente)* | Operación | Sprint 6 · 7 |
+| RNF-BD-03 | HU27 — Migraciones automáticas al arrancar | Operación | Sprint 6 |
 
 ---
 

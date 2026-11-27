@@ -25,9 +25,9 @@ Se usan como "regla de medir" para comparar las demás:
 | **HU03** — Registrar proveedor con NIT único | **5** | Alta con validaciones, regla de unicidad y un Stored Procedure. Es el CRUD "típico". |
 | **HU08** — Descuento automático al iniciar producción | **13** | Núcleo del sistema: Stored Procedure con bloqueo pesimista, varias tablas y manejo de errores. |
 
-## 3. Hoja de estimación — HU16 a HU21
+## 3. Hoja de estimación — HU16 a HU30
 
-Estas seis historias describen funcionalidad que ya estaba construida y se documentó de forma retroactiva (Sprint 5). La columna **Estimación inicial** es una propuesta razonada por comparación con las referencias; **debe confirmarse con el equipo** llenando las columnas de votos.
+Las historias **HU16 a HU27** describen funcionalidad que ya estaba construida y se documentó de forma retroactiva (Sprints 5 y 6). Las historias **HU28 a HU30 están pendientes**: se estiman antes de construirlas (Sprint 7). La columna **Estimación inicial** es una propuesta razonada por comparación con las referencias; **debe confirmarse con el equipo** en una sesión real de planning poker (sección 5).
 
 | HU | Historia | Estimación inicial | Voto Andrés | Voto Javier | Voto Oscar | **Puntos finales (equipo)** |
 |---|---|---|---|---|---|---|
@@ -37,6 +37,15 @@ Estas seis historias describen funcionalidad que ya estaba construida y se docum
 | HU19 | Administrar recetas BOM | 5 | | | | _pendiente_ |
 | HU20 | Mantener y cerrar la sesión de forma segura | 5 | | | | _pendiente_ |
 | HU21 | Bloquear la cuenta tras intentos fallidos | 3 | | | | _pendiente_ |
+| HU22 | Editar los datos de un proveedor | 3 | | | | _pendiente_ |
+| HU23 | Buscar y filtrar pedidos | 3 | | | | _pendiente_ |
+| HU24 | Editar, buscar y filtrar cuentas de usuario | 5 | | | | _pendiente_ |
+| HU25 | Consultar y filtrar solicitudes de ajuste de inventario | 3 | | | | _pendiente_ |
+| HU26 | Crear el primer administrador al desplegar en producción | 3 | | | | _pendiente_ |
+| HU27 | Arrancar el sistema de forma segura y verificar su estado | 5 | | | | _pendiente_ |
+| HU28 | Crear una nueva receta (producto) desde la interfaz *(pendiente de construir)* | 8 | | | | _pendiente_ |
+| HU29 | Cambiar mi propia contraseña *(pendiente de construir)* | 3 | | | | _pendiente_ |
+| HU30 | Publicar el sistema con HTTPS *(pendiente de construir)* | 5 | | | | _pendiente_ |
 
 ### Razonamiento de la estimación inicial
 
@@ -48,6 +57,15 @@ Estas seis historias describen funcionalidad que ya estaba construida y se docum
 | HU19 — **5** | CRUD con unicidad compuesta (tipo de casetón + material), selector que oculta lo ya usado y una pestaña por tipo. Comparable a HU03 (5). |
 | HU20 — **5** | Poco código pero alto riesgo de seguridad: rotación de tokens, cookie `httpOnly`, hash en base de datos y un interceptor que renueva la sesión sin repetir peticiones. La incertidumbre sube el valor. |
 | HU21 — **3** | Lógica simple (contador, bloqueo y límite por IP), pero crítica; se probó con casos específicos. |
+| HU22 — **3** | Formulario de edición con actualización parcial, validaciones simples y NIT inmutable. Sin transacciones ni reglas complejas. Equivalente a HU04 (3). |
+| HU23 — **3** | Solo lectura: tarjetas de resumen, filtro por estado y búsqueda por cliente que se combinan. Equivalente a HU04 (3). |
+| HU24 — **5** | Edición con varias reglas (correo único, rol existente, política de contraseña, no auto-desactivarse) más búsqueda y filtro por rol. Comparable a HU03 (5). |
+| HU25 — **3** | Solo lectura con tres filtros (estado, tipo, texto) y paginación. Equivalente a HU04 (3). |
+| HU26 — **3** | Comando pequeño que reutiliza la validación de contraseña de HU02. Poco código, pero es lo que permite entrar a un sistema recién desplegado. |
+| HU27 — **5** | Varias piezas pequeñas pero críticas: validación de configuración con mensajes claros, `/health` que consulta la base de datos, healthchecks de Docker y manejador global de errores. Comparable a HU03 (5). |
+| HU28 — **8** | *(Pendiente.)* Endpoint nuevo con transacción en dos tablas (producto y líneas de receta), formulario dinámico con lista de materiales y una decisión de negocio abierta (si el producto aparece en "Nuevo Pedido"). Comparable a HU16 (8). |
+| HU29 — **3** | *(Pendiente.)* Un endpoint y un formulario que reutilizan las reglas de HU02; revocar las demás sesiones agrega algo de riesgo. |
+| HU30 — **5** | *(Pendiente.)* Poco código, pero depende del dominio y del proveedor del certificado (proxy con TLS, redirección, HSTS, renovación). La incertidumbre sube el valor, como en HU20 (5). |
 
 ## 4. Historias HU01 a HU15
 

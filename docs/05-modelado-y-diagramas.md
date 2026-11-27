@@ -158,6 +158,7 @@ flowchart LR
     OP(["👷 OPERARIO"])
     AD(["👤 ADMINISTRADOR"])
     AD -. "hereda todo lo del operario" .-> OP
+    DEP(["🛠️ RESPONSABLE DEL DESPLIEGUE"])
 
     subgraph SIS["Sistema CASETECH ERP"]
         direction TB
@@ -174,6 +175,9 @@ flowchart LR
             CU09(["CU09 · Consultar compras"])
             CU10(["CU10 · Solicitar ajuste de inventario"])
             CU11(["CU11 · Consultar Kardex y exportarlo"])
+            CU19(["CU19 · Buscar y filtrar pedidos"])
+            CU20(["CU20 · Consultar y filtrar ajustes de inventario"])
+            CU24(["CU24 · Cambiar mi propia contraseña (pendiente)"])
         end
 
         subgraph ADM["Funciones exclusivas del ADMINISTRADOR"]
@@ -184,6 +188,12 @@ flowchart LR
             CU16(["CU16 · Aprobar o rechazar ajuste"])
             CU17(["CU17 · Consultar bitácora de auditoría"])
             CU18(["CU18 · Exportar reportes CSV"])
+            CU23(["CU23 · Crear nueva receta desde la interfaz (pendiente)"])
+        end
+
+        subgraph OPS["Operación y despliegue — RESPONSABLE DEL DESPLIEGUE"]
+            CU21(["CU21 · Crear el primer administrador"])
+            CU22(["CU22 · Arrancar de forma segura y verificar el estado"])
         end
     end
 
@@ -198,6 +208,9 @@ flowchart LR
     OP --- CU09
     OP --- CU10
     OP --- CU11
+    OP --- CU19
+    OP --- CU20
+    OP --- CU24
 
     AD --- CU12
     AD --- CU13
@@ -206,8 +219,15 @@ flowchart LR
     AD --- CU16
     AD --- CU17
     AD --- CU18
+    AD --- CU23
+
+    DEP --- CU21
+    DEP --- CU22
 
     CU07 -. "«include»" .-> CU06
+
+    classDef pendiente stroke-dasharray: 5 5,stroke:#b45309
+    class CU23,CU24 pendiente
 ```
 
 > La relación `«include»` de CU07 hacia CU06 significa que, para iniciar producción, la pantalla siempre muestra primero la previsualización del consumo de materiales (CU06) y solo habilita el botón de confirmar si hay stock suficiente. El descuento del inventario en sí lo hace el sistema automáticamente (Stored Procedure), por eso no es un caso de uso separado.
@@ -227,15 +247,21 @@ flowchart LR
 | CU09 | Consultar compras | Ambos | HU17 | `GET /purchases` |
 | CU10 | Solicitar ajuste de inventario | Ambos | HU09 | `POST /stock-adjustments` |
 | CU11 | Consultar Kardex y exportarlo | Ambos | HU12 | `GET /dashboard/movements` |
-| CU12 | Gestionar usuarios | ADMINISTRADOR | HU02 | `/users` |
-| CU13 | Gestionar proveedores | ADMINISTRADOR | HU03 | `POST/PUT/PATCH /providers` |
+| CU12 | Gestionar usuarios (crear, editar, buscar) | ADMINISTRADOR | HU02, HU24 | `/users` |
+| CU13 | Gestionar proveedores (registrar, editar, activar) | ADMINISTRADOR | HU03, HU22 | `POST/PUT/PATCH /providers` |
 | CU14 | Gestionar materias primas | ADMINISTRADOR | HU18 | `POST/PUT/PATCH /materials` |
 | CU15 | Administrar recetas BOM | ADMINISTRADOR | HU19 | `/recipes` |
 | CU16 | Aprobar o rechazar ajuste | ADMINISTRADOR | HU09 | `POST /stock-adjustments/{id}/review` |
 | CU17 | Consultar bitácora de auditoría | ADMINISTRADOR | HU15 | `GET /dashboard/audit-logs` |
 | CU18 | Exportar reportes CSV | ADMINISTRADOR | HU06 | `GET /reports/*/export-csv` |
+| CU19 | Buscar y filtrar pedidos | Ambos | HU23 | `GET /orders?estado=&cliente=` |
+| CU20 | Consultar y filtrar ajustes de inventario | Ambos | HU25 | `GET /stock-adjustments` |
+| CU21 | Crear el primer administrador | RESPONSABLE DEL DESPLIEGUE | HU26 | `python -m app.scripts.create_admin` |
+| CU22 | Arrancar de forma segura y verificar el estado | RESPONSABLE DEL DESPLIEGUE | HU27 | `GET /health` |
+| CU23 | Crear nueva receta desde la interfaz *(pendiente)* | ADMINISTRADOR | HU28 | `POST /product-types` *(por construir)* |
+| CU24 | Cambiar mi propia contraseña *(pendiente)* | Ambos | HU29 | *(por construir)* |
 
-> **Nota:** las historias HU16 a HU21 describen funcionalidad que ya está construida y se documentan en [`03-historias-de-usuario.md`](./03-historias-de-usuario.md).
+> **Nota:** las historias HU16 a HU27 describen funcionalidad que ya está construida y se documentan en [`03-historias-de-usuario.md`](./03-historias-de-usuario.md). HU28 y HU29 están **pendientes** (CU23 y CU24, dibujados con línea punteada). HU30 (publicar con HTTPS) es de infraestructura y no tiene caso de uso.
 
 ---
 
