@@ -317,7 +317,7 @@ docker compose exec frontend pnpm audit --audit-level=moderate
 ```
 
 ### Integración continua
-`.github/workflows/ci.yml` ejecuta en cada *push* o *pull request* hacia `main` o `develop`: **Backend** (Ruff, MyPy, pip-audit, Pytest) y **Frontend** (ESLint, pnpm audit, Vitest, build). Ambos son obligatorios para fusionar a `main`. Los E2E se ejecutan a mano.
+`.github/workflows/tests.yml` ejecuta en cada *push* o *pull request* hacia `main` o `develop`: **Backend** (Ruff, MyPy, pip-audit, Pytest) y **Frontend** (ESLint, pnpm audit, Vitest, build). Ambos son obligatorios para fusionar a `main`. Los E2E se ejecutan a mano.
 
 ---
 
@@ -354,7 +354,7 @@ Si falta una variable obligatoria, el backend **no arranca** y explica cuál. Pa
 |---|---|
 | [`docs/01-analisis-y-alcance.md`](./docs/01-analisis-y-alcance.md) | Análisis del negocio y alcance |
 | [`docs/02-requisitos-sistema.md`](./docs/02-requisitos-sistema.md) | Requisitos funcionales (RF01–RF19) y no funcionales |
-| [`docs/03-historias-de-usuario.md`](./docs/03-historias-de-usuario.md) | 21 historias de usuario con criterios de aceptación y Sprints |
+| [`docs/03-historias-de-usuario.md`](./docs/03-historias-de-usuario.md) | 30 historias de usuario con criterios de aceptación y Sprints |
 | [`docs/04-modelo-datos.md`](./docs/04-modelo-datos.md) | Modelo de datos (13 tablas) y diccionario |
 | [`docs/05-modelado-y-diagramas.md`](./docs/05-modelado-y-diagramas.md) | MER, modelo relacional, casos de uso, clases, secuencia y estados |
 | [`docs/06-arquitectura.md`](./docs/06-arquitectura.md) | Arquitectura del sistema, decisiones y limitaciones |
@@ -364,6 +364,7 @@ Si falta una variable obligatoria, el backend **no arranca** y explica cuál. Pa
 | [`docs/scrum/`](./docs/scrum) | Product backlog y planning poker |
 | [`docs/equipo-y-retrospectiva.md`](./docs/equipo-y-retrospectiva.md) | Roles Scrum, reparto del trabajo, proceso de revisión y plantilla de retrospectiva |
 | [`docs/matriz-rotacion.md`](./docs/matriz-rotacion.md) | Rotación de capas por semana y cobertura semanal |
+| [`docs/lista-de-chequeo-entrega.md`](./docs/lista-de-chequeo-entrega.md) | Estado de los 14 criterios de entrega, con evidencia y pendientes |
 
 ---
 
