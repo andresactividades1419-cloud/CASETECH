@@ -14,9 +14,9 @@ Reglas:
 
 | Integrante (usuario GitHub) | S1 | S2 | S3 | S4 | S5 | S6 | S7 | S8 | S9 |
 |---|---|---|---|---|---|---|---|---|---|
-| @andres141918-prog | E2E | API | Front: ProtectedRoute + menú por rol | | | | | | |
-| @javieburgossepul-cpu | E2E | Front | Front: OrderModal (+ responsable del backend ≥ 40 %) | | | | | | |
-| @oscark2209 | E2E | E2E (CI con umbral) | Front: LoginPage | | | | | | |
+| @andres141918-prog | E2E | API | Front: ProtectedRoute + menú por rol | Front (contrato que consume el frontend) | | | | | |
+| @javieburgossepul-cpu | E2E | Front | Front: OrderModal (+ responsable del backend ≥ 40 %) | E2E (seguridad y contrato de errores) | | | | | |
+| @oscark2209 | E2E | E2E (CI con umbral) | Front: LoginPage | API (recurso principal: pedidos) | | | | | |
 
 > **Excepción S2**: en S1 los tres integrantes trabajaron en E2E. Con un grupo de 3 (Front, API y E2E) es inevitable que una persona repita E2E en S2. La asume @oscark2209 con el montaje del CI con umbral (`.github/workflows/tests.yml`), que es un entregable distinto al test Playwright de S1. Según la regla de rotación, en S3–S5 debe pasar por Front, API y BD antes de volver a E2E.
 
@@ -38,6 +38,16 @@ Primero se fusiona la preparación compartida (React Testing Library, jsdom, `re
 | @andres141918-prog | `ProtectedRoute` + menú por rol | `test/week-03-front-protected-route` | ≥ 3 tests de componente + mutante |
 | @javieburgossepul-cpu | `OrderModal` | `test/week-03-front-order-modal` | ≥ 3 tests de componente + mutante; páginas extra Pedidos y Materiales. Responsable del backend ≥ 40 % (hoy 69 %) |
 | @oscark2209 | `LoginPage` | `test/week-03-front-login-page` | ≥ 3 tests de componente + mutante + arreglo de accesibilidad; páginas extra Dashboard y Proveedores |
+
+### Ramas de trabajo S4 (desde `develop`) — pruebas de API, vuelve la rotación
+
+Cada integrante tomó una capa distinta a la de S2 (grupo de 3: API, Front y E2E).
+
+| Integrante | Capa / ángulo | Rama | Entregable |
+|---|---|---|---|
+| @oscark2209 | API: recurso principal (pedidos) | `test/week-04-api-orders` | 8 tests de API + mutante; hallazgo: fechas fijas `2026-12-31` que caducaban |
+| @javieburgossepul-cpu | E2E: seguridad y contrato de errores | `test/week-04-api-security-errors` | 9 tests de API (401/403/autorizado) + mutante; hallazgo corregido: JSON mal formado respondía 422 con lista interna |
+| @andres141918-prog | Front: contrato que consume el frontend | `test/week-04-front-contract` | 7 tests de API + mutante; hallazgos corregidos: fuga del error crudo de PostgreSQL en proveedores y "Usuario #undefined" en Compras. Además, tests de las páginas Compras y Ajustes para el piso del 50 % del frontend |
 
 ## Cobertura semanal
 
