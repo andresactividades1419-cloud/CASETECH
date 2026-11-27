@@ -119,8 +119,9 @@ concurrency = ["greenlet", "thread"]
 # se fija 68 % (un punto de margen por diferencias entre máquinas). Antes: 56 %.
 # Cierre semana 3 (2026-11-25): el CI midió 69.15 % → umbral 69 (el mayor entre el
 # piso de la semana, 40, y la cobertura real redondeada hacia abajo).
+# Cierre semana 4 (2026-11-27): el CI midió 76.50 % → umbral 76 (piso de la semana: 50).
 # ¿Impacto? Si la cobertura baja de este valor, pytest (local y en CI) falla.
-fail_under = 69
+fail_under = 76
 
 # ============================================================
 # MyPy — Type checking
