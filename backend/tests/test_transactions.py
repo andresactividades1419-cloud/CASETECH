@@ -45,7 +45,7 @@ async def test_start_production_insufficient_stock_returns_422(
         "cliente": "Constructora Los Andes S.A.S.",
         "tipo_caseton_id": 1,
         "cantidad": 10,
-        "fecha_entrega_estimada": "2026-12-31",
+        "fecha_entrega_estimada": "2099-12-31",
         "observaciones": "Pedido de prueba para validar bloqueo por stock insuficiente",
     }
     create_res = await client.post(
@@ -91,7 +91,7 @@ async def test_state_machine_rejects_invalid_transitions(
         "cliente": "Constructora Bolívar S.A.",
         "tipo_caseton_id": 1,
         "cantidad": 1,
-        "fecha_entrega_estimada": "2026-12-31",
+        "fecha_entrega_estimada": "2099-12-31",
     }
     create_res = await client.post(
         "/api/v1/orders/", json=create_payload, headers=admin_headers
@@ -189,7 +189,7 @@ async def test_cancel_order_in_production_reverts_inventory(
         "cliente": "Constructora Andina S.A.",
         "tipo_caseton_id": 1,
         "cantidad": 2,
-        "fecha_entrega_estimada": "2026-12-31",
+        "fecha_entrega_estimada": "2099-12-31",
     }
     create_res = await client.post(
         "/api/v1/orders/", json=create_payload, headers=admin_headers
@@ -259,7 +259,7 @@ async def test_create_order_retries_on_codigo_pedido_collision(
         "cliente": "Constructora Prueba Concurrencia",
         "tipo_caseton_id": 1,
         "cantidad": 5,
-        "fecha_entrega_estimada": "2026-12-31",
+        "fecha_entrega_estimada": "2099-12-31",
     }
 
     primer_res = await client.post(
