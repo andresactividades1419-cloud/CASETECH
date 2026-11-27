@@ -26,7 +26,7 @@ async def test_recipe_preview_endpoint(
         "cliente": "Constructora Bolívar S.A.",
         "tipo_caseton_id": 1,
         "cantidad": 10,
-        "fecha_entrega_estimada": "2026-12-31",
+        "fecha_entrega_estimada": "2099-12-31",
     }
     create_res = await client.post(
         "/api/v1/orders/", json=create_payload, headers=admin_headers
