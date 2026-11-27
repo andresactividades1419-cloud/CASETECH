@@ -8,6 +8,8 @@ Convenciones:
 - Las funciones son ``async`` para mantener compatibilidad con asyncpg.
 """
 
+import logging
+
 from fastapi import HTTPException, status
 from sqlalchemy import func, or_, select, text, update
 from sqlalchemy.exc import DBAPIError, IntegrityError
@@ -20,6 +22,8 @@ from app.schemas.provider import (
     ProviderRead,
     ProviderUpdate,
 )
+
+logger = logging.getLogger("casetech.providers")
 
 # ---------------------------------------------------------------------------
 # create_provider — HU02: Registro vía SP con validación de duplicidad
@@ -120,9 +124,17 @@ async def create_provider(
                 detail=f"Error de validación en la base de datos: {clean_msg}",
             ) from exc
 
+        # ¿Qué? Error de BD no previsto: se registra completo en el log y al
+        # cliente solo le llega un mensaje genérico.
+        # ¿Para qué? Antes el mensaje crudo de PostgreSQL (SQL, nombres de
+        # procedimientos y tablas) viajaba en la respuesta al navegador.
+        # ¿Impacto? Nadie fuera del servidor ve detalles internos de la BD;
+        # el error real sigue disponible en el log para investigarlo.
+        logger.exception("Error no controlado al ejecutar sp_crear_proveedor")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al ejecutar el procedimiento almacenado: {exc.orig}",
+            detail="No se pudo registrar el proveedor por un error interno. "
+            "Intenta de nuevo; si el problema persiste, contacta al administrador.",
         ) from exc
 
     # Recuperar el proveedor recién creado para retornarlo serializado
