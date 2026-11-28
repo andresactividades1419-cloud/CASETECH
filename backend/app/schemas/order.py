@@ -13,6 +13,14 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field, field_validator
 
+
+def hoy() -> date:
+    # ¿Qué? Devuelve la fecha actual del servidor, en una sola función propia.
+    # ¿Para qué? El reloj es una dependencia externa: los tests reemplazan esta
+    # función por una fecha fija (stub) y ya no dependen del día en que se corren.
+    # ¿Impacto? En la app real se comporta igual que date.today().
+    return date.today()
+
 # ---------------------------------------------------------------------------
 # Enum de estados válidos según constraint de BD
 # ---------------------------------------------------------------------------
@@ -74,20 +82,25 @@ class OrderBase(BaseModel):
             raise ValueError("El nombre del cliente debe tener al menos 3 caracteres.")
         return cleaned
 
-    @field_validator("fecha_entrega_estimada")
-    @classmethod
-    def validate_fecha_futura(cls, v: date) -> date:
-        if v < date.today():
-            raise ValueError(
-                "La fecha de entrega estimada no puede ser una fecha pasada."
-            )
-        return v
-
 
 class OrderCreate(OrderBase):
     """Payload para registrar un nuevo pedido de producción."""
 
-    pass
+    # ¿Qué? La regla "la fecha de entrega no puede ser pasada" vive solo aquí,
+    # en el esquema de CREACIÓN.
+    # ¿Para qué? Antes estaba en OrderBase, del que también hereda OrderResponse:
+    # al LEER un pedido cuya fecha de entrega ya pasó, la respuesta fallaba con
+    # 500 (hallazgo bootcamp semana 5, descubierto con un mock del reloj).
+    # ¿Impacto? Se sigue rechazando crear pedidos con fecha pasada, y los pedidos
+    # viejos se pueden consultar, listar, completar y cancelar.
+    @field_validator("fecha_entrega_estimada")
+    @classmethod
+    def validate_fecha_futura(cls, v: date) -> date:
+        if v < hoy():
+            raise ValueError(
+                "La fecha de entrega estimada no puede ser una fecha pasada."
+            )
+        return v
 
 
 class OrderStatusUpdate(BaseModel):
