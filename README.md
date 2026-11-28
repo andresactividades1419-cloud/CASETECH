@@ -267,9 +267,10 @@ La estrategia completa (riesgos, qué se prueba y qué no, ambientes) está en [
 
 | Nivel | Pruebas | Herramienta | Cobertura (umbral mínimo) |
 |---|---|---|---|
-| Backend (unitarias + API + BD) | 46 | pytest + httpx, SQLite en memoria | 68,9 % (68 %) |
-| Frontend (unitarias) | 2 | Vitest | 0,76 % (0,5 %) |
-| Extremo a extremo (E2E) | 3 | Playwright (Chromium) | — |
+| Backend (unitarias + API) | 95 | pytest + httpx, SQLite en memoria | 76,93 % (76 %) |
+| Backend (integración con BD real) | 4 | pytest contra PostgreSQL 16 (`db-test`) | — (se mide aparte) |
+| Frontend (unitarias + componentes) | 113 | Vitest + Testing Library + MSW | 66,53 % (66 %) |
+| Extremo a extremo (E2E) | 6 | Playwright (Chromium) | — |
 
 Si la cobertura baja de su umbral mínimo, las pruebas fallan (localmente y en el CI).
 
@@ -280,6 +281,22 @@ Si la cobertura baja de su umbral mínimo, las pruebas fallan (localmente y en e
 docker compose exec backend uv run pytest -v tests/
 ```
 Al terminar imprime la cobertura por archivo y las líneas sin cubrir. Las pruebas usan una base SQLite en memoria que se recrea antes de cada test: **no tocan** la base de desarrollo.
+
+### Pruebas de integración con PostgreSQL real
+Corren contra una base de pruebas desechable (`db-test`, puerto 5433, BD `casetech_test`) que **no es** la de desarrollo. El esquema se crea con las mismas migraciones de Alembic que producción, y cada test se deshace con rollback al terminar.
+```bash
+# 1) Levantar la BD de pruebas (espera a que esté lista)
+docker compose up -d --wait db-test
+
+# 2) Correr los tests de integración
+docker compose exec -e TEST_DATABASE_URL=postgresql+asyncpg://casetech_test:casetech_test@db-test:5432/casetech_test backend uv run pytest tests/integration -o addopts=""
+
+# 3) Apagarla (sus datos viven en memoria: se borran al apagarla)
+docker compose stop db-test
+```
+> ⚠️ **No uses `docker compose down -v`** para apagar la BD de pruebas: ese comando borra también el volumen de la base de **desarrollo** (`postgres_data`).
+
+Sin `TEST_DATABASE_URL`, estos tests aparecen como *skipped* y el resto de la suite (y el CI) sigue igual. Si la URL apunta a una BD cuyo nombre no termina en `_test`, los tests se detienen antes de conectarse.
 
 ### Pruebas del frontend
 ```bash
