@@ -68,7 +68,22 @@ function refreshAccessToken() {
 // Interceptor de Respuestas: en 401 intenta renovar la sesión una vez;
 // si falla también, recién ahí avisa que la sesión expiró.
 apiClient.interceptors.response.use(
-  (response) => response,
+  // ¿Qué? Rechaza las respuestas HTML (por ejemplo, la página "502 Bad Gateway" de
+  //   Nginx cuando el backend está caído). Las descargas de CSV (blob) no se tocan.
+  // ¿Para qué? Antes el HTML llegaba como si fueran datos: la pantalla leía
+  //   data.items === undefined y mostraba "no hay registros" en vez de un error
+  //   (hallazgo bootcamp semana 5, descubierto con MSW).
+  // ¿Impacto? Las pantallas muestran su aviso de error con un mensaje claro.
+  (response) => {
+    const tipo = String(response.headers?.['content-type'] || '');
+    if (response.config?.responseType !== 'blob' && tipo.includes('text/html')) {
+      const error = new Error('El servidor respondió una página HTML en lugar de datos. Intente de nuevo en unos minutos.');
+      error.response = response;
+      error.config = response.config;
+      return Promise.reject(error);
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
     const url = originalRequest?.url || '';
