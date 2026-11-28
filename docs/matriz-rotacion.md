@@ -69,6 +69,7 @@ Anota la cobertura real al cerrar cada semana. El umbral de la semana siguiente 
 | S2 | 1.30% | 69.15% | Front: 0.5% · Back: 68% — el frontend **no alcanzó el piso del 30 %** en S2 (solo tenía tests de lógica pura); lo superó en S3. El backend subió de 56 % a 69 % al corregir la medición (greenlet) |
 | S3 | 44.83% | 69.15% | Front: 44% · Back: 69% |
 | S4 | 61.63% | 76.50% | Front: 61% · Back: 76% — ambos ya superan el piso de S5 (60 %) |
+| S5 | 66.53% | 76.93% | Front: 66% · Back: 76% — el frontend todavía no alcanza el piso de S6 (70 %): faltan ~3.5 puntos |
 
 ## Registro de vocero aleatorio
 

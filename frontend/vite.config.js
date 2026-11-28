@@ -42,9 +42,10 @@ export default defineConfig({
       // Cierre semana 3 (2026-11-25): el CI midió 44.83 % de líneas → umbral 44
       // (el mayor entre el piso de la semana, 40, y la cobertura real redondeada hacia abajo).
       // Cierre semana 4 (2026-11-27): el CI midió 61.63 % → umbral 61 (piso de la semana: 50).
+      // Cierre semana 5 (2026-11-27): el CI midió 66.53 % → umbral 66 (piso de la semana: 60).
       // Ojo: en Windows (archivos con fin de línea CRLF) la misma suite marca un % más
       // alto que en CI (LF). El número oficial es siempre el del CI.
-      thresholds: { lines: 61, statements: 61, functions: 0, branches: 0 },
+      thresholds: { lines: 66, statements: 66, functions: 0, branches: 0 },
     },
   },
 });
