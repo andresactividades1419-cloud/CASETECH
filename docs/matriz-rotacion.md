@@ -68,9 +68,12 @@ Primero se fusiona la preparación compartida (BD de pruebas `db-test` y fixture
 | Integrante | Capa / ángulo | Rama | Entregable |
 |---|---|---|---|
 | @andres141918-prog | Preparación compartida | `chore/week-06-test-database-setup` | Servicio `db-test` (puerto 5433, `tmpfs`), fixtures `pg_session` / `pg_client` / `pg_admin_headers`, 4 tests de humo + mutante del savepoint, comandos en el README |
-| @andres141918-prog | BD: Stored Procedures | `test/week-06-db-stored-procedures` | ≥ 3 tests de los SP reales (descontar, déficit, revertir) + mutante (issue #123) |
-| @javieburgossepul-cpu | BD: restricciones de tablas | `test/week-06-db-materials-constraints` | ≥ 3 tests de `NOT NULL`, longitud, `UNIQUE` y `NUMERIC(12,3)` en materiales y proveedores + mutante |
-| @oscark2209 | API: pedidos contra BD real | `test/week-06-api-orders-real-db` | ≥ 3 tests de endpoints verificados en la BD + hallazgo de un `500` corregido con regla y test unitario + mutante |
+| @andres141918-prog | BD: Stored Procedures | `test/week-06-db-stored-procedures` | 3 tests de los SP reales (descuento + kardex, déficit con atomicidad, reversión) + 2 mutantes aplicados solo en `db-test` (issue #123) — PR #149 |
+| @andres141918-prog | Aporte de cobertura del frontend | `test/week-06-front-users-page` | 25 tests de `UsersPage` y `UserModal` (0 % → 98 %) + mutante; hallazgo de accesibilidad corregido: etiquetas sin `htmlFor` — PR #152 |
+| @javieburgossepul-cpu | BD: restricciones de tablas | `test/week-06-db-materials-constraints` | 10 tests de integración (`VARCHAR`, `NOT NULL`, `UNIQUE`, `CHECK`, `NUMERIC(12,3)`, filtro y `ORDER BY`) + 6 unitarios + mutante; hallazgo corregido: stock de mil millones respondía **500** — PR #150 |
+| @oscark2209 | API: pedidos contra BD real | `test/week-06-api-orders-real-db` | 4 tests de integración verificados en la BD + 5 unitarios + mutante; hallazgo corregido: `cantidad` > 2³¹-1 y `tipo_caseton_id` > 2⁶³-1 respondían **500** — PR #151 |
+
+**Prueba de fuego:** la suite de integración completa (21 tests) pasa dos veces seguidas con `db-test` recién levantada y deja las tablas vacías (verificado por @andres141918-prog; pendiente la corrida en el computador de @javieburgossepul-cpu).
 
 ## Cobertura semanal
 
@@ -83,6 +86,7 @@ Anota la cobertura real al cerrar cada semana. El umbral de la semana siguiente 
 | S3 | 44.83% | 69.15% | Front: 44% · Back: 69% |
 | S4 | 61.63% | 76.50% | Front: 61% · Back: 76% — ambos ya superan el piso de S5 (60 %) |
 | S5 | 66.53% | 76.93% | Front: 66% · Back: 76% — el frontend todavía no alcanza el piso de S6 (70 %): faltan ~3.5 puntos |
+| S6 | 73.22% | 76.96% | Front: 73% · Back: 76% — los dos superan el piso de S6 (70 %). Para S7 (75 %) al frontend le faltan ~1.8 puntos; para S8 (80 %) faltan ~6.8 (front) y ~3 (back). Medido **sin** `TEST_DATABASE_URL` (los 21 tests de integración se saltan en el CI) |
 
 ## Registro de vocero aleatorio
 
