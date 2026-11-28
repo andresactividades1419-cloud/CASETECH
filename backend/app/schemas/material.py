@@ -10,6 +10,12 @@ from pydantic import BaseModel, Field, field_validator
 # Unidades de medida estándar en la fabricación de casetones
 VALID_UNITS = ("m", "m2", "m3", "kg", "und", "pulgada", "mm")
 
+# ¿Qué? El stock más grande que cabe en las columnas stock_actual y stock_minimo,
+#       que en PostgreSQL son NUMERIC(12,3): 9 dígitos enteros y 3 decimales.
+# ¿Para qué? Rechazar con 422 un stock que la base de datos no puede guardar.
+# ¿Impacto? Sin este límite, el API respondía 500 ("numeric field overflow").
+MAX_STOCK = Decimal("999999999.999")
+
 
 class MaterialBase(BaseModel):
     """Campos base compartidos por todos los esquemas de material."""
@@ -35,6 +41,7 @@ class MaterialBase(BaseModel):
     stock_minimo: Decimal = Field(
         default=Decimal("0.000"),
         ge=0,
+        le=MAX_STOCK,
         description="Umbral mínimo de inventario para disparar alertas de reabastecimiento (HU12).",
         examples=[Decimal("10.000")],
     )
@@ -63,6 +70,7 @@ class MaterialCreate(MaterialBase):
     stock_actual: Decimal = Field(
         default=Decimal("0.000"),
         ge=0,
+        le=MAX_STOCK,
         description="Cantidad física inicial disponible en bodega.",
         examples=[Decimal("100.000")],
     )
@@ -86,11 +94,13 @@ class MaterialUpdate(BaseModel):
     stock_minimo: Decimal | None = Field(
         default=None,
         ge=0,
+        le=MAX_STOCK,
         description="Nuevo umbral de alerta de stock mínimo.",
     )
     stock_actual: Decimal | None = Field(
         default=None,
         ge=0,
+        le=MAX_STOCK,
         description="Ajuste directo de stock actual (si aplica).",
     )
 
