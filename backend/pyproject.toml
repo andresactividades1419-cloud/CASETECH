@@ -121,6 +121,8 @@ concurrency = ["greenlet", "thread"]
 # piso de la semana, 40, y la cobertura real redondeada hacia abajo).
 # Cierre semana 4 (2026-11-27): el CI midió 76.50 % → umbral 76 (piso de la semana: 50).
 # Cierre semana 5 (2026-11-27): el CI midió 76.93 % → umbral 76 (piso de la semana: 60).
+# Cierre semana 6 (2026-11-28): el CI midió 76.96 % → umbral 76 (piso de la semana: 70).
+# Los tests de integración (tests/integration) se saltan en el CI y no cuentan aquí.
 # ¿Impacto? Si la cobertura baja de este valor, pytest (local y en CI) falla.
 fail_under = 76
 
