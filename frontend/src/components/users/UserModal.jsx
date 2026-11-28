@@ -133,6 +133,10 @@ export function UserModal({ isOpen, onClose, user, onSave, isSubmitting, errorMe
         </div>
 
         {/* Formulario */}
+        {/* ¿Qué? Cada <label> lleva htmlFor y su campo el mismo id (user-nombre, user-email, ...).
+            ¿Para qué? Que el lector de pantalla anuncie el nombre de cada campo y que un clic
+            en la etiqueta enfoque el campo (accesibilidad, bootcamp semana 6).
+            ¿Impacto? Sin esto, los campos no tienen nombre accesible y getByLabelText no los encuentra. */}
         <form onSubmit={handleSubmit} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
           {errorMessage && (
             <div style={{
@@ -148,10 +152,11 @@ export function UserModal({ isOpen, onClose, user, onSave, isSubmitting, errorMe
           )}
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', marginBottom: '0.35rem' }}>
+            <label htmlFor="user-nombre" style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', marginBottom: '0.35rem' }}>
               Nombre Completo *
             </label>
             <input
+              id="user-nombre"
               type="text"
               required
               placeholder="Ej: Carlos Gómez"
@@ -178,10 +183,11 @@ export function UserModal({ isOpen, onClose, user, onSave, isSubmitting, errorMe
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', marginBottom: '0.35rem' }}>
+            <label htmlFor="user-email" style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', marginBottom: '0.35rem' }}>
               Correo Electrónico *
             </label>
             <input
+              id="user-email"
               type="email"
               required
               placeholder="usuario@casetech.com"
@@ -208,10 +214,11 @@ export function UserModal({ isOpen, onClose, user, onSave, isSubmitting, errorMe
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', marginBottom: '0.35rem' }}>
+            <label htmlFor="user-password" style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', marginBottom: '0.35rem' }}>
               {isEditing ? 'Nueva Contraseña (opcional)' : 'Contraseña * (mín 8 caracteres, 1 mayúscula, 1 número)'}
             </label>
             <input
+              id="user-password"
               type="password"
               required={!isEditing}
               placeholder={isEditing ? '•••••••• (dejar en blanco para conservar)' : 'Contraseña segura'}
@@ -239,10 +246,11 @@ export function UserModal({ isOpen, onClose, user, onSave, isSubmitting, errorMe
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', marginBottom: '0.35rem' }}>
+              <label htmlFor="user-rol" style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', marginBottom: '0.35rem' }}>
                 Rol del Usuario *
               </label>
               <select
+                id="user-rol"
                 value={formData.rol_id}
                 onChange={(e) => setFormData({ ...formData, rol_id: Number(e.target.value) })}
                 style={{
@@ -263,10 +271,11 @@ export function UserModal({ isOpen, onClose, user, onSave, isSubmitting, errorMe
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', marginBottom: '0.35rem' }}>
+              <label htmlFor="user-activo" style={{ display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#94a3b8', marginBottom: '0.35rem' }}>
                 Estado de la Cuenta
               </label>
               <select
+                id="user-activo"
                 value={formData.activo ? 'true' : 'false'}
                 onChange={(e) => setFormData({ ...formData, activo: e.target.value === 'true' })}
                 style={{
