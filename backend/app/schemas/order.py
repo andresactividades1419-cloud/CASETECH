@@ -21,6 +21,14 @@ def hoy() -> date:
     # ¿Impacto? En la app real se comporta igual que date.today().
     return date.today()
 
+
+# ¿Qué? Los números más grandes que caben en las columnas de la tabla pedidos:
+#       cantidad es INTEGER y tipo_caseton_id es BIGINT en PostgreSQL.
+# ¿Para qué? Rechazar con 422 un número que la base de datos no puede guardar.
+# ¿Impacto? Sin estos límites, el API respondía 500 ("invalid input for query argument").
+MAX_INTEGER = 2_147_483_647
+MAX_BIGINT = 9_223_372_036_854_775_807
+
 # ---------------------------------------------------------------------------
 # Enum de estados válidos según constraint de BD
 # ---------------------------------------------------------------------------
@@ -53,12 +61,14 @@ class OrderBase(BaseModel):
     tipo_caseton_id: int = Field(
         ...,
         gt=0,
+        le=MAX_BIGINT,
         description="ID del tipo de casetón a producir. Determina la receta BOM aplicada.",
         examples=[1, 2],
     )
     cantidad: int = Field(
         ...,
         gt=0,
+        le=MAX_INTEGER,
         description="Número de unidades de casetón a fabricar.",
         examples=[50, 200],
     )
