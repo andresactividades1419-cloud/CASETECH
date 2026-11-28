@@ -14,9 +14,9 @@ Reglas:
 
 | Integrante (usuario GitHub) | S1 | S2 | S3 | S4 | S5 | S6 | S7 | S8 | S9 |
 |---|---|---|---|---|---|---|---|---|---|
-| @andres141918-prog | E2E | API | Front: ProtectedRoute + menú por rol | Front (contrato que consume el frontend) | E2E: estados simulados con page.route (+ cliente HTTP con MSW) | | | | |
-| @javieburgossepul-cpu | E2E | Front | Front: OrderModal (+ responsable del backend ≥ 40 %) | E2E (seguridad y contrato de errores) | API: dependencia del reloj | | | | |
-| @oscark2209 | E2E | E2E (CI con umbral) | Front: LoginPage | API (recurso principal: pedidos) | BD: sesión de base de datos como dependencia | | | | |
+| @andres141918-prog | E2E | API | Front: ProtectedRoute + menú por rol | Front (contrato que consume el frontend) | E2E: estados simulados con page.route (+ cliente HTTP con MSW) | BD: Stored Procedures contra PostgreSQL (+ montaje de la BD de pruebas) | | | |
+| @javieburgossepul-cpu | E2E | Front | Front: OrderModal (+ responsable del backend ≥ 40 %) | E2E (seguridad y contrato de errores) | API: dependencia del reloj | BD: restricciones de las tablas materiales y proveedores | | | |
+| @oscark2209 | E2E | E2E (CI con umbral) | Front: LoginPage | API (recurso principal: pedidos) | BD: sesión de base de datos como dependencia | API: pedidos contra PostgreSQL real | | | |
 
 > **Excepción S2**: en S1 los tres integrantes trabajaron en E2E. Con un grupo de 3 (Front, API y E2E) es inevitable que una persona repita E2E en S2. La asume @oscark2209 con el montaje del CI con umbral (`.github/workflows/tests.yml`), que es un entregable distinto al test Playwright de S1. Según la regla de rotación, en S3–S5 debe pasar por Front, API y BD antes de volver a E2E.
 
@@ -58,6 +58,19 @@ Cada integrante tomó una capa distinta a la de S4. Inventario de dependencias e
 | @javieburgossepul-cpu | API: dependencia del reloj | `test/week-05-api-clock-doubles` | 6 tests con stub y mock de `hoy()` + mutante; hallazgo: pedidos con fecha de entrega vencida respondían 500 al leerlos |
 | @oscark2209 | BD: sesión de base de datos | `test/week-05-db-session-doubles` | 3 tests con stub, mock y fake de `AsyncSession` + mutante |
 | @andres141918-prog | E2E: estados simulados con `page.route` | `test/week-05-front-msw` | 3 E2E con `page.route` (API caído, lista vacía, 422 en login) + mutante. Aporte extra para la cobertura: 41 tests de `src/api` con MSW; hallazgo: respuestas HTML de un proxy llegaban como datos |
+
+### Ramas de trabajo S6 (desde `develop`) — integración con BD real
+
+**Excepción S6**: @andres141918-prog y @javieburgossepul-cpu son los dos únicos que aún no pasan por BD (los dos ya hicieron Front, API y E2E). Para no romper la regla de rotación, los dos toman BD esta semana, con ángulos distintos; @oscark2209 ya completó las cuatro capas y toma API. Nadie toma Front: los tests que faltan para el piso del 70 % del frontend los aporta @andres141918-prog.
+
+Primero se fusiona la preparación compartida (BD de pruebas `db-test` y fixtures en `backend/tests/integration/conftest.py`); después cada integrante trabaja su ángulo. Limpieza entre tests: **transacción con rollback** (savepoints), porque los servicios de CASETECH hacen `commit()` y `rollback()` propios y el truncado borraría también los datos semilla de las migraciones.
+
+| Integrante | Capa / ángulo | Rama | Entregable |
+|---|---|---|---|
+| @andres141918-prog | Preparación compartida | `chore/week-06-test-database-setup` | Servicio `db-test` (puerto 5433, `tmpfs`), fixtures `pg_session` / `pg_client` / `pg_admin_headers`, 4 tests de humo + mutante del savepoint, comandos en el README |
+| @andres141918-prog | BD: Stored Procedures | `test/week-06-db-stored-procedures` | ≥ 3 tests de los SP reales (descontar, déficit, revertir) + mutante (issue #123) |
+| @javieburgossepul-cpu | BD: restricciones de tablas | `test/week-06-db-materials-constraints` | ≥ 3 tests de `NOT NULL`, longitud, `UNIQUE` y `NUMERIC(12,3)` en materiales y proveedores + mutante |
+| @oscark2209 | API: pedidos contra BD real | `test/week-06-api-orders-real-db` | ≥ 3 tests de endpoints verificados en la BD + hallazgo de un `500` corregido con regla y test unitario + mutante |
 
 ## Cobertura semanal
 

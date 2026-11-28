@@ -24,6 +24,40 @@ services:
       start_period: 10s
 
   # ============================================================
+  # Servicio: Base de datos de PRUEBAS (bootcamp de testing, semana 6)
+  # ============================================================
+  # ¿Qué? Un segundo PostgreSQL 16, solo para los tests de integración.
+  # ¿Para qué? Los tests escriben y borran datos: nunca deben tocar la BD de desarrollo.
+  # ¿Impacto? Es desechable: sus datos viven en memoria (tmpfs) y se borran al apagarla.
+  #   Levantar:  docker compose up -d --wait db-test
+  #   Apagar:    docker compose stop db-test   (NO usar "down -v": borra también la BD de desarrollo)
+  db-test:
+    image: postgres:16-alpine
+    container_name: casetech-db-test
+    # Perfil "test": "docker compose up" normal NO la levanta; solo cuando se nombra.
+    profiles: ["test"]
+    environment:
+      # Credenciales de una BD local desechable, no de producción.
+      POSTGRES_USER: casetech_test
+      POSTGRES_PASSWORD: casetech_test
+      # El nombre termina en _test: los tests se niegan a correr contra otra BD.
+      POSTGRES_DB: casetech_test
+    # Datos en memoria: cada vez que se levanta, empieza vacía.
+    tmpfs:
+      - /var/lib/postgresql/data
+    ports:
+      # Puerto 5433 en tu computador, distinto al 5432 de la BD de desarrollo.
+      - "5433:5432"
+    networks:
+      - casetech-network
+    healthcheck:
+      # "--wait" espera a que esto responda antes de devolver el control.
+      test: ["CMD-SHELL", "pg_isready -U casetech_test -d casetech_test"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+  # ============================================================
   # Servicio: Backend FastAPI (Python 3.11 + UV)
   # ============================================================
   backend:
