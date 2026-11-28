@@ -14,9 +14,9 @@ Reglas:
 
 | Integrante (usuario GitHub) | S1 | S2 | S3 | S4 | S5 | S6 | S7 | S8 | S9 |
 |---|---|---|---|---|---|---|---|---|---|
-| @andres141918-prog | E2E | API | Front: ProtectedRoute + menú por rol | Front (contrato que consume el frontend) | | | | | |
-| @javieburgossepul-cpu | E2E | Front | Front: OrderModal (+ responsable del backend ≥ 40 %) | E2E (seguridad y contrato de errores) | | | | | |
-| @oscark2209 | E2E | E2E (CI con umbral) | Front: LoginPage | API (recurso principal: pedidos) | | | | | |
+| @andres141918-prog | E2E | API | Front: ProtectedRoute + menú por rol | Front (contrato que consume el frontend) | E2E: estados simulados con page.route (+ cliente HTTP con MSW) | | | | |
+| @javieburgossepul-cpu | E2E | Front | Front: OrderModal (+ responsable del backend ≥ 40 %) | E2E (seguridad y contrato de errores) | API: dependencia del reloj | | | | |
+| @oscark2209 | E2E | E2E (CI con umbral) | Front: LoginPage | API (recurso principal: pedidos) | BD: sesión de base de datos como dependencia | | | | |
 
 > **Excepción S2**: en S1 los tres integrantes trabajaron en E2E. Con un grupo de 3 (Front, API y E2E) es inevitable que una persona repita E2E en S2. La asume @oscark2209 con el montaje del CI con umbral (`.github/workflows/tests.yml`), que es un entregable distinto al test Playwright de S1. Según la regla de rotación, en S3–S5 debe pasar por Front, API y BD antes de volver a E2E.
 
@@ -48,6 +48,16 @@ Cada integrante tomó una capa distinta a la de S2 (grupo de 3: API, Front y E2E
 | @oscark2209 | API: recurso principal (pedidos) | `test/week-04-api-orders` | 8 tests de API + mutante; hallazgo: fechas fijas `2026-12-31` que caducaban |
 | @javieburgossepul-cpu | E2E: seguridad y contrato de errores | `test/week-04-api-security-errors` | 9 tests de API (401/403/autorizado) + mutante; hallazgo corregido: JSON mal formado respondía 422 con lista interna |
 | @andres141918-prog | Front: contrato que consume el frontend | `test/week-04-front-contract` | 7 tests de API + mutante; hallazgos corregidos: fuga del error crudo de PostgreSQL en proveedores y "Usuario #undefined" en Compras. Además, tests de las páginas Compras y Ajustes para el piso del 50 % del frontend |
+
+### Ramas de trabajo S5 (desde `develop`) — dobles de prueba
+
+Cada integrante tomó una capa distinta a la de S4. Inventario de dependencias externas de CASETECH: el reloj (fecha de entrega, expiración de tokens), PostgreSQL (procedimientos almacenados; en tests, SQLite en memoria como fake) y el backend visto desde el frontend. No hay correo, pagos ni APIs de terceros.
+
+| Integrante | Capa / ángulo | Rama | Entregable |
+|---|---|---|---|
+| @javieburgossepul-cpu | API: dependencia del reloj | `test/week-05-api-clock-doubles` | 6 tests con stub y mock de `hoy()` + mutante; hallazgo: pedidos con fecha de entrega vencida respondían 500 al leerlos |
+| @oscark2209 | BD: sesión de base de datos | `test/week-05-db-session-doubles` | 3 tests con stub, mock y fake de `AsyncSession` + mutante |
+| @andres141918-prog | E2E: estados simulados con `page.route` | `test/week-05-front-msw` | 3 E2E con `page.route` (API caído, lista vacía, 422 en login) + mutante. Aporte extra para la cobertura: 41 tests de `src/api` con MSW; hallazgo: respuestas HTML de un proxy llegaban como datos |
 
 ## Cobertura semanal
 
