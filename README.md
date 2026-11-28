@@ -268,7 +268,7 @@ La estrategia completa (riesgos, qué se prueba y qué no, ambientes) está en [
 | Nivel | Pruebas | Herramienta | Cobertura (umbral mínimo) |
 |---|---|---|---|
 | Backend (unitarias + API) | 95 | pytest + httpx, SQLite en memoria | 76,93 % (76 %) |
-| Backend (integración con BD real) | 4 | pytest contra PostgreSQL 16 (`db-test`) | — (se mide aparte) |
+| Backend (integración con BD real) | 7 | pytest contra PostgreSQL 16 (`db-test`) | — (se mide aparte) |
 | Frontend (unitarias + componentes) | 113 | Vitest + Testing Library + MSW | 66,53 % (66 %) |
 | Extremo a extremo (E2E) | 6 | Playwright (Chromium) | — |
 
